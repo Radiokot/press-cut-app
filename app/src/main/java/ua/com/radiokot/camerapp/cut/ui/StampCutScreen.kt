@@ -314,6 +314,12 @@ fun StampCutScreen(
             contentDescription = null,
             modifier = Modifier
                 .size(frameSize)
+                .graphicsLayer {
+                    translationX = offsetX.value
+                    translationY = offsetY.value
+                    scaleX = scale.value
+                    scaleY = scale.value
+                }
                 .run {
                     if (sharedTransitionScope == null || animatedVisibilityScope == null) {
                         return@run this
@@ -328,10 +334,6 @@ fun StampCutScreen(
                 }
                 .graphicsLayer {
                     rotationZ = rotation.value
-                    translationX = offsetX.value
-                    translationY = offsetY.value
-                    scaleX = scale.value
-                    scaleY = scale.value
                 }
         )
 
