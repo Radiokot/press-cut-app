@@ -11,10 +11,11 @@ class Stamp(
     val isReadOnly: Boolean,
 ) {
     fun copy(
+        newCollectionId: String = this.collectionId,
         newCaption: String? = this.caption,
     ) = Stamp(
         id = id,
-        collectionId = collectionId,
+        collectionId = newCollectionId,
         imageUri = imageUri,
         caption = newCaption,
         takenAtLocal = takenAtLocal,

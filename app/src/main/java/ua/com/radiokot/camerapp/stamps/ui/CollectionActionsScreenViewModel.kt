@@ -11,11 +11,13 @@ import ua.com.radiokot.camerapp.stamps.domain.GetStampCollectionsWithSamplesUseC
 import ua.com.radiokot.camerapp.stamps.domain.StampCollection
 import ua.com.radiokot.camerapp.stamps.domain.StampCollectionRepository
 import ua.com.radiokot.camerapp.stamps.domain.StampCollectionWithSamples
+import ua.com.radiokot.camerapp.stamps.domain.StampRepository
 import ua.com.radiokot.camerapp.util.eventSharedFlow
 import ua.com.radiokot.camerapp.util.lazyLogger
 
 class CollectionActionsScreenViewModel(
     private val collectionRepository: StampCollectionRepository,
+    private val stampRepository: StampRepository,
     getStampCollectionsWithSamplesUseCase: GetStampCollectionsWithSamplesUseCase,
     parameters: Parameters,
 ) : ViewModel() {
@@ -86,13 +88,41 @@ class CollectionActionsScreenViewModel(
         )
     }
 
+    private var moveJob: Job? = null
+
     fun onMoveDestinationCollectionSelected(
         destinationCollectionId: String,
     ) {
+        if (moveJob?.isActive == true) {
+            return
+        }
+
+        moveJob = viewModelScope.launch {
+            moveStampsToCollection(
+                destinationCollectionId = destinationCollectionId,
+            )
+        }
+    }
+
+    private suspend fun moveStampsToCollection(
+        destinationCollectionId: String,
+    ) {
         log.debug {
-            "onMoveDestinationCollectionSelected(): moving stamps to collection:" +
+            "moveStampsToCollection(): moving:" +
                     "\ndestinationCollectionId=$destinationCollectionId"
         }
+
+        stampRepository.moveStampsBetweenCollections(
+            sourceCollectionId = collection.id,
+            destinationCollectionId = destinationCollectionId,
+        )
+
+        log.info {
+            "Stamps from the collection ${collection.id} " +
+                    "moved to the collection $destinationCollectionId"
+        }
+
+        _events.emit(Event.Done)
     }
 
     sealed interface Event {

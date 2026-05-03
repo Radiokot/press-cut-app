@@ -14,11 +14,16 @@ import com.ashampoo.xmp.XMPMeta
 import com.ashampoo.xmp.XMPMetaFactory
 import kotlinx.collections.immutable.PersistentList
 import kotlinx.collections.immutable.toPersistentList
+import kotlinx.coroutines.CoroutineName
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import ua.com.radiokot.camerapp.stamps.domain.Stamp
 import ua.com.radiokot.camerapp.stamps.domain.StampRepository
@@ -36,12 +41,16 @@ import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.io.path.absolutePathString
 import kotlin.jvm.optionals.getOrNull
+import kotlin.time.measureTime
 
 class FsStampRepository(
     private val stampDirectory: File,
 ) : StampRepository {
 
     private val log by lazyLogger("FsStampRepo")
+
+    private val coroutineScope =
+        CoroutineScope(SupervisorJob() + Dispatchers.IO + CoroutineName("FsStampCollectionRepo"))
 
     init {
         require(stampDirectory.exists()) {
@@ -160,7 +169,7 @@ class FsStampRepository(
                 takenAtLocal = takenAtLocal,
                 isReadOnly = false,
             )
-            sharedFlow.tryEmit(cache)
+            sharedFlow.emit(cache)
         }
     }
 
@@ -215,7 +224,7 @@ class FsStampRepository(
 
         if (isCacheInitialized.load()) {
             cache[cache.indexOf(stamp)] = updatedStamp
-            sharedFlow.tryEmit(cache)
+            sharedFlow.emit(cache)
         }
     }
 
@@ -234,7 +243,57 @@ class FsStampRepository(
 
         if (isCacheInitialized.load()) {
             cache -= stamp
-            sharedFlow.tryEmit(cache)
+            sharedFlow.emit(cache)
+        }
+    }
+
+    override suspend fun moveStampsBetweenCollections(
+        sourceCollectionId: String,
+        destinationCollectionId: String,
+    ) {
+        log.debug {
+            "moveStampsBetweenCollections(): moving the files in background:" +
+                    "\nsourceCollectionId=$sourceCollectionId" +
+                    "\ndestinationCollectionId=$destinationCollectionId"
+        }
+
+        coroutineScope.launch {
+            val duration = measureTime {
+                val sourceCollectionDirectory = File(stampDirectory, sourceCollectionId)
+                val destinationCollectionDirectory =
+                    File(stampDirectory, destinationCollectionId)
+
+                coroutineScope {
+                    sourceCollectionDirectory
+                        .listFiles { isStamp(it) && it.canWrite() }!!
+                        .forEach { stampFile ->
+                            launch {
+                                val destinationFile = File(
+                                    destinationCollectionDirectory,
+                                    stampFile.name
+                                )
+                                stampFile.renameTo(destinationFile)
+                            }
+                        }
+                }
+            }
+
+            log.debug {
+                "moveStampsBetweenCollections(): done moving in background:" +
+                        "\nduration=$duration"
+            }
+        }
+
+        if (isCacheInitialized.load()) {
+            cache.indices.forEach { i ->
+                val stamp = cache[i]
+                if (stamp.collectionId == sourceCollectionId && !stamp.isReadOnly) {
+                    cache[i] = stamp.copy(
+                        newCollectionId = destinationCollectionId,
+                    )
+                }
+            }
+            sharedFlow.emit(cache)
         }
     }
 

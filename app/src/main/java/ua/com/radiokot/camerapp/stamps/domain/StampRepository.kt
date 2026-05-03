@@ -28,4 +28,9 @@ interface StampRepository {
     suspend fun deleteStamp(
         stamp: Stamp,
     )
+
+    suspend fun moveStampsBetweenCollections(
+        sourceCollectionId: String,
+        destinationCollectionId: String,
+    )
 }
