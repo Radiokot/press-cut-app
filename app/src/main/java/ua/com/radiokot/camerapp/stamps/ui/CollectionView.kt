@@ -33,7 +33,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
 import com.skydoves.landscapist.ImageOptions
+import com.skydoves.landscapist.core.ImageRequest
 import com.skydoves.landscapist.image.LandscapistImage
+import ua.com.radiokot.camerapp.ui.noProgressive
 import ua.com.radiokot.camerapp.ui.podkovaFamily
 import kotlin.math.absoluteValue
 
@@ -272,6 +274,7 @@ private fun StampSampleView(
     }
     LandscapistImage(
         imageModel = { sample.imageUri.toUri() },
+        requestBuilder = ImageRequest.Builder::noProgressive,
         imageOptions = imageOptions,
         modifier = modifier
             .size(StampSize * 0.85f)

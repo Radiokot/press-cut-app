@@ -63,10 +63,12 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
+import com.skydoves.landscapist.core.ImageRequest
 import com.skydoves.landscapist.image.LandscapistImage
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import ua.com.radiokot.camerapp.R
+import ua.com.radiokot.camerapp.ui.noProgressive
 import ua.com.radiokot.camerapp.ui.paperBackground
 import ua.com.radiokot.camerapp.ui.podkovaFamily
 import java.time.LocalDate
@@ -232,6 +234,7 @@ fun StampScreen(
         ) {
             LandscapistImage(
                 imageModel = { imageUri.toUri() },
+                requestBuilder = ImageRequest.Builder::noProgressive,
                 modifier = Modifier
                     .size(StampSize * 2f)
                     .run {

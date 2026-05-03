@@ -40,11 +40,13 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.core.net.toUri
+import com.skydoves.landscapist.core.ImageRequest
 import com.skydoves.landscapist.image.LandscapistImage
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toPersistentList
 import ua.com.radiokot.camerapp.R
 import ua.com.radiokot.camerapp.ui.LeTextButton
+import ua.com.radiokot.camerapp.ui.noProgressive
 import ua.com.radiokot.camerapp.util.plus
 import kotlin.math.absoluteValue
 
@@ -161,6 +163,7 @@ fun StampsScreen(
             ) {
                 LandscapistImage(
                     imageModel = { stamp.thumbnailUrl.toUri() },
+                    requestBuilder = ImageRequest.Builder::noProgressive,
                     modifier = Modifier
                         .size(StampSize)
                         .run {
