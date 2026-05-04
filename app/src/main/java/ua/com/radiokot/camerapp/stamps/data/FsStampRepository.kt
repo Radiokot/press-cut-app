@@ -18,11 +18,13 @@ import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import ua.com.radiokot.camerapp.stamps.domain.Stamp
@@ -31,17 +33,19 @@ import ua.com.radiokot.camerapp.util.lazyLogger
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
+import java.nio.file.FileSystems
 import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.StandardCopyOption
 import java.nio.file.attribute.BasicFileAttributes
 import java.time.LocalDateTime
 import java.time.ZoneId
+import java.util.Collections
 import java.util.Optional
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.io.path.absolutePathString
 import kotlin.jvm.optionals.getOrNull
-import kotlin.time.measureTime
 
 class FsStampRepository(
     private val stampDirectory: File,
@@ -247,54 +251,67 @@ class FsStampRepository(
         }
     }
 
-    override suspend fun moveStampsBetweenCollections(
+    override fun moveStampsBetweenCollections(
         sourceCollectionId: String,
         destinationCollectionId: String,
-    ) {
-        log.debug {
-            "moveStampsBetweenCollections(): moving the files in background:" +
-                    "\nsourceCollectionId=$sourceCollectionId" +
-                    "\ndestinationCollectionId=$destinationCollectionId"
-        }
+    ): Flow<Pair<Int, Int>> {
 
-        coroutineScope.launch {
-            val duration = measureTime {
-                val sourceCollectionDirectory = File(stampDirectory, sourceCollectionId)
-                val destinationCollectionDirectory =
-                    File(stampDirectory, destinationCollectionId)
+        val movedStampIds = Collections.synchronizedSet<String>(mutableSetOf())
 
-                coroutineScope {
-                    sourceCollectionDirectory
-                        .listFiles { isStamp(it) && it.canWrite() }!!
-                        .forEach { stampFile ->
-                            launch {
-                                val destinationFile = File(
-                                    destinationCollectionDirectory,
-                                    stampFile.name
-                                )
-                                stampFile.renameTo(destinationFile)
-                            }
-                        }
-                }
-            }
+        return channelFlow {
+            val progressChannel = this.channel
+            val sourceCollectionDirectory =
+                File(stampDirectory, sourceCollectionId)
+            val destinationCollectionDirectoryPath =
+                FileSystems
+                    .getDefault()
+                    .getPath(
+                        stampDirectory.absolutePath,
+                        destinationCollectionId,
+                    )
+                    .toString()
+            val filesToMove =
+                sourceCollectionDirectory
+                    .listFiles { isStamp(it) && it.canWrite() }!!
+
+            progressChannel.send(0 to filesToMove.size)
 
             log.debug {
-                "moveStampsBetweenCollections(): done moving in background:" +
-                        "\nduration=$duration"
+                "moveStampsBetweenCollections(): moving the files async:" +
+                        "\nsourceCollectionId=$sourceCollectionId" +
+                        "\ndestinationCollectionId=$destinationCollectionId" +
+                        "\nfilesToMove=${filesToMove.size}"
             }
-        }
 
-        if (isCacheInitialized.load()) {
-            cache.indices.forEach { i ->
-                val stamp = cache[i]
-                if (stamp.collectionId == sourceCollectionId && !stamp.isReadOnly) {
-                    cache[i] = stamp.copy(
-                        newCollectionId = destinationCollectionId,
+            filesToMove.forEach { stampFile ->
+                launch {
+                    Files.move(
+                        FileSystems.getDefault().getPath(stampFile.path),
+                        FileSystems.getDefault().getPath(
+                            destinationCollectionDirectoryPath,
+                            stampFile.name
+                        ),
+                        StandardCopyOption.ATOMIC_MOVE,
                     )
+                    movedStampIds += stampFile.nameWithoutExtension
+                    progressChannel.send(movedStampIds.size to filesToMove.size)
                 }
             }
-            sharedFlow.emit(cache)
         }
+            .onCompletion {
+                if (isCacheInitialized.load()) {
+                    cache.indices.forEach { i ->
+                        val stamp = cache[i]
+                        if (stamp.id in movedStampIds) {
+                            cache[i] = stamp.copy(
+                                newCollectionId = destinationCollectionId,
+                            )
+                        }
+                    }
+                    sharedFlow.emit(cache)
+                }
+            }
+            .flowOn(Dispatchers.IO)
     }
 
     private fun getStampFile(

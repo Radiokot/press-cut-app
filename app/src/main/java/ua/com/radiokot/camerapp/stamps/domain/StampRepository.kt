@@ -29,8 +29,12 @@ interface StampRepository {
         stamp: Stamp,
     )
 
-    suspend fun moveStampsBetweenCollections(
+    /**
+     * @return progress flow, where each value is
+     * the moved file count and the total file count.
+     */
+    fun moveStampsBetweenCollections(
         sourceCollectionId: String,
         destinationCollectionId: String,
-    )
+    ): Flow<Pair<Int, Int>>
 }

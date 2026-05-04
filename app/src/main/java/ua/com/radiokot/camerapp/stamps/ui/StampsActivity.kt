@@ -19,6 +19,7 @@ import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.asFloatState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -284,6 +285,20 @@ private fun SharedTransitionScope.StampsNavHost(
                             }
                         }
 
+                        is CollectionActionsScreenViewModel.Event.ProceedToMoveStamps -> {
+                            navController.navigate(
+                                route = MoveStampsDestination(
+                                    sourceCollectionId = event.sourceCollectionId,
+                                    destinationCollectionId = event.destinationCollectionId,
+                                )
+                            ) {
+                                popUpTo(CollectionActionsDestination) {
+                                    inclusive = true
+                                }
+                                launchSingleTop = true
+                            }
+                        }
+
                         is CollectionActionsScreenViewModel.Event.Done -> {
                             navController.navigateUp()
                         }
@@ -342,6 +357,51 @@ private fun SharedTransitionScope.StampsNavHost(
                                     key = SelectedCollectionId,
                                     value = event.collectionId,
                                 )
+                            navController.navigateUp()
+                        }
+                    }
+                }
+            }
+        }
+
+        composable(
+            route = MoveStampsDestination,
+            arguments = listOf(
+                navArgument(CollectionDestinationCollectionId) {
+                    type = NavType.StringType
+                },
+                navArgument(SelectedCollectionId) {
+                    type = NavType.StringType
+                },
+            ),
+        ) { navEntry ->
+            val viewModel: MoveStampsScreenViewModel = koinViewModel {
+                parametersOf(
+                    MoveStampsScreenViewModel.Parameters(
+                        sourceCollectionId =
+                            navEntry
+                                .arguments
+                                ?.getString(CollectionDestinationCollectionId)
+                                ?: error("No source collection ID argument passed"),
+                        destinationCollectionId =
+                            navEntry
+                                .arguments
+                                ?.getString(SelectedCollectionId)
+                                ?: error("No destination collection ID argument passed"),
+                    )
+                )
+            }
+
+            MoveStampsScreen(
+                progressState = viewModel.progress.collectAsState().asFloatState(),
+                modifier = Modifier
+                    .fillMaxSize()
+            )
+
+            LaunchedEffect(viewModel) {
+                viewModel.events.collect { event ->
+                    when (event) {
+                        is MoveStampsScreenViewModel.Event.Done -> {
                             navController.navigateUp()
                         }
                     }
@@ -497,6 +557,15 @@ private fun MoveDestinationCollectionSelectionDestination(
 ) = "$CollectionsDestination/$currentCollectionId/move-from"
 
 private const val SelectedCollectionId = "selectedCollectionId"
+
+private const val MoveStampsDestination =
+    "$CollectionsDestination/{$CollectionDestinationCollectionId}/move?to={$SelectedCollectionId}"
+
+fun MoveStampsDestination(
+    sourceCollectionId: String,
+    destinationCollectionId: String,
+) =
+    "$CollectionsDestination/$sourceCollectionId/move?to=$destinationCollectionId"
 
 private const val StampsDestination = "stamps"
 private const val StampDestinationStampId = "stampId"

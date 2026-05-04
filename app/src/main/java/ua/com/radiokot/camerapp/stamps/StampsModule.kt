@@ -14,6 +14,7 @@ import ua.com.radiokot.camerapp.stamps.domain.StampCollectionRepository
 import ua.com.radiokot.camerapp.stamps.domain.StampRepository
 import ua.com.radiokot.camerapp.stamps.ui.CollectionActionsScreenViewModel
 import ua.com.radiokot.camerapp.stamps.ui.CollectionsScreenViewModel
+import ua.com.radiokot.camerapp.stamps.ui.MoveStampsScreenViewModel
 import ua.com.radiokot.camerapp.stamps.ui.MoveToCollectionDialogViewModel
 import ua.com.radiokot.camerapp.stamps.ui.StampScreenViewModel
 import ua.com.radiokot.camerapp.stamps.ui.StampsScreenViewModel
@@ -111,6 +112,15 @@ val stampsModule = module {
             parameters =
                 getOrNull()
                     ?: error("No MoveToCollectionDialogViewModel.Parameters provided"),
+        )
+    }
+
+    viewModel {
+        MoveStampsScreenViewModel(
+            stampRepository = get(),
+            parameters =
+                getOrNull()
+                    ?: error("No MoveStampsScreenViewModel.Parameters provided"),
         )
     }
 }

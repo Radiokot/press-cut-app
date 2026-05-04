@@ -88,46 +88,30 @@ class CollectionActionsScreenViewModel(
         )
     }
 
-    private var moveJob: Job? = null
-
     fun onMoveDestinationCollectionSelected(
         destinationCollectionId: String,
     ) {
-        if (moveJob?.isActive == true) {
-            return
-        }
-
-        moveJob = viewModelScope.launch {
-            moveStampsToCollection(
-                destinationCollectionId = destinationCollectionId,
-            )
-        }
-    }
-
-    private suspend fun moveStampsToCollection(
-        destinationCollectionId: String,
-    ) {
         log.debug {
-            "moveStampsToCollection(): moving:" +
+            "onMoveDestinationCollectionSelected(): proceeding to the move:" +
                     "\ndestinationCollectionId=$destinationCollectionId"
         }
 
-        stampRepository.moveStampsBetweenCollections(
-            sourceCollectionId = collection.id,
-            destinationCollectionId = destinationCollectionId,
+        _events.tryEmit(
+            Event.ProceedToMoveStamps(
+                sourceCollectionId = collection.id,
+                destinationCollectionId = destinationCollectionId,
+            )
         )
-
-        log.info {
-            "Stamps from the collection ${collection.id} " +
-                    "moved to the collection $destinationCollectionId"
-        }
-
-        _events.emit(Event.Done)
     }
 
     sealed interface Event {
         class ProceedToMoveDestinationCollectionSelection(
             val currentCollectionId: String,
+        ) : Event
+
+        class ProceedToMoveStamps(
+            val sourceCollectionId: String,
+            val destinationCollectionId: String,
         ) : Event
 
         object Done : Event
