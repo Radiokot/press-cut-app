@@ -70,6 +70,7 @@ import kotlinx.coroutines.withContext
 import ua.com.radiokot.camerapp.R
 import ua.com.radiokot.camerapp.stamps.ui.StampCutter
 import ua.com.radiokot.camerapp.stamps.ui.StampSize
+import ua.com.radiokot.camerapp.ui.podkovaFamily
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random
 import kotlin.system.measureTimeMillis
@@ -232,15 +233,24 @@ fun StampCutScreen(
                                 }
                                 delay(50)
                                 cut()
+                                cutterInteractionSource.emit(
+                                    PressInteraction.Cancel(
+                                        pressInteraction
+                                    )
+                                )
                             }
                             val releasedInMs = measureTimeMillis {
                                 tryAwaitRelease()
                             }
                             if (releasedInMs < viewConfiguration.longPressTimeoutMillis) {
                                 focusAtCenter()
+                                longPress.cancel()
+                                cutterInteractionSource.emit(
+                                    PressInteraction.Cancel(
+                                        pressInteraction
+                                    )
+                                )
                             }
-                            longPress.cancel()
-                            cutterInteractionSource.emit(PressInteraction.Cancel(pressInteraction))
                         },
                     )
                 }
@@ -255,6 +265,7 @@ fun StampCutScreen(
             BasicText(
                 text = "Opening the camera…",
                 style = TextStyle(
+                    fontFamily = podkovaFamily,
                     color = Color.White,
                     textAlign = TextAlign.Center,
                 )
