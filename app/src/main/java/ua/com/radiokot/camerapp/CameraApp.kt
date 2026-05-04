@@ -40,10 +40,14 @@ class CameraApp : Application() {
     private fun initLogging() {
         // The Logback configuration is in the app/src/main/assets/logback.xml
 
-        @Suppress("KotlinConstantConditions", "RedundantSuppression")
+        @Suppress(
+            "KotlinConstantConditions",
+            "RedundantSuppression",
+            "SimplifyBooleanWithConstants",
+        )
         System.setProperty(
             "LOG_LEVEL",
-            if (BuildConfig.DEBUG)
+            if (BuildConfig.DEBUG || BuildConfig.BUILD_TYPE == "devRelease")
                 "TRACE"
             else
                 "INFO"
