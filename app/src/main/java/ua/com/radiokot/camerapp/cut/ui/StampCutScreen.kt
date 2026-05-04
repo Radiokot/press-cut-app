@@ -1,5 +1,7 @@
 package ua.com.radiokot.camerapp.cut.ui
 
+import android.media.AudioAttributes
+import android.media.SoundPool
 import androidx.camera.compose.CameraXViewfinder
 import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
@@ -60,9 +62,12 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.toSize
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import ua.com.radiokot.camerapp.R
 import ua.com.radiokot.camerapp.stamps.ui.StampCutter
 import ua.com.radiokot.camerapp.stamps.ui.StampSize
 import java.util.concurrent.TimeUnit
@@ -99,10 +104,22 @@ fun StampCutScreen(
             )
         }
     }
+    val soundPool = remember {
+        SoundPool.Builder()
+            .setAudioAttributes(
+                AudioAttributes
+                    .Builder()
+                    .setUsage(AudioAttributes.USAGE_GAME)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .build()
+            )
+            .build()
+    }
 
     DisposableEffect(Unit) {
         onDispose {
             processCameraProvider?.unbindAll()
+            soundPool.release()
         }
     }
 
@@ -161,6 +178,22 @@ fun StampCutScreen(
             }
         }
 
+        val playCutSound = remember {
+            val cutSoundId =
+                soundPool.load(context, R.raw.cut, 1)
+
+            fun() {
+                soundPool.play(
+                    cutSoundId,
+                    1f,
+                    1f,
+                    1,
+                    0,
+                    1f,
+                )
+            }
+        }
+
         val cut = remember(onCutAction) {
             fun() {
                 val frameLayoutCoordinates = frameLayoutCoordinates
@@ -194,6 +227,9 @@ fun StampCutScreen(
                             val longPress = coroutineScope.launch {
                                 delay(viewConfiguration.longPressTimeoutMillis)
                                 cutterInteractionSource.emit(pressInteraction)
+                                withContext(Dispatchers.IO) {
+                                    playCutSound()
+                                }
                                 delay(50)
                                 cut()
                             }
