@@ -254,14 +254,33 @@ class FsStampRepository(
     override fun moveStampsBetweenCollections(
         sourceCollectionId: String,
         destinationCollectionId: String,
+    ): Flow<Pair<Int, Int>> = flow {
+
+        val sourceCollectionDirectory =
+            File(stampDirectory, sourceCollectionId)
+        val stampIdsToMove =
+            sourceCollectionDirectory
+                .listFiles { isStamp(it) && it.canWrite() }
+                ?.map(File::nameWithoutExtension)
+                ?: emptyList()
+
+        moveStampsBetweenCollections(
+            sourceCollectionId = sourceCollectionId,
+            destinationCollectionId = destinationCollectionId,
+            stampIds = stampIdsToMove,
+        ).collect(this)
+    }.flowOn(Dispatchers.IO)
+
+    override fun moveStampsBetweenCollections(
+        sourceCollectionId: String,
+        destinationCollectionId: String,
+        stampIds: Collection<String>,
     ): Flow<Pair<Int, Int>> {
 
         val movedStampIds = Collections.synchronizedSet<String>(mutableSetOf())
 
         return channelFlow {
             val progressChannel = this.channel
-            val sourceCollectionDirectory =
-                File(stampDirectory, sourceCollectionId)
             val destinationCollectionDirectoryPath =
                 FileSystems
                     .getDefault()
@@ -270,31 +289,32 @@ class FsStampRepository(
                         destinationCollectionId,
                     )
                     .toString()
-            val filesToMove =
-                sourceCollectionDirectory
-                    .listFiles { isStamp(it) && it.canWrite() }!!
 
-            progressChannel.send(0 to filesToMove.size)
+            progressChannel.send(0 to stampIds.size)
 
             log.debug {
                 "moveStampsBetweenCollections(): moving the files async:" +
                         "\nsourceCollectionId=$sourceCollectionId" +
                         "\ndestinationCollectionId=$destinationCollectionId" +
-                        "\nfilesToMove=${filesToMove.size}"
+                        "\nstamps=${stampIds.size}"
             }
 
-            filesToMove.forEach { stampFile ->
+            stampIds.forEach { stampId ->
                 launch {
+                    val stampSourceFile = getStampFile(
+                        id = stampId,
+                        collectionId = sourceCollectionId,
+                    )
                     Files.move(
-                        FileSystems.getDefault().getPath(stampFile.path),
+                        FileSystems.getDefault().getPath(stampSourceFile.path),
                         FileSystems.getDefault().getPath(
                             destinationCollectionDirectoryPath,
-                            stampFile.name
+                            stampSourceFile.name
                         ),
                         StandardCopyOption.ATOMIC_MOVE,
                     )
-                    movedStampIds += stampFile.nameWithoutExtension
-                    progressChannel.send(movedStampIds.size to filesToMove.size)
+                    movedStampIds += stampId
+                    progressChannel.send(movedStampIds.size to stampIds.size)
                 }
             }
         }
