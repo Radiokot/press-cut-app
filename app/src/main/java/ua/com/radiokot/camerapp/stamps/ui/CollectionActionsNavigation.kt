@@ -77,7 +77,7 @@ fun NavGraphBuilder.collectionActionsDestination(
         }
     }
 
-    LaunchedEffect(viewModel) {
+    LaunchedEffect(viewModel,navEntry) {
         navEntry
             .savedStateHandle
             .getStateFlow(
@@ -91,7 +91,6 @@ fun NavGraphBuilder.collectionActionsDestination(
 }
 
 private const val CollectionId = "collectionId"
-const val SelectedMoveDestinationCollectionId = "selectedMoveDestinationCollectionId"
 
 const val CollectionActionsRoute =
     "collectionActions/{$CollectionId}"

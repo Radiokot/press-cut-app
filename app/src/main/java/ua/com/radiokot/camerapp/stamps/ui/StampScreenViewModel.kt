@@ -1,13 +1,15 @@
 package ua.com.radiokot.camerapp.stamps.ui
 
-import androidx.compose.runtime.Immutable
 import androidx.compose.foundation.text.input.TextFieldState
+import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import ua.com.radiokot.camerapp.stamps.domain.Stamp
@@ -46,6 +48,7 @@ class StampScreenViewModel(
     val events: SharedFlow<Event> = _events
 
     private var isDeleted = false
+    private var isMoved = false
 
     fun onAddCaptionAction() {
         check(isEditable) {
@@ -73,6 +76,64 @@ class StampScreenViewModel(
             isDeleted = true
             _events.emit(Event.Done)
         }
+    }
+
+    fun onMoveAction() {
+        check(isEditable) {
+            "Can't move a read-only stamp"
+        }
+
+        log.debug {
+            "onMoveAction(): proceeding to destination collection selection"
+        }
+
+        _events.tryEmit(
+            Event.ProceedToMoveDestinationCollectionSelection(
+                currentCollectionId = stamp.collectionId,
+            )
+        )
+    }
+
+    private var moveJob: Job? = null
+
+    fun onMoveDestinationCollectionSelected(
+        destinationCollectionId: String,
+    ) {
+        if (moveJob?.isActive == true) {
+            return
+        }
+
+        moveJob = viewModelScope.launch {
+            move(
+                destinationCollectionId = destinationCollectionId,
+            )
+        }
+    }
+
+    private suspend fun move(
+        destinationCollectionId: String,
+    ) {
+        log.debug {
+            "move(): saving updates and moving:" +
+                    "\ndestinationCollectionId=$destinationCollectionId"
+        }
+
+        saveUpdates()
+
+        stampRepository
+            .moveStampsBetweenCollections(
+                sourceCollectionId = stamp.collectionId,
+                destinationCollectionId = destinationCollectionId,
+                stampIds = listOf(stamp.id),
+            )
+            .collect()
+
+        log.info {
+            "Stamp ${stamp.id} moved to the collection $destinationCollectionId"
+        }
+
+        isMoved = true
+        _events.emit(Event.Done)
     }
 
     private suspend fun saveUpdates() {
@@ -105,7 +166,7 @@ class StampScreenViewModel(
     }
 
     override fun onCleared() {
-        if (isEditable && !isDeleted) {
+        if (isEditable && !(isDeleted || isMoved)) {
             runBlocking {
                 saveUpdates()
             }
@@ -118,6 +179,10 @@ class StampScreenViewModel(
     )
 
     sealed interface Event {
+        class ProceedToMoveDestinationCollectionSelection(
+            val currentCollectionId: String,
+        ) : Event
+
         object Done : Event
     }
 }

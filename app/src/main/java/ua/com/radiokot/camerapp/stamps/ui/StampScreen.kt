@@ -85,6 +85,7 @@ fun StampScreen(
     takenAt: LocalDate,
     onAddCaptionAction: () -> Unit,
     onDeleteAction: () -> Unit,
+    onMoveAction: () -> Unit,
     onSwipedToExit: () -> Unit,
     sharedTransitionScope: SharedTransitionScope?,
     animatedVisibilityScope: AnimatedVisibilityScope?,
@@ -110,7 +111,7 @@ fun StampScreen(
     val allCenterVerticalOffset = animateDpAsState(
         targetValue =
             if (areActionsVisible)
-                -(StampSize.height / 2)
+                -(80.dp)
             else 0.dp,
         animationSpec = spring(
             stiffness = Spring.StiffnessMediumLow,
@@ -158,6 +159,10 @@ fun StampScreen(
             onDelete = {
                 areActionsVisible = false
                 onDeleteAction()
+            },
+            onMove = {
+                areActionsVisible = false
+                onMoveAction()
             },
             modifier = Modifier
                 .fillMaxWidth()
@@ -331,6 +336,7 @@ private fun Actions(
     cornerRadius: Dp = 10.dp,
     isCaptionSet: Boolean,
     onAddCaption: () -> Unit,
+    onMove: () -> Unit,
     onDelete: () -> Unit,
 ) = Column(
     modifier = modifier
@@ -376,6 +382,26 @@ private fun Actions(
     }
 
     BasicText(
+        text = "Move",
+        style = textStyle,
+        modifier = Modifier
+            .clickable(
+                onClick = onMove,
+            )
+            .padding(
+                vertical = 20.dp,
+            )
+            .fillMaxWidth()
+    )
+
+    Spacer(
+        modifier = Modifier
+            .height(1.dp)
+            .fillMaxWidth()
+            .background(Color(0xFFcbc4bb))
+    )
+
+    BasicText(
         text = "Hold to delete",
         style = textStyle.copy(
             color = Color(0xFFD97D7D),
@@ -383,7 +409,7 @@ private fun Actions(
         modifier = Modifier
             .holdToDeleteAction(
                 roundedCornerRadius = cornerRadius,
-                areTopCornersRounded = isCaptionSet,
+                areTopCornersRounded = false,
                 onDelete = onDelete,
             )
             .padding(
@@ -412,6 +438,7 @@ private fun StampScreenPreview(
             takenAt = LocalDate.now(),
             onAddCaptionAction = { },
             onDeleteAction = { },
+            onMoveAction = { },
             onSwipedToExit = { },
             sharedTransitionScope = null,
             animatedVisibilityScope = null,
@@ -430,6 +457,7 @@ private fun ActionsPreview(
         isCaptionSet = false,
         onAddCaption = {},
         onDelete = {},
+        onMove = {},
         modifier = Modifier
             .width(350.dp)
     )

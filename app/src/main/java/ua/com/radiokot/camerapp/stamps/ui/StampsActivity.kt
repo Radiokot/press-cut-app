@@ -212,6 +212,7 @@ private fun SharedTransitionScope.StampsNavHost(
                 navController.navigate(
                     route = SelectMoveDestinationCollectionDestinationRoute(
                         sourceCollectionId = currentCollectionId,
+                        isSingleStamp = false,
                     )
                 ) {
                     launchSingleTop = true
@@ -272,6 +273,16 @@ private fun SharedTransitionScope.StampsNavHost(
 
         stampDestination(
             sharedTransitionScope = this@StampsNavHost,
+            onProceedToMoveDestinationCollectionSelection = { currentCollectionId ->
+                navController.navigate(
+                    route = SelectMoveDestinationCollectionDestinationRoute(
+                        sourceCollectionId = currentCollectionId,
+                        isSingleStamp = true,
+                    )
+                ) {
+                    launchSingleTop = true
+                }
+            },
             onDone = navController::navigateUp,
         )
     }

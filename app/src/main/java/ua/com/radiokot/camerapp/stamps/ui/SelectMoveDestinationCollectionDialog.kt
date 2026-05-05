@@ -29,6 +29,7 @@ import ua.com.radiokot.camerapp.ui.podkovaFamily
 
 @Composable
 fun SelectMoveDestinationCollectionDialog(
+    isSingleStamp: Boolean,
     collections: ImmutableList<String>,
     onCollectionSelected: (Int) -> Unit,
     onNewCollectionAction: () -> Unit,
@@ -62,7 +63,11 @@ fun SelectMoveDestinationCollectionDialog(
             )
     ) {
         BasicText(
-            text = "Which collection to move the stamps to?",
+            text =
+                if (isSingleStamp)
+                    "Which collection to move the stamp to?"
+                else
+                    "Which collection to move the stamps to?",
             style = actionTextStyle.copy(
                 fontWeight = FontWeight.Normal,
             ),
@@ -70,6 +75,7 @@ fun SelectMoveDestinationCollectionDialog(
                 .fillMaxWidth()
                 .padding(
                     vertical = 48.dp,
+                    horizontal = 16.dp,
                 )
         )
 
@@ -101,6 +107,7 @@ fun SelectMoveDestinationCollectionDialog(
                         )
                         .padding(
                             vertical = 20.dp,
+                            horizontal = 16.dp,
                         )
                         .fillMaxWidth()
                 )
@@ -155,6 +162,7 @@ private fun SelectMoveDestinationCollectionDialogPreview(
 
 ) {
     SelectMoveDestinationCollectionDialog(
+        isSingleStamp = true,
         collections = persistentListOf(
             "Red collection",
             "Outside",

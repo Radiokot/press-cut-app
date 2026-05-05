@@ -19,6 +19,9 @@ fun NavGraphBuilder.selectMoveDestinationCollectionDestination(
         navArgument(SourceCollectionId) {
             type = NavType.StringType
         },
+        navArgument(IsSingleStamp) {
+            type = NavType.BoolType
+        },
     ),
 ) { navEntry ->
     val viewModel: SelectMoveDestinationCollectionDialogViewModel = koinViewModel {
@@ -34,6 +37,11 @@ fun NavGraphBuilder.selectMoveDestinationCollectionDestination(
     }
 
     SelectMoveDestinationCollectionDialog(
+        isSingleStamp =
+            navEntry
+                .arguments
+                ?.getBoolean(IsSingleStamp)
+                ?: false,
         collections = viewModel.collections,
         onCollectionSelected = viewModel::onCollectionSelected,
         onNewCollectionAction = viewModel::onNewCollectionAction,
@@ -52,11 +60,14 @@ fun NavGraphBuilder.selectMoveDestinationCollectionDestination(
 }
 
 private const val SourceCollectionId = "sourceCollectionId"
+private const val IsSingleStamp = "isSingleStamp"
+const val SelectedMoveDestinationCollectionId = "selectedMoveDestinationCollectionId"
 
 const val SelectMoveDestinationCollectionRoute =
-    "selectMoveDestinationCollection?from={$SourceCollectionId}"
+    "selectMoveDestinationCollection?from={$SourceCollectionId}&isSingle={$IsSingleStamp}"
 
 fun SelectMoveDestinationCollectionDestinationRoute(
     sourceCollectionId: String?,
+    isSingleStamp: Boolean,
 ) =
-    "selectMoveDestinationCollection?from=$sourceCollectionId"
+    "selectMoveDestinationCollection?from=$sourceCollectionId&isSingle=$isSingleStamp"
