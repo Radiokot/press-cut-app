@@ -28,7 +28,7 @@ import kotlinx.collections.immutable.persistentListOf
 import ua.com.radiokot.camerapp.ui.podkovaFamily
 
 @Composable
-fun MoveToCollectionDialog(
+fun SelectMoveDestinationCollectionDialog(
     collections: ImmutableList<String>,
     onCollectionSelected: (Int) -> Unit,
     onNewCollectionAction: () -> Unit,
@@ -151,10 +151,10 @@ fun MoveToCollectionDialog(
 
 @Preview
 @Composable
-private fun MoveToCollectionDialogPreview(
+private fun SelectMoveDestinationCollectionDialogPreview(
 
 ) {
-    MoveToCollectionDialog(
+    SelectMoveDestinationCollectionDialog(
         collections = persistentListOf(
             "Red collection",
             "Outside",

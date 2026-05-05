@@ -7,7 +7,6 @@ import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
-import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.animation.SharedTransitionLayout
@@ -19,8 +18,6 @@ import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.asFloatState
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -35,22 +32,14 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.util.fastRoundToInt
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.dialog
 import androidx.navigation.compose.rememberNavController
-import androidx.navigation.navArgument
 import com.skydoves.landscapist.image.LocalLandscapist
 import kotlinx.collections.immutable.persistentListOf
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.filterNotNull
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.compose.koinInject
-import org.koin.compose.viewmodel.koinViewModel
-import org.koin.core.parameter.parametersOf
 import ua.com.radiokot.camerapp.cut.ui.NewStampActivity
-import ua.com.radiokot.camerapp.intro.ui.PermissionsDestination
+import ua.com.radiokot.camerapp.intro.ui.PermissionsRoute
 import ua.com.radiokot.camerapp.intro.ui.PermissionsScreenViewModel
 import ua.com.radiokot.camerapp.intro.ui.permissionsDestination
 import ua.com.radiokot.camerapp.ui.paperBackground
@@ -165,9 +154,9 @@ private fun SharedTransitionScope.StampsNavHost(
         navController = navController,
         startDestination =
             if (startWithPermissions)
-                PermissionsDestination
+                PermissionsRoute
             else
-                CollectionsDestination,
+                CollectionsRoute,
         enterTransition = { fadeIn() },
         exitTransition = { fadeOut() },
         modifier = modifier
@@ -179,9 +168,9 @@ private fun SharedTransitionScope.StampsNavHost(
         permissionsDestination(
             onDone = {
                 navController.navigate(
-                    route = CollectionsDestination,
+                    route = CollectionsRoute,
                 ) {
-                    popUpTo(PermissionsDestination) {
+                    popUpTo(PermissionsRoute) {
                         inclusive = true
                     }
                     launchSingleTop = true
@@ -189,388 +178,101 @@ private fun SharedTransitionScope.StampsNavHost(
             }
         )
 
-        composable(
-            route = CollectionsDestination,
-        ) {
-            val viewModel: CollectionsScreenViewModel = koinViewModel()
-            val items = viewModel.items.collectAsState()
-
-            CollectionsScreen(
-                itemsState = items,
-                onItemClicked = viewModel::onItemClicked,
-                onItemLongClicked = viewModel::onItemLongClicked,
-                onNewStampAction = viewModel::onNewStampAction,
-                onNewCollectionAction = viewModel::onNewCollectionAction,
-                sharedTransitionScope = this@StampsNavHost,
-                animatedVisibilityScope = this@composable,
-                modifier = Modifier
-                    .fillMaxSize()
-            )
-
-            LaunchedEffect(viewModel) {
-                viewModel.events.collect { event ->
-                    when (event) {
-                        is CollectionsScreenViewModel.Event.ProceedToCollection -> {
-                            navController.navigate(
-                                route = CollectionDestination(
-                                    collectionId = event.collectionId,
-                                    focusNameInput = event.focusNameInput,
-                                )
-                            ) {
-                                launchSingleTop = true
-                            }
-                        }
-
-                        is CollectionsScreenViewModel.Event.ProceedToCollectionActions -> {
-                            navController.navigate(
-                                route = CollectionActionsDestination(
-                                    collectionId = event.collectionId,
-                                )
-                            ) {
-                                launchSingleTop = true
-                            }
-                        }
-
-                        is CollectionsScreenViewModel.Event.ProceedToNewStamp -> {
-                            proceedToNewStamp(
-                                collectionId = null,
-                            )
-                        }
-                    }
-                }
-            }
-        }
-
-        composable(
-            route = CollectionActionsDestination,
-            arguments = listOf(
-                navArgument(CollectionDestinationCollectionId) {
-                    type = NavType.StringType
-                },
-            ),
-        ) { navEntry ->
-            val viewModel: CollectionActionsScreenViewModel = koinViewModel {
-                parametersOf(
-                    CollectionActionsScreenViewModel.Parameters(
-                        collectionId =
-                            navEntry
-                                .arguments
-                                ?.getString(CollectionDestinationCollectionId)
-                                ?: error("No ID argument passed"),
+        collectionsDestination(
+            sharedTransitionScope = this@StampsNavHost,
+            onProceedToCollection = { collectionId: String, focusNameInput: Boolean ->
+                navController.navigate(
+                    route = StampsRoute(
+                        collectionId = collectionId,
+                        focusNameInput = focusNameInput,
                     )
+                ) {
+                    launchSingleTop = true
+                }
+            },
+            onProceedToCollectionActions = { collectionId: String ->
+                navController.navigate(
+                    route = CollectionActionsRoute(
+                        collectionId = collectionId,
+                    )
+                ) {
+                    launchSingleTop = true
+                }
+            },
+            onProceedToNewStamp = {
+                proceedToNewStamp(
+                    collectionId = null,
                 )
             }
+        )
 
-            CollectionActionsScreen(
-                collection = viewModel.collectionItem,
-                canDelete = viewModel.canDelete,
-                onMoveStampsAction = viewModel::onMoveStampsAction,
-                onDeleteAction = viewModel::onDeleteAction,
-                sharedTransitionScope = this@StampsNavHost,
-                animatedVisibilityScope = this@composable,
-                modifier = Modifier
-                    .fillMaxSize()
-            )
-
-            LaunchedEffect(viewModel) {
-                viewModel.events.collect { event ->
-                    when (event) {
-                        is CollectionActionsScreenViewModel.Event.ProceedToMoveDestinationCollectionSelection -> {
-                            navController.navigate(
-                                route = MoveDestinationCollectionSelectionDestination(
-                                    currentCollectionId = event.currentCollectionId,
-                                )
-                            ) {
-                                launchSingleTop = true
-                            }
-                        }
-
-                        is CollectionActionsScreenViewModel.Event.ProceedToMoveStamps -> {
-                            navController.navigate(
-                                route = MoveStampsDestination(
-                                    sourceCollectionId = event.sourceCollectionId,
-                                    destinationCollectionId = event.destinationCollectionId,
-                                )
-                            ) {
-                                popUpTo(CollectionActionsDestination) {
-                                    inclusive = true
-                                }
-                                launchSingleTop = true
-                            }
-                        }
-
-                        is CollectionActionsScreenViewModel.Event.Done -> {
-                            navController.navigateUp()
-                        }
-                    }
+        collectionActionsDestination(
+            sharedTransitionScope = this@StampsNavHost,
+            onProceedToMoveDestinationCollectionSelection = { currentCollectionId ->
+                navController.navigate(
+                    route = SelectMoveDestinationCollectionDestinationRoute(
+                        sourceCollectionId = currentCollectionId,
+                    )
+                ) {
+                    launchSingleTop = true
                 }
-            }
-
-            LaunchedEffect(viewModel) {
-                navEntry
-                    .savedStateHandle
-                    .getStateFlow(
-                        key = SelectedCollectionId,
-                        initialValue = null
+            },
+            onProceedToMoveStamps = { sourceCollectionId, destinationCollectionId ->
+                navController.navigate(
+                    route = MoveStampsRoute(
+                        sourceCollectionId = sourceCollectionId,
+                        destinationCollectionId = destinationCollectionId,
                     )
-                    .filterNotNull()
-                    .distinctUntilChanged()
-                    .collect(viewModel::onMoveDestinationCollectionSelected)
-            }
-        }
+                ) {
+                    popUpTo(CollectionActionsRoute) {
+                        inclusive = true
+                    }
+                    launchSingleTop = true
+                }
+            },
+            onDone = navController::navigateUp,
+        )
 
-        dialog(
-            route = MoveDestinationCollectionSelectionDestination,
-            arguments = listOf(
-                navArgument(CollectionDestinationCollectionId) {
-                    type = NavType.StringType
-                },
-            ),
-        ) { navEntry ->
-            val viewModel: MoveToCollectionDialogViewModel = koinViewModel {
-                parametersOf(
-                    MoveToCollectionDialogViewModel.Parameters(
-                        moveFromCollectionId =
-                            navEntry
-                                .arguments
-                                ?.getString(CollectionDestinationCollectionId)
-                                ?: error("No ID argument passed"),
+        selectMoveDestinationCollectionDestination(
+            onSelected = { collectionId ->
+                navController
+                    .previousBackStackEntry
+                    ?.savedStateHandle
+                    ?.set(
+                        key = SelectedMoveDestinationCollectionId,
+                        value = collectionId,
                     )
+                navController.navigateUp()
+            },
+            onCancel = navController::navigateUp,
+        )
+
+        moveStampsDestination(
+            onDone = navController::navigateUp,
+        )
+
+        stampsDestination(
+            sharedTransitionScope = this@StampsNavHost,
+            onProceedToStamp = { stampId ->
+                navController.navigate(
+                    route = StampRoute(
+                        stampId = stampId,
+                    )
+                ) {
+                    launchSingleTop = true
+                }
+            },
+            onProceedToNewStamp = { collectionId ->
+                proceedToNewStamp(
+                    collectionId = collectionId,
                 )
-            }
+            },
+            onDone = navController::navigateUp,
+        )
 
-            MoveToCollectionDialog(
-                collections = viewModel.collections,
-                onCollectionSelected = viewModel::onCollectionSelected,
-                onNewCollectionAction = viewModel::onNewCollectionAction,
-                onCancel = navController::navigateUp,
-            )
-
-            LaunchedEffect(viewModel) {
-                viewModel.events.collect { event ->
-                    when (event) {
-                        is MoveToCollectionDialogViewModel.Event.CollectionSelected -> {
-                            navController
-                                .previousBackStackEntry
-                                ?.savedStateHandle
-                                ?.set(
-                                    key = SelectedCollectionId,
-                                    value = event.collectionId,
-                                )
-                            navController.navigateUp()
-                        }
-                    }
-                }
-            }
-        }
-
-        composable(
-            route = MoveStampsDestination,
-            arguments = listOf(
-                navArgument(CollectionDestinationCollectionId) {
-                    type = NavType.StringType
-                },
-                navArgument(SelectedCollectionId) {
-                    type = NavType.StringType
-                },
-            ),
-        ) { navEntry ->
-            val viewModel: MoveStampsScreenViewModel = koinViewModel {
-                parametersOf(
-                    MoveStampsScreenViewModel.Parameters(
-                        sourceCollectionId =
-                            navEntry
-                                .arguments
-                                ?.getString(CollectionDestinationCollectionId)
-                                ?: error("No source collection ID argument passed"),
-                        destinationCollectionId =
-                            navEntry
-                                .arguments
-                                ?.getString(SelectedCollectionId)
-                                ?: error("No destination collection ID argument passed"),
-                    )
-                )
-            }
-
-            MoveStampsScreen(
-                progressState = viewModel.progress.collectAsState().asFloatState(),
-                modifier = Modifier
-                    .fillMaxSize()
-            )
-
-            LaunchedEffect(viewModel) {
-                viewModel.events.collect { event ->
-                    when (event) {
-                        is MoveStampsScreenViewModel.Event.Done -> {
-                            navController.navigateUp()
-                        }
-                    }
-                }
-            }
-        }
-
-        composable(
-            route = CollectionDestination,
-            arguments = listOf(
-                navArgument(CollectionDestinationCollectionId) {
-                    type = NavType.StringType
-                },
-                navArgument(CollectionDestinationFocusNameInput) {
-                    type = NavType.BoolType
-                }
-            ),
-        ) { navEntry ->
-            val viewModel: StampsScreenViewModel = koinViewModel {
-                parametersOf(
-                    StampsScreenViewModel.Parameters(
-                        collectionId =
-                            navEntry
-                                .arguments
-                                ?.getString(CollectionDestinationCollectionId)
-                                ?: error("No ID argument passed"),
-                    )
-                )
-            }
-            val stamps = viewModel.stamps.collectAsState()
-            val focusCollectionNameInput =
-                navEntry
-                    .arguments
-                    ?.getBoolean(CollectionDestinationFocusNameInput)
-                    ?: false
-
-            StampsScreen(
-                collectionId = viewModel.collectionId,
-                collectionNameInputState = viewModel.collectionNameInput,
-                focusCollectionNameInput = focusCollectionNameInput,
-                stamps = stamps,
-                onStampClicked = viewModel::onStampClicked,
-                onNewStampAction = viewModel::onNewStampAction,
-                sharedTransitionScope = this@StampsNavHost,
-                animatedVisibilityScope = this@composable,
-                modifier = Modifier
-                    .fillMaxSize()
-            )
-
-            LaunchedEffect(viewModel) {
-                viewModel.events.collect { event ->
-                    when (event) {
-                        is StampsScreenViewModel.Event.ProceedToStamp -> {
-                            navController.navigate(
-                                route = StampDestination(
-                                    stampId = event.stampId,
-                                ),
-                            ) {
-                                launchSingleTop = true
-                            }
-                        }
-
-                        is StampsScreenViewModel.Event.ProceedToNewStamp -> {
-                            proceedToNewStamp(
-                                collectionId = event.collectionId,
-                            )
-                        }
-
-                        is StampsScreenViewModel.Event.Done -> {
-                            navController.navigateUp()
-                        }
-                    }
-                }
-            }
-
-            BackHandler(
-                onBack = viewModel::onBackAction,
-            )
-        }
-
-        composable(
-            route = StampDestination,
-            arguments = listOf(
-                navArgument(StampDestinationStampId) {
-                    type = NavType.StringType
-                },
-            ),
-        ) { navEntry ->
-            val viewModel: StampScreenViewModel = koinViewModel {
-                parametersOf(
-                    StampScreenViewModel.Parameters(
-                        stampId = navEntry.arguments?.getString(StampDestinationStampId)
-                            ?: error("No ID argument passed"),
-                    )
-                )
-            }
-            val isCaptionInputEnabled by viewModel.isCaptionInputEnabled.collectAsState()
-
-            StampScreen(
-                stampId = viewModel.stampId,
-                isEditable = viewModel.isEditable,
-                captionState = viewModel.caption,
-                isCaptionInputEnabled = isCaptionInputEnabled,
-                onAddCaptionAction = viewModel::onAddCaptionAction,
-                onDeleteAction = viewModel::onDeleteAction,
-                imageUri = viewModel.imageUri,
-                takenAt = viewModel.takenAt,
-                onSwipedToExit = navController::navigateUp,
-                sharedTransitionScope = this@StampsNavHost,
-                animatedVisibilityScope = this@composable,
-                modifier = Modifier
-                    .fillMaxSize()
-            )
-
-            LaunchedEffect(viewModel) {
-                viewModel.events.collect { event ->
-                    when (event) {
-                        is StampScreenViewModel.Event.Done -> {
-                            navController.navigateUp()
-                        }
-                    }
-                }
-            }
-        }
+        stampDestination(
+            sharedTransitionScope = this@StampsNavHost,
+            onDone = navController::navigateUp,
+        )
     }
 }
-
-private const val CollectionsDestination = "collections"
-private const val CollectionDestinationCollectionId = "collectionId"
-private const val CollectionDestinationFocusNameInput = "focusNameInput"
-private const val CollectionDestination =
-    "$CollectionsDestination/{$CollectionDestinationCollectionId}" +
-            "?$CollectionDestinationFocusNameInput={$CollectionDestinationFocusNameInput}"
-
-private fun CollectionDestination(
-    collectionId: String,
-    focusNameInput: Boolean,
-) = "$CollectionsDestination/$collectionId" +
-        "?$CollectionDestinationFocusNameInput=$focusNameInput"
-
-private const val CollectionActionsDestination =
-    "$CollectionsDestination/{$CollectionDestinationCollectionId}/actions"
-
-private fun CollectionActionsDestination(
-    collectionId: String,
-) = "$CollectionsDestination/$collectionId/actions"
-
-private const val MoveDestinationCollectionSelectionDestination =
-    "$CollectionsDestination/{$CollectionDestinationCollectionId}/move-from"
-
-private fun MoveDestinationCollectionSelectionDestination(
-    currentCollectionId: String,
-) = "$CollectionsDestination/$currentCollectionId/move-from"
-
-private const val SelectedCollectionId = "selectedCollectionId"
-
-private const val MoveStampsDestination =
-    "$CollectionsDestination/{$CollectionDestinationCollectionId}/move?to={$SelectedCollectionId}"
-
-fun MoveStampsDestination(
-    sourceCollectionId: String,
-    destinationCollectionId: String,
-) =
-    "$CollectionsDestination/$sourceCollectionId/move?to=$destinationCollectionId"
-
-private const val StampsDestination = "stamps"
-private const val StampDestinationStampId = "stampId"
-private const val StampDestination = "$StampsDestination/{$StampDestinationStampId}"
-
-private fun StampDestination(
-    stampId: String,
-) = "$StampsDestination/$stampId"

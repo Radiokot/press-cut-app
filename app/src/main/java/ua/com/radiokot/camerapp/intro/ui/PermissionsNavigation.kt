@@ -7,13 +7,11 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import org.koin.compose.viewmodel.koinViewModel
 
-const val PermissionsDestination = "permissions"
-
 fun NavGraphBuilder.permissionsDestination(
     modifier: Modifier = Modifier,
     onDone: () -> Unit,
 ) = composable(
-    route = PermissionsDestination,
+    route = PermissionsRoute,
 ) {
     val viewModel: PermissionsScreenViewModel = koinViewModel()
 
@@ -34,3 +32,5 @@ fun NavGraphBuilder.permissionsDestination(
         }
     }
 }
+
+const val PermissionsRoute = "permissions"

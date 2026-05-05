@@ -15,7 +15,7 @@ import ua.com.radiokot.camerapp.stamps.domain.StampRepository
 import ua.com.radiokot.camerapp.stamps.ui.CollectionActionsScreenViewModel
 import ua.com.radiokot.camerapp.stamps.ui.CollectionsScreenViewModel
 import ua.com.radiokot.camerapp.stamps.ui.MoveStampsScreenViewModel
-import ua.com.radiokot.camerapp.stamps.ui.MoveToCollectionDialogViewModel
+import ua.com.radiokot.camerapp.stamps.ui.SelectMoveDestinationCollectionDialogViewModel
 import ua.com.radiokot.camerapp.stamps.ui.StampScreenViewModel
 import ua.com.radiokot.camerapp.stamps.ui.StampsScreenViewModel
 import java.io.File
@@ -106,7 +106,7 @@ val stampsModule = module {
     }
 
     viewModel {
-        MoveToCollectionDialogViewModel(
+        SelectMoveDestinationCollectionDialogViewModel(
             collectionRepository = get(),
             getSortedStampCollectionsUseCase = get(),
             parameters =

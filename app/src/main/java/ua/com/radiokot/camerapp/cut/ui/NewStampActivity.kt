@@ -32,7 +32,7 @@ import androidx.navigation.compose.rememberNavController
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
-import ua.com.radiokot.camerapp.intro.ui.PermissionsDestination
+import ua.com.radiokot.camerapp.intro.ui.PermissionsRoute
 import ua.com.radiokot.camerapp.intro.ui.PermissionsScreenViewModel
 import ua.com.radiokot.camerapp.intro.ui.permissionsDestination
 import ua.com.radiokot.camerapp.ui.paperBackground
@@ -125,7 +125,7 @@ private fun SharedTransitionScope.StampCutNavHost(
         navController = navController,
         startDestination =
             if (startWithPermissions)
-                PermissionsDestination
+                PermissionsRoute
             else
                 CutDestination,
         enterTransition = { fadeIn() },
@@ -137,7 +137,7 @@ private fun SharedTransitionScope.StampCutNavHost(
                 navController.navigate(
                     route = CutDestination,
                 ) {
-                    popUpTo(PermissionsDestination) {
+                    popUpTo(PermissionsRoute) {
                         inclusive = true
                     }
                     launchSingleTop = true

@@ -18,19 +18,19 @@ import ua.com.radiokot.camerapp.util.eventSharedFlow
 import ua.com.radiokot.camerapp.util.lazyLogger
 
 @Immutable
-class MoveToCollectionDialogViewModel(
+class SelectMoveDestinationCollectionDialogViewModel(
     private val collectionRepository: StampCollectionRepository,
     getSortedStampCollectionsUseCase: GetSortedStampCollectionsUseCase,
     parameters: Parameters,
 ) : ViewModel() {
 
-    private val log by lazyLogger("MoveToCollectionDialogVM")
+    private val log by lazyLogger("SelectMoveDestinationCollectionDialogVM")
 
     private val _collections: List<StampCollection> = runBlocking {
         getSortedStampCollectionsUseCase()
             .first()
             .mapNotNull { collection ->
-                if (collection.id == parameters.moveFromCollectionId) {
+                if (collection.id == parameters.sourceCollectionId) {
                     return@mapNotNull null
                 }
                 collection
@@ -108,6 +108,6 @@ class MoveToCollectionDialogViewModel(
     }
 
     data class Parameters(
-        val moveFromCollectionId: String,
+        val sourceCollectionId: String,
     )
 }
