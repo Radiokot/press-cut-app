@@ -135,13 +135,13 @@ class FsStampRepository(
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
                 imageBitmap.compress(
                     Bitmap.CompressFormat.WEBP_LOSSY,
-                    100,
+                    90,
                     stream,
                 )
             } else {
                 imageBitmap.compress(
                     Bitmap.CompressFormat.WEBP,
-                    100,
+                    90,
                     stream,
                 )
             }
