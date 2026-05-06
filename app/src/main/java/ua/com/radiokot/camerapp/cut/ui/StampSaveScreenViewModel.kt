@@ -1,3 +1,5 @@
+@file:OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
+
 package ua.com.radiokot.camerapp.cut.ui
 
 import android.graphics.Bitmap
@@ -13,6 +15,8 @@ import androidx.core.graphics.createBitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -21,6 +25,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -49,7 +54,7 @@ class StampSaveScreenViewModel(
             imageAdjustmentsControllerViewModel.vibranceValue,
             transform = ::Triple
         )
-            .map { (contrast, brightness, vibrance) ->
+            .mapLatest { (contrast, brightness, vibrance) ->
                 val width = originalStampImageBitmap.width
                 val height = originalStampImageBitmap.height
 
