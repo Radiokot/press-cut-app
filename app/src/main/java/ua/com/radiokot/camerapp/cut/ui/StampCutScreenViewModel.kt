@@ -44,8 +44,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import ua.com.radiokot.camerapp.stamps.ui.StampShapeA
 import ua.com.radiokot.camerapp.util.eventSharedFlow
-import ua.com.radiokot.camerapp.util.map
 import ua.com.radiokot.camerapp.util.lazyLogger
+import ua.com.radiokot.camerapp.util.map
 import kotlin.math.min
 
 @Immutable
@@ -66,7 +66,7 @@ class StampCutScreenViewModel : ViewModel() {
                     .setResolutionStrategy(
                         ResolutionStrategy(
                             android.util.Size(1920, 1920),
-                            ResolutionStrategy.FALLBACK_RULE_CLOSEST_LOWER_THEN_HIGHER,
+                            ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER_THEN_LOWER,
                         )
                     )
                     .build()
