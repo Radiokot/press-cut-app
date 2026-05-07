@@ -6,6 +6,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.asIntState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.navigation.NavGraphBuilder
@@ -55,6 +56,12 @@ fun NavGraphBuilder.stampsDestination(
         focusCollectionNameInput = focusCollectionNameInput,
         stamps = stamps,
         onStampClicked = viewModel::onStampClicked,
+        onStampLongClicked = viewModel::onStampLongClicked,
+        selectedCountState =
+            viewModel
+                .selectedStampCount
+                .collectAsState()
+                .asIntState(),
         onNewStampAction = viewModel::onNewStampAction,
         sharedTransitionScope = sharedTransitionScope,
         animatedVisibilityScope = this@composable,

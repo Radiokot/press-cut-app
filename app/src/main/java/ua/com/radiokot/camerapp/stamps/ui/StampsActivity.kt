@@ -2,7 +2,6 @@
 
 package ua.com.radiokot.camerapp.stamps.ui
 
-import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -14,7 +13,6 @@ import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
@@ -35,7 +33,6 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
 import com.skydoves.landscapist.image.LocalLandscapist
-import kotlinx.collections.immutable.persistentListOf
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.compose.koinInject
 import ua.com.radiokot.camerapp.cut.ui.NewStampActivity
@@ -81,18 +78,8 @@ class StampsActivity : ComponentActivity() {
                 // Until I find the cause, making the screen appear invisible for the first time
                 // makes further appearance and animation smooth.
                 if (isStampsScreenWarmupShown) {
-                    @SuppressLint("UnrememberedMutableState")
-                    StampsScreen(
-                        collectionId = "",
-                        collectionNameInputState = TextFieldState("I ❤️ weird hacks"),
-                        focusCollectionNameInput = false,
-                        stamps = mutableStateOf(persistentListOf()),
-                        onStampClicked = {},
-                        onNewStampAction = {},
-                        sharedTransitionScope = null,
-                        animatedVisibilityScope = null,
+                    StampsScreenPreview(
                         modifier = Modifier
-                            .fillMaxSize()
                             .alpha(0.01f)
                     )
 
