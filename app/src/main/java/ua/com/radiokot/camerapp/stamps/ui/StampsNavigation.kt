@@ -15,6 +15,8 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.filterNotNull
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 
@@ -22,6 +24,12 @@ fun NavGraphBuilder.stampsDestination(
     sharedTransitionScope: SharedTransitionScope?,
     onProceedToStamp: (stampId: String) -> Unit,
     onProceedToNewStamp: (collectionId: String) -> Unit,
+    onProceedToMoveDestinationCollectionSelection: (currentCollectionId: String) -> Unit,
+    onProceedToMoveStamps: (
+        sourceCollectionId: String,
+        destinationCollectionId: String,
+        stampSelectionIndex: Int,
+    ) -> Unit,
     onDone: () -> Unit,
 ) = composable(
     route = StampsRoute,
@@ -90,7 +98,7 @@ fun NavGraphBuilder.stampsDestination(
                     )
                 }
 
-                is StampsScreenViewModel.Event.ShowNotAllStampsDeletedExplanation -> {
+                is StampsScreenViewModel.Event.ShowSomeStampsCantBeDeletedExplanation -> {
                     Toast.makeText(
                         context,
                         "Some stamps could not be deleted",
@@ -98,11 +106,45 @@ fun NavGraphBuilder.stampsDestination(
                     ).show()
                 }
 
+                is StampsScreenViewModel.Event.ShowSomeStampsCantBeMovedExplanation -> {
+                    Toast.makeText(
+                        context,
+                        "Some stamps could not be moved",
+                        Toast.LENGTH_LONG,
+                    ).show()
+                }
+
+                is StampsScreenViewModel.Event.ProceedToMoveDestinationCollectionSelection -> {
+                    onProceedToMoveDestinationCollectionSelection(
+                        event.currentCollectionId,
+                    )
+                }
+
+                is StampsScreenViewModel.Event.ProceedToMoveStamps -> {
+                    onProceedToMoveStamps(
+                        event.sourceCollectionId,
+                        event.destinationCollectionId,
+                        event.stampSelectionIndex,
+                    )
+                }
+
                 is StampsScreenViewModel.Event.Done -> {
                     onDone()
                 }
             }
         }
+    }
+
+    LaunchedEffect(viewModel, navEntry) {
+        navEntry
+            .savedStateHandle
+            .getStateFlow(
+                key = SelectedMoveDestinationCollectionId,
+                initialValue = null,
+            )
+            .filterNotNull()
+            .distinctUntilChanged()
+            .collect(viewModel::onMoveDestinationCollectionSelected)
     }
 
     BackHandler(

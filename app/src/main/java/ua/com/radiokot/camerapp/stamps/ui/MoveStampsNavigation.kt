@@ -25,6 +25,9 @@ fun NavGraphBuilder.moveStampsDestination(
         navArgument(DestinationCollectionId) {
             type = NavType.StringType
         },
+        navArgument(StampSelectionIndex) {
+            type = NavType.IntType
+        },
     ),
 ) { navEntry ->
     val viewModel: MoveStampsScreenViewModel = koinViewModel {
@@ -40,6 +43,11 @@ fun NavGraphBuilder.moveStampsDestination(
                         .arguments
                         ?.getString(DestinationCollectionId)
                         ?: error("No $DestinationCollectionId argument passed"),
+                stampSelectionIndex =
+                    navEntry
+                        .arguments
+                        ?.getInt(StampSelectionIndex, -1)
+                        ?.takeUnless { it < 0 },
             )
         )
     }
@@ -63,12 +71,14 @@ fun NavGraphBuilder.moveStampsDestination(
 
 private const val SourceCollectionId = "sourceCollectionId"
 private const val DestinationCollectionId = "destinationCollectionId"
+private const val StampSelectionIndex = "stampSelectionIndex"
 
 const val MoveStampsRoute =
-    "moveStamps?from={$SourceCollectionId}&to={$DestinationCollectionId}"
+    "moveStamps?from={$SourceCollectionId}&to={$DestinationCollectionId}&selection={$StampSelectionIndex}"
 
 fun MoveStampsRoute(
     sourceCollectionId: String,
     destinationCollectionId: String,
+    stampSelectionIndex: Int = -1,
 ) =
-    "moveStamps?from=$sourceCollectionId&to=$destinationCollectionId"
+    "moveStamps?from=$sourceCollectionId&to=$destinationCollectionId&selection=$stampSelectionIndex"

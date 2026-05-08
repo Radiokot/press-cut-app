@@ -13,6 +13,7 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
@@ -23,6 +24,7 @@ import kotlinx.coroutines.runBlocking
 import ua.com.radiokot.camerapp.stamps.domain.Stamp
 import ua.com.radiokot.camerapp.stamps.domain.StampCollectionRepository
 import ua.com.radiokot.camerapp.stamps.domain.StampRepository
+import ua.com.radiokot.camerapp.stamps.domain.StampSelections
 import ua.com.radiokot.camerapp.util.eventSharedFlow
 import ua.com.radiokot.camerapp.util.lazyLogger
 import ua.com.radiokot.camerapp.util.map
@@ -64,6 +66,18 @@ class StampsScreenViewModel(
             .flowOn(Dispatchers.Default)
             .stateIn(viewModelScope)
     }
+
+    private val selectedEditableStampIds: Set<String>
+        get() =
+            collectionStamps
+                .value
+                .mapNotNullTo(mutableSetOf()) { stamp ->
+                    if (stamp.id !in selectedStampIds.value || stamp.isReadOnly)
+                        null
+                    else
+                        stamp.id
+                }
+
     val items: StateFlow<ImmutableList<StampsScreenItem>> = runBlocking {
         combine(
             collectionStamps,
@@ -133,7 +147,67 @@ class StampsScreenViewModel(
     }
 
     fun onMoveSelectedAction() {
-        // TODO
+        log.debug {
+            "onMoveSelectedAction(): proceeding to destination collection selection"
+        }
+
+        events.tryEmit(
+            Event.ProceedToMoveDestinationCollectionSelection(
+                currentCollectionId = collectionId,
+            )
+        )
+    }
+
+    fun onMoveDestinationCollectionSelected(
+        destinationCollectionId: String,
+    ) {
+        val stampToMoveIds = selectedEditableStampIds
+        val anyReadOnlyStamps = selectedStampIds.value.size != stampToMoveIds.size
+
+        clearSelection()
+
+        if (anyReadOnlyStamps) {
+            events.tryEmit(Event.ShowSomeStampsCantBeMovedExplanation)
+        }
+
+        if (stampToMoveIds.isEmpty()) {
+            return
+        }
+
+        if (stampToMoveIds.size <= 10) {
+            log.debug {
+                "onMoveDestinationCollectionSelected(): moving here and now:" +
+                        "\ndestinationCollectionId=$destinationCollectionId" +
+                        "\nstampToMoveIds=${stampToMoveIds.size}"
+            }
+
+            viewModelScope.launch {
+                stampRepository
+                    .moveStampsBetweenCollections(
+                        sourceCollectionId = collectionId,
+                        destinationCollectionId = destinationCollectionId,
+                        stampIds = stampToMoveIds,
+                    )
+                    .collect()
+            }
+        } else {
+            val selectionIndex = StampSelections + stampToMoveIds
+
+            log.debug {
+                "onMoveDestinationCollectionSelected(): proceeding to move with selection:" +
+                        "\ndestinationCollectionId=$destinationCollectionId" +
+                        "\nstampToMoveIds=${stampToMoveIds.size}" +
+                        "\nselectionIndex=$selectionIndex"
+            }
+
+            events.tryEmit(
+                Event.ProceedToMoveStamps(
+                    sourceCollectionId = collectionId,
+                    destinationCollectionId = destinationCollectionId,
+                    stampSelectionIndex = selectionIndex,
+                )
+            )
+        }
     }
 
     private var deleteJob: Job? = null
@@ -150,21 +224,10 @@ class StampsScreenViewModel(
 
     private suspend fun deleteSelectedStamps() {
 
-        val selectedStampIds = selectedStampIds.value
-        var anyReadOnlyStamps = false
-        val stampToDeleteIds =
-            collectionStamps
-                .value
-                .mapNotNullTo(mutableSetOf()) { stamp ->
-                    if (stamp.id !in selectedStampIds) {
-                        return@mapNotNullTo null
-                    }
-                    if (stamp.isReadOnly) {
-                        anyReadOnlyStamps = true
-                        return@mapNotNullTo null
-                    }
-                    return@mapNotNullTo stamp.id
-                }
+        val stampToDeleteIds = selectedEditableStampIds
+        val anyReadOnlyStamps = selectedStampIds.value.size != stampToDeleteIds.size
+
+        clearSelection()
 
         log.debug {
             "deleteStamps(): deleting:" +
@@ -188,14 +251,8 @@ class StampsScreenViewModel(
                         "read-only stamps remained"
             }
 
-            events.emit(Event.ShowNotAllStampsDeletedExplanation)
+            events.emit(Event.ShowSomeStampsCantBeDeletedExplanation)
         }
-
-        log.debug {
-            "deleteStamps(): done, clearing selection"
-        }
-
-        clearSelection()
     }
 
     fun onNewStampAction() {
@@ -273,7 +330,18 @@ class StampsScreenViewModel(
             val collectionId: String,
         ) : Event
 
-        object ShowNotAllStampsDeletedExplanation : Event
+        class ProceedToMoveDestinationCollectionSelection(
+            val currentCollectionId: String,
+        ) : Event
+
+        class ProceedToMoveStamps(
+            val sourceCollectionId: String,
+            val destinationCollectionId: String,
+            val stampSelectionIndex: Int,
+        ) : Event
+
+        object ShowSomeStampsCantBeDeletedExplanation : Event
+        object ShowSomeStampsCantBeMovedExplanation : Event
 
         object Done : Event
     }

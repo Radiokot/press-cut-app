@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.sample
 import kotlinx.coroutines.flow.stateIn
 import ua.com.radiokot.camerapp.stamps.domain.StampRepository
+import ua.com.radiokot.camerapp.stamps.domain.StampSelections
 import ua.com.radiokot.camerapp.util.eventSharedFlow
 import ua.com.radiokot.camerapp.util.lazyLogger
 import kotlin.time.Duration.Companion.milliseconds
@@ -30,12 +31,23 @@ class MoveStampsScreenViewModel(
     val events: SharedFlow<Event>
         field = eventSharedFlow()
 
+    private val moveProgressFlow =
+        if (parameters.stampSelectionIndex == null)
+            stampRepository
+                .moveStampsBetweenCollections(
+                    sourceCollectionId = parameters.sourceCollectionId,
+                    destinationCollectionId = parameters.destinationCollectionId,
+                )
+        else
+            stampRepository
+                .moveStampsBetweenCollections(
+                    sourceCollectionId = parameters.sourceCollectionId,
+                    destinationCollectionId = parameters.destinationCollectionId,
+                    stampIds = StampSelections[parameters.stampSelectionIndex],
+                )
+
     val progress: StateFlow<Float> =
-        stampRepository
-            .moveStampsBetweenCollections(
-                sourceCollectionId = parameters.sourceCollectionId,
-                destinationCollectionId = parameters.destinationCollectionId,
-            )
+        moveProgressFlow
             .sample(100.milliseconds)
             .map { (movedFileCount, totalFileCount) ->
                 movedFileCount.toFloat() / totalFileCount
@@ -44,7 +56,8 @@ class MoveStampsScreenViewModel(
                 log.debug {
                     "progress: starting:" +
                             "\nsourceCollectionId=${parameters.sourceCollectionId}" +
-                            "\ndestinationCollectionId=${parameters.destinationCollectionId}"
+                            "\ndestinationCollectionId=${parameters.destinationCollectionId}" +
+                            "\nstampSelectionIndex=${parameters.stampSelectionIndex}"
                 }
             }
             .onCompletion { error ->
@@ -53,7 +66,8 @@ class MoveStampsScreenViewModel(
                         log.error(error) {
                             "process: failed moving:" +
                                     "\nsourceCollectionId=${parameters.sourceCollectionId}" +
-                                    "\ndestinationCollectionId=${parameters.destinationCollectionId}"
+                                    "\ndestinationCollectionId=${parameters.destinationCollectionId}" +
+                                    "stampSelectionIndex=${parameters.stampSelectionIndex}"
                         }
                     }
                     return@onCompletion
@@ -77,5 +91,6 @@ class MoveStampsScreenViewModel(
     data class Parameters(
         val sourceCollectionId: String,
         val destinationCollectionId: String,
+        val stampSelectionIndex: Int?,
     )
 }

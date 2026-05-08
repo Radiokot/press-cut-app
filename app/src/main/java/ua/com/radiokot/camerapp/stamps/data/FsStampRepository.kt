@@ -237,6 +237,12 @@ class FsStampRepository(
         stampIds: Collection<String>,
     ) {
         coroutineScope.launch {
+            log.debug {
+                "deleteStamps(): deleting the files async:" +
+                        "\ncollectionId=$collectionId" +
+                        "\nstamps=${stampIds.size}"
+            }
+
             stampIds.forEach { stampId ->
                 launch {
                     val file = getStampFile(
