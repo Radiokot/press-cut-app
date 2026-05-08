@@ -232,21 +232,26 @@ class FsStampRepository(
         }
     }
 
-    override suspend fun deleteStamp(
-        stamp: Stamp,
-    ): Unit = withContext(Dispatchers.IO) {
-
-        val file = getStampFile(
-            id = stamp.id,
-            collectionId = stamp.collectionId,
-        )
-
-        if (file.exists()) {
-            file.delete()
+    override suspend fun deleteStamps(
+        collectionId: String,
+        stampIds: Collection<String>,
+    ) {
+        coroutineScope.launch {
+            stampIds.forEach { stampId ->
+                launch {
+                    val file = getStampFile(
+                        id = stampId,
+                        collectionId = collectionId,
+                    )
+                    if (file.exists()) {
+                        file.delete()
+                    }
+                }
+            }
         }
 
         if (isCacheInitialized.load()) {
-            cache -= stamp
+            cache.removeAll { it.id in stampIds }
             sharedFlow.emit(cache)
         }
     }

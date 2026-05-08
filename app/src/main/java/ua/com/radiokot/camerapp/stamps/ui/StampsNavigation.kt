@@ -2,6 +2,7 @@
 
 package ua.com.radiokot.camerapp.stamps.ui
 
+import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.layout.fillMaxSize
@@ -9,6 +10,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.asIntState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavType
 import androidx.navigation.compose.composable
@@ -43,7 +45,7 @@ fun NavGraphBuilder.stampsDestination(
             )
         )
     }
-    val stamps = viewModel.stamps.collectAsState()
+    val stamps = viewModel.items.collectAsState()
     val focusCollectionNameInput =
         navEntry
             .arguments
@@ -62,12 +64,16 @@ fun NavGraphBuilder.stampsDestination(
                 .selectedStampCount
                 .collectAsState()
                 .asIntState(),
+        onMoveSelectedAction = viewModel::onMoveSelectedAction,
+        onDeleteSelectedAction = viewModel::onDeleteSelectedAction,
         onNewStampAction = viewModel::onNewStampAction,
         sharedTransitionScope = sharedTransitionScope,
         animatedVisibilityScope = this@composable,
         modifier = Modifier
             .fillMaxSize()
     )
+
+    val context = LocalContext.current
 
     LaunchedEffect(viewModel) {
         viewModel.events.collect { event ->
@@ -82,6 +88,14 @@ fun NavGraphBuilder.stampsDestination(
                     onProceedToNewStamp(
                         event.collectionId,
                     )
+                }
+
+                is StampsScreenViewModel.Event.ShowNotAllStampsDeletedExplanation -> {
+                    Toast.makeText(
+                        context,
+                        "Some stamps could not be deleted",
+                        Toast.LENGTH_LONG,
+                    ).show()
                 }
 
                 is StampsScreenViewModel.Event.Done -> {

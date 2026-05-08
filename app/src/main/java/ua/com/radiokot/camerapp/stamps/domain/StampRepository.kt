@@ -27,6 +27,18 @@ interface StampRepository {
 
     suspend fun deleteStamp(
         stamp: Stamp,
+    ) = deleteStamps(
+        stampIds = listOf(stamp.id),
+        collectionId = stamp.collectionId,
+    )
+
+    /**
+     * Deletes the stamps in the background
+     * while the [flow]([getStampsFlow]) is updated immediately.
+     */
+    suspend fun deleteStamps(
+        collectionId: String,
+        stampIds: Collection<String>,
     )
 
     /**

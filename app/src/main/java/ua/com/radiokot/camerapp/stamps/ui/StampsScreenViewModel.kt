@@ -9,6 +9,7 @@ import kotlinx.collections.immutable.PersistentSet
 import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.collections.immutable.toPersistentList
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
@@ -18,6 +19,7 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import ua.com.radiokot.camerapp.stamps.domain.Stamp
 import ua.com.radiokot.camerapp.stamps.domain.StampCollectionRepository
@@ -28,7 +30,7 @@ import ua.com.radiokot.camerapp.util.map
 
 @Immutable
 class StampsScreenViewModel(
-    stampRepository: StampRepository,
+    private val stampRepository: StampRepository,
     private val collectionRepository: StampCollectionRepository,
     parameters: Parameters,
 ) : ViewModel() {
@@ -52,17 +54,25 @@ class StampsScreenViewModel(
     val selectedStampCount: StateFlow<Int> =
         selectedStampIds.map(viewModelScope, Set<*>::size)
 
-    val stamps: StateFlow<ImmutableList<StampsScreenItem>> = runBlocking {
-        combine(
-            stampRepository
-                .getStampsFlow(),
-            selectedStampIds,
-            ::Pair
-        )
-            .map { (stamps, selectedStampIds) ->
+    private val collectionStamps: StateFlow<List<Stamp>> = runBlocking {
+        stampRepository
+            .getStampsFlow()
+            .map { stamps ->
                 stamps
                     .filter { it.collectionId == collectionId }
                     .sortedByDescending(Stamp::takenAtLocal)
+            }
+            .flowOn(Dispatchers.Default)
+            .stateIn(viewModelScope)
+    }
+    val items: StateFlow<ImmutableList<StampsScreenItem>> = runBlocking {
+        combine(
+            collectionStamps,
+            selectedStampIds,
+            ::Pair
+        )
+            .map { (collectionStamps, selectedStampIds) ->
+                collectionStamps
                     .map { stamp ->
                         StampsScreenItem(
                             stamp = stamp,
@@ -123,6 +133,72 @@ class StampsScreenViewModel(
         }
     }
 
+    fun onMoveSelectedAction() {
+        // TODO
+    }
+
+    private var deleteJob: Job? = null
+
+    fun onDeleteSelectedAction() {
+        if (selectedStampIds.value.isEmpty() || deleteJob?.isActive == true) {
+            return
+        }
+
+        viewModelScope.launch {
+            deleteSelectedStamps()
+        }
+    }
+
+    private suspend fun deleteSelectedStamps() {
+
+        val selectedStampIds = selectedStampIds.value
+        var anyReadOnlyStamps = false
+        val stampToDeleteIds =
+            collectionStamps
+                .value
+                .mapNotNullTo(mutableSetOf()) { stamp ->
+                    if (stamp.id !in selectedStampIds) {
+                        return@mapNotNullTo null
+                    }
+                    if (stamp.isReadOnly) {
+                        anyReadOnlyStamps = true
+                        return@mapNotNullTo null
+                    }
+                    return@mapNotNullTo stamp.id
+                }
+
+        log.debug {
+            "deleteStamps(): deleting:" +
+                    "\nstampToDeleteIds=${stampToDeleteIds.size}" +
+                    "\nanyReadOnlyStamps=$anyReadOnlyStamps" +
+                    "\ncollectionId=$collectionId"
+        }
+
+        stampRepository.deleteStamps(
+            collectionId = collectionId,
+            stampIds = stampToDeleteIds,
+        )
+
+        if (!anyReadOnlyStamps) {
+            log.info {
+                "Deleted ${stampToDeleteIds.size} stamps from the collection $collectionId"
+            }
+        } else {
+            log.info {
+                "Deleted ${stampToDeleteIds.size} stamps from the collection $collectionId, " +
+                        "read-only stamps remained"
+            }
+
+            _events.emit(Event.ShowNotAllStampsDeletedExplanation)
+        }
+
+        log.debug {
+            "deleteStamps(): done, clearing selection"
+        }
+
+        clearSelection()
+    }
+
     fun onNewStampAction() {
         log.debug {
             "onNewStampAction(): proceeding to new stamp creation:" +
@@ -136,15 +212,19 @@ class StampsScreenViewModel(
         )
     }
 
+    private fun clearSelection() {
+        selectedStampIds.update {
+            persistentSetOf()
+        }
+    }
+
     fun onBackAction() {
         if (isSelecting) {
             log.debug {
-                "onBackAction(): clearing selection"
+                "onBackAction(): clearing selection first"
             }
 
-            selectedStampIds.update {
-                persistentSetOf()
-            }
+            clearSelection()
 
             return
         }
@@ -193,6 +273,8 @@ class StampsScreenViewModel(
         class ProceedToNewStamp(
             val collectionId: String,
         ) : Event
+
+        object ShowNotAllStampsDeletedExplanation : Event
 
         object Done : Event
     }

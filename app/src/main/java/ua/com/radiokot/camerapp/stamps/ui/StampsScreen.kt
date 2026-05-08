@@ -1,11 +1,15 @@
 package ua.com.radiokot.camerapp.stamps.ui
 
 import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -57,7 +61,10 @@ import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.net.toUri
@@ -82,6 +89,8 @@ fun StampsScreen(
     onStampClicked: (StampsScreenItem) -> Unit,
     onStampLongClicked: (StampsScreenItem) -> Unit,
     selectedCountState: IntState,
+    onMoveSelectedAction: () -> Unit,
+    onDeleteSelectedAction: () -> Unit,
     onNewStampAction: () -> Unit,
     sharedTransitionScope: SharedTransitionScope?,
     animatedVisibilityScope: AnimatedVisibilityScope?,
@@ -109,11 +118,10 @@ fun StampsScreen(
     val safeContentPadding =
         WindowInsets.safeContent.asPaddingValues()
     val contentPadding =
-        safeContentPadding +
-                PaddingValues(
-                    // Button height and spacing.
-                    bottom = 120.dp,
-                )
+        safeContentPadding + PaddingValues(
+            bottom = 120.dp,
+        )
+
     val nameInputFocusRequester = remember(::FocusRequester)
     if (focusCollectionNameInput) {
         LaunchedEffect(Unit) {
@@ -190,6 +198,7 @@ fun StampsScreen(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
                     .height(StampSize.height * 1.05f)
+                    .animateItem()
             ) {
                 val selectionAnimationProgressState = animateFloatAsState(
                     targetValue =
@@ -259,15 +268,50 @@ fun StampsScreen(
     var visibleSelectedCount by remember {
         mutableIntStateOf(0)
     }
+    var areSelectionActionsVisible by remember {
+        mutableStateOf(false)
+    }
     val isSelectionVisible by remember {
         derivedStateOf {
             if (selectedCountState.intValue > 0) {
                 visibleSelectedCount = selectedCountState.intValue
                 true
             } else {
+                areSelectionActionsVisible = false
                 false
             }
         }
+    }
+
+    AnimatedVisibility(
+        visible = areSelectionActionsVisible,
+        enter =
+            fadeIn() + slideInVertically(
+                initialOffsetY = { height ->
+                    height / 2
+                },
+            ),
+        exit = fadeOut(),
+        modifier = Modifier
+            .align(Alignment.BottomEnd)
+            .width(StampSize.width * 2.5f)
+            .padding(contentPadding)
+            .padding(
+                horizontal = 24.dp,
+            )
+    ) {
+        SelectionActions(
+            onMove = {
+                areSelectionActionsVisible = false
+                onMoveSelectedAction()
+            },
+            onDelete = {
+                areSelectionActionsVisible = false
+                onDeleteSelectedAction()
+            },
+            modifier = Modifier
+                .fillMaxWidth()
+        )
     }
 
     AnimatedContent(
@@ -286,7 +330,9 @@ fun StampsScreen(
             if (isSelectionVisible) {
                 SelectionController(
                     selectedCount = visibleSelectedCount,
-                    onActionsClicked = {},
+                    onActionsClicked = {
+                        areSelectionActionsVisible = !areSelectionActionsVisible
+                    },
                     modifier = Modifier
                         .padding(
                             bottom = 10.dp,
@@ -409,6 +455,71 @@ private fun SelectionControllerPreview() {
     )
 }
 
+@Composable
+private fun SelectionActions(
+    modifier: Modifier = Modifier,
+    cornerRadius: Dp = 10.dp,
+    onMove: () -> Unit,
+    onDelete: () -> Unit,
+) = Column(
+    modifier = modifier
+        .background(
+            color = Color(0xFFfff9eb),
+            shape = RoundedCornerShape(cornerRadius),
+        )
+        .border(
+            width = 2.dp,
+            color = Color(0xFF6B624B),
+            shape = RoundedCornerShape(cornerRadius),
+        )
+) {
+    val textStyle = remember {
+        TextStyle(
+            fontSize = 20.sp,
+            textAlign = TextAlign.Center,
+            fontFamily = podkovaFamily,
+            fontWeight = FontWeight.Bold,
+        )
+    }
+
+    BasicText(
+        text = "Move",
+        style = textStyle,
+        modifier = Modifier
+            .clickable(
+                onClick = onMove,
+            )
+            .padding(
+                vertical = 20.dp,
+            )
+            .fillMaxWidth()
+    )
+
+    Spacer(
+        modifier = Modifier
+            .height(1.dp)
+            .fillMaxWidth()
+            .background(Color(0xFFcbc4bb))
+    )
+
+    BasicText(
+        text = "Hold to delete",
+        style = textStyle.copy(
+            color = Color(0xFFD97D7D),
+        ),
+        modifier = Modifier
+            .holdToDeleteAction(
+                roundedCornerRadius = cornerRadius,
+                areTopCornersRounded = false,
+                onDelete = onDelete,
+            )
+            .padding(
+                vertical = 20.dp,
+            )
+            .fillMaxWidth()
+    )
+}
+
 @Preview
 @Composable
 fun StampsScreenPreview(
@@ -434,6 +545,8 @@ fun StampsScreenPreview(
         onStampClicked = { },
         onStampLongClicked = { },
         selectedCountState = 0.let(::mutableIntStateOf),
+        onMoveSelectedAction = { },
+        onDeleteSelectedAction = { },
         onNewStampAction = { },
         sharedTransitionScope = null,
         animatedVisibilityScope = null
