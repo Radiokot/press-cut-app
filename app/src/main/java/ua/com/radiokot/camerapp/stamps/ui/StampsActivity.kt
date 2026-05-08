@@ -223,13 +223,8 @@ private fun SharedTransitionScope.StampsNavHost(
 
         selectMoveDestinationCollectionDestination(
             onSelected = { collectionId ->
-                navController
-                    .previousBackStackEntry
-                    ?.savedStateHandle
-                    ?.set(
-                        key = SelectedMoveDestinationCollectionId,
-                        value = collectionId,
-                    )
+                SelectMoveDestinationCollectionContract(navController.previousBackStackEntry)
+                    .setSelectedCollectionId(collectionId)
                 navController.navigateUp()
             },
             onCancel = navController::navigateUp,

@@ -61,7 +61,6 @@ fun NavGraphBuilder.selectMoveDestinationCollectionDestination(
 
 private const val SourceCollectionId = "sourceCollectionId"
 private const val IsSingleStamp = "isSingleStamp"
-const val SelectedMoveDestinationCollectionId = "selectedMoveDestinationCollectionId"
 
 const val SelectMoveDestinationCollectionRoute =
     "selectMoveDestinationCollection?from={$SourceCollectionId}&isSingle={$IsSingleStamp}"
