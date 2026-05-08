@@ -10,7 +10,6 @@ import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.collections.immutable.toPersistentList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -85,8 +84,8 @@ class StampsScreenViewModel(
             .stateIn(viewModelScope)
     }
 
-    private val _events: MutableSharedFlow<Event> = eventSharedFlow()
-    val events: SharedFlow<Event> = _events
+    val events: SharedFlow<Event>
+        field = eventSharedFlow()
 
     fun onStampClicked(
         item: StampsScreenItem,
@@ -99,7 +98,7 @@ class StampsScreenViewModel(
                         "\nstampId=$stampId"
             }
 
-            _events.tryEmit(
+            events.tryEmit(
                 Event.ProceedToStamp(
                     stampId = stampId,
                 )
@@ -189,7 +188,7 @@ class StampsScreenViewModel(
                         "read-only stamps remained"
             }
 
-            _events.emit(Event.ShowNotAllStampsDeletedExplanation)
+            events.emit(Event.ShowNotAllStampsDeletedExplanation)
         }
 
         log.debug {
@@ -205,7 +204,7 @@ class StampsScreenViewModel(
                     "\ncollectionId=$collectionId"
         }
 
-        _events.tryEmit(
+        events.tryEmit(
             Event.ProceedToNewStamp(
                 collectionId = collectionId,
             )
@@ -233,7 +232,7 @@ class StampsScreenViewModel(
             saveUpdates()
         }
 
-        _events.tryEmit(Event.Done)
+        events.tryEmit(Event.Done)
     }
 
     private suspend fun saveUpdates() {

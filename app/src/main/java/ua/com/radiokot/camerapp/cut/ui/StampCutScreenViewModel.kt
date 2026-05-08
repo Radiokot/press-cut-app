@@ -33,7 +33,6 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.awaitClose
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -86,15 +85,15 @@ class StampCutScreenViewModel : ViewModel() {
         }
             .stateIn(viewModelScope, SharingStarted.Lazily, null)
 
-    private val _cutBitmap: MutableStateFlow<Bitmap?> = MutableStateFlow(null)
+    private val cutBitmap: MutableStateFlow<Bitmap?> = MutableStateFlow(null)
     val cutImage: StateFlow<ImageBitmap?> =
-        _cutBitmap
+        cutBitmap
             .map(viewModelScope) { bitmap ->
                 bitmap?.asImageBitmap()
             }
 
-    private val _events: MutableSharedFlow<Event> = eventSharedFlow()
-    val events: SharedFlow<Event> = _events
+    val events: SharedFlow<Event>
+        field = eventSharedFlow()
 
     private var cutJob: Job? = null
 
@@ -160,7 +159,7 @@ class StampCutScreenViewModel : ViewModel() {
                 surfaceRequest.value!!.deferrableSurface.surface.get()!!,
                 previewImageBitmap,
                 {
-                    _cutBitmap.value = frameImage(
+                    cutBitmap.value = frameImage(
                         image = previewImageBitmap,
                         visibleViewfinderRect = visibleViewfinderRect,
                         visibleFrameRect = visibleFrameRect,
@@ -187,7 +186,7 @@ class StampCutScreenViewModel : ViewModel() {
             true
         )
 
-        _events.emit(
+        events.emit(
             Event.DidCut(
                 stampImageBitmap = frameImage(
                     image = rotatedCaptureImageBitmap,
@@ -208,8 +207,8 @@ class StampCutScreenViewModel : ViewModel() {
         }
 
         cutJob?.cancel()
-        _cutBitmap.value?.recycle()
-        _cutBitmap.value = null
+        cutBitmap.value?.recycle()
+        cutBitmap.value = null
     }
 
     private fun frameImage(

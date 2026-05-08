@@ -8,7 +8,6 @@ import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toPersistentList
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import ua.com.radiokot.camerapp.util.eventSharedFlow
 import ua.com.radiokot.camerapp.util.lazyLogger
@@ -18,8 +17,8 @@ class PermissionsScreenViewModel : ViewModel() {
 
     private val log by lazyLogger("PermissionsScreenVM")
 
-    private val _events: MutableSharedFlow<Event> = eventSharedFlow()
-    val events: SharedFlow<Event> = _events
+    val events: SharedFlow<Event>
+        field = eventSharedFlow()
 
     val requiredPermissions: ImmutableList<String> =
         buildList {
@@ -52,7 +51,7 @@ class PermissionsScreenViewModel : ViewModel() {
             "onAllPermissionsGranted(): all permissions are granted, emitting Done"
         }
 
-        _events.tryEmit(Event.Done)
+        events.tryEmit(Event.Done)
     }
 
     sealed interface Event {

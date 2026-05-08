@@ -18,7 +18,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -103,8 +102,8 @@ class StampSaveScreenViewModel(
         )
             .stateIn(viewModelScope, SharingStarted.Eagerly, false)
 
-    private val _events: MutableSharedFlow<Event> = eventSharedFlow()
-    val events: SharedFlow<Event> = _events
+    val events: SharedFlow<Event>
+        field = eventSharedFlow()
 
     private var saveJob: Job? = null
 
@@ -150,7 +149,7 @@ class StampSaveScreenViewModel(
             "Saved a stamp"
         }
 
-        _events.emit(Event.DidSave)
+        events.emit(Event.DidSave)
     }
 
     private fun applyImageAdjustments(

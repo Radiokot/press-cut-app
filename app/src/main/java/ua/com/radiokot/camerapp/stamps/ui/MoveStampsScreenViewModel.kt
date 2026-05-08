@@ -7,7 +7,6 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -28,8 +27,8 @@ class MoveStampsScreenViewModel(
 
     private val log by lazyLogger("MoveStampsScreenVM")
 
-    private val _events: MutableSharedFlow<Event> = eventSharedFlow()
-    val events: SharedFlow<Event> = _events
+    val events: SharedFlow<Event>
+        field = eventSharedFlow()
 
     val progress: StateFlow<Float> =
         stampRepository
@@ -67,7 +66,7 @@ class MoveStampsScreenViewModel(
 
                 emit(1f)
                 delay(800)
-                _events.emit(Event.Done)
+                events.emit(Event.Done)
             }
             .stateIn(viewModelScope, SharingStarted.Lazily, 0f)
 

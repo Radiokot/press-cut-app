@@ -56,6 +56,12 @@ android {
         }
     }
 
+    kotlin {
+        compilerOptions {
+            freeCompilerArgs.add("-Xexplicit-backing-fields")
+        }
+    }
+
     packagingOptions {
         exclude "META-INF/versions/**"
         doNotStrip "**/*.so"

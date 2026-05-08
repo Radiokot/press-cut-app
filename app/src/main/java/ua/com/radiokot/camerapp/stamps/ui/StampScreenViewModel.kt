@@ -5,7 +5,6 @@ import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -40,12 +39,11 @@ class StampScreenViewModel(
         get() = !stamp.isReadOnly
 
     val caption: TextFieldState = TextFieldState(initialText = stamp.caption ?: "")
-    private val _isCaptionInputEnabled: MutableStateFlow<Boolean> =
-        MutableStateFlow(isEditable && stamp.caption != null)
-    val isCaptionInputEnabled: StateFlow<Boolean> = _isCaptionInputEnabled
+    val isCaptionInputEnabled: StateFlow<Boolean>
+        field = MutableStateFlow(isEditable && stamp.caption != null)
 
-    private val _events: MutableSharedFlow<Event> = eventSharedFlow()
-    val events: SharedFlow<Event> = _events
+    val events: SharedFlow<Event>
+        field = eventSharedFlow()
 
     private var isDeleted = false
     private var isMoved = false
@@ -59,7 +57,7 @@ class StampScreenViewModel(
             "onAddCaptionAction(): enabling caption input"
         }
 
-        _isCaptionInputEnabled.value = true
+        isCaptionInputEnabled.value = true
     }
 
     fun onDeleteAction() {
@@ -74,7 +72,7 @@ class StampScreenViewModel(
         viewModelScope.launch {
             stampRepository.deleteStamp(stamp)
             isDeleted = true
-            _events.emit(Event.Done)
+            events.emit(Event.Done)
         }
     }
 
@@ -87,7 +85,7 @@ class StampScreenViewModel(
             "onMoveAction(): proceeding to destination collection selection"
         }
 
-        _events.tryEmit(
+        events.tryEmit(
             Event.ProceedToMoveDestinationCollectionSelection(
                 currentCollectionId = stamp.collectionId,
             )
@@ -133,7 +131,7 @@ class StampScreenViewModel(
         }
 
         isMoved = true
-        _events.emit(Event.Done)
+        events.emit(Event.Done)
     }
 
     private suspend fun saveUpdates() {

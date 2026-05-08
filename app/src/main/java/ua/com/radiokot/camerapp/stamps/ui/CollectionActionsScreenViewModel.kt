@@ -3,7 +3,6 @@ package ua.com.radiokot.camerapp.stamps.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
@@ -11,13 +10,11 @@ import ua.com.radiokot.camerapp.stamps.domain.GetStampCollectionsWithSamplesUseC
 import ua.com.radiokot.camerapp.stamps.domain.StampCollection
 import ua.com.radiokot.camerapp.stamps.domain.StampCollectionRepository
 import ua.com.radiokot.camerapp.stamps.domain.StampCollectionWithSamples
-import ua.com.radiokot.camerapp.stamps.domain.StampRepository
 import ua.com.radiokot.camerapp.util.eventSharedFlow
 import ua.com.radiokot.camerapp.util.lazyLogger
 
 class CollectionActionsScreenViewModel(
     private val collectionRepository: StampCollectionRepository,
-    private val stampRepository: StampRepository,
     getStampCollectionsWithSamplesUseCase: GetStampCollectionsWithSamplesUseCase,
     parameters: Parameters,
 ) : ViewModel() {
@@ -40,8 +37,8 @@ class CollectionActionsScreenViewModel(
     val canDelete: Boolean =
         !collection.isPrimary
 
-    private val _events: MutableSharedFlow<Event> = eventSharedFlow()
-    val events: SharedFlow<Event> = _events
+    val events: SharedFlow<Event>
+        field = eventSharedFlow()
 
     private var deleteJob: Job? = null
 
@@ -73,7 +70,7 @@ class CollectionActionsScreenViewModel(
             "Collection ${collection.id} deleted"
         }
 
-        _events.emit(Event.Done)
+        events.emit(Event.Done)
     }
 
     fun onMoveStampsAction() {
@@ -81,7 +78,7 @@ class CollectionActionsScreenViewModel(
             "onMoveStampsAction(): proceeding to destination collection selection"
         }
 
-        _events.tryEmit(
+        events.tryEmit(
             Event.ProceedToMoveDestinationCollectionSelection(
                 currentCollectionId = collection.id,
             )
@@ -96,7 +93,7 @@ class CollectionActionsScreenViewModel(
                     "\ndestinationCollectionId=$destinationCollectionId"
         }
 
-        _events.tryEmit(
+        events.tryEmit(
             Event.ProceedToMoveStamps(
                 sourceCollectionId = collection.id,
                 destinationCollectionId = destinationCollectionId,

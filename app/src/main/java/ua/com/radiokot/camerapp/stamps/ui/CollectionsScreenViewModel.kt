@@ -6,7 +6,6 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toPersistentList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.flowOn
@@ -26,8 +25,8 @@ class CollectionsScreenViewModel(
 
     private val log by lazyLogger("CollectionsScreenVM")
 
-    private val _events: MutableSharedFlow<Event> = eventSharedFlow()
-    val events: SharedFlow<Event> = _events
+    val events: SharedFlow<Event>
+        field = eventSharedFlow()
 
     val items: StateFlow<ImmutableList<CollectionListItem>> = runBlocking {
         getStampCollectionsWithSamplesUseCase()
@@ -50,7 +49,7 @@ class CollectionsScreenViewModel(
                     "\ncollectionId = $collectionId"
         }
 
-        _events.tryEmit(
+        events.tryEmit(
             Event.ProceedToCollection(
                 collectionId = collectionId,
                 focusNameInput = false,
@@ -68,7 +67,7 @@ class CollectionsScreenViewModel(
                     "\ncollectionId = $collectionId"
         }
 
-        _events.tryEmit(
+        events.tryEmit(
             Event.ProceedToCollectionActions(
                 collectionId = collectionId,
             )
@@ -80,7 +79,7 @@ class CollectionsScreenViewModel(
             "onNewStampAction(): proceeding to new stamp creation"
         }
 
-        _events.tryEmit(Event.ProceedToNewStamp)
+        events.tryEmit(Event.ProceedToNewStamp)
     }
 
     private var addCollectionJob: Job? = null
@@ -112,7 +111,7 @@ class CollectionsScreenViewModel(
             "Added a collection $addedCollectionId"
         }
 
-        _events.emit(
+        events.emit(
             Event.ProceedToCollection(
                 collectionId = addedCollectionId,
                 focusNameInput = true,

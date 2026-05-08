@@ -40,21 +40,20 @@ class ImageAdjustmentsControllerViewModel : ViewModel() {
         ),
     )
 
-    private val _currentItem: MutableStateFlow<AdjustmentControllerItem> =
-        MutableStateFlow(items.first())
-    val currentItem: StateFlow<AdjustmentControllerItem> = _currentItem
-    private val _brightnessValue: MutableStateFlow<Int> = MutableStateFlow(0)
-    val brightnessValue: StateFlow<Int> = _brightnessValue
-    private val _contrastValue: MutableStateFlow<Int> = MutableStateFlow(0)
-    val contrastValue: StateFlow<Int> = _contrastValue
-    private val _vibranceValue: MutableStateFlow<Int> = MutableStateFlow(0)
-    val vibranceValue: StateFlow<Int> = _vibranceValue
+    val currentItem: StateFlow<AdjustmentControllerItem>
+        field = MutableStateFlow(items.first())
+    val brightnessValue: StateFlow<Int>
+        field = MutableStateFlow(0)
+    val contrastValue: StateFlow<Int>
+        field = MutableStateFlow(0)
+    val vibranceValue: StateFlow<Int>
+        field = MutableStateFlow(0)
 
     private val _currentValue: MutableStateFlow<Int>
         get() = when (currentItem.value.key) {
-            BRIGHTNESS_KEY -> _brightnessValue
-            CONTRAST_KEY -> _contrastValue
-            VIBRANCE_KEY -> _vibranceValue
+            BRIGHTNESS_KEY -> brightnessValue
+            CONTRAST_KEY -> contrastValue
+            VIBRANCE_KEY -> vibranceValue
             else -> error("Unknown key")
         }
     val currentValue: StateFlow<Int> =
@@ -68,7 +67,7 @@ class ImageAdjustmentsControllerViewModel : ViewModel() {
                     "\nnewItem=$newItem"
         }
 
-        _currentItem.value = newItem
+        currentItem.value = newItem
     }
 
     fun onValueChanged(newValue: Int) {
@@ -79,17 +78,6 @@ class ImageAdjustmentsControllerViewModel : ViewModel() {
         }
 
         _currentValue.value = newValue
-    }
-
-    fun reset() {
-        log.debug {
-            "reset(): resetting"
-        }
-
-        _currentItem.value = items.first()
-        _contrastValue.value = 0
-        _brightnessValue.value = 0
-        _vibranceValue.value = 0
     }
 
     private companion object {

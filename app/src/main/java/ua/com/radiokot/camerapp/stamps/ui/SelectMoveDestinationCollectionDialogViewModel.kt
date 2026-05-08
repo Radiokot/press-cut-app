@@ -6,7 +6,6 @@ import androidx.lifecycle.viewModelScope
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toPersistentList
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -41,8 +40,8 @@ class SelectMoveDestinationCollectionDialogViewModel(
             .map(StampCollection::name)
             .toPersistentList()
 
-    private val _events: MutableSharedFlow<Event> = eventSharedFlow()
-    val events: SharedFlow<Event> = _events
+    val events: SharedFlow<Event>
+        field = eventSharedFlow()
 
     fun onCollectionSelected(
         index: Int,
@@ -58,7 +57,7 @@ class SelectMoveDestinationCollectionDialogViewModel(
                     "\ncollectionId=$collectionId"
         }
 
-        _events.tryEmit(
+        events.tryEmit(
             Event.CollectionSelected(
                 collectionId = collectionId,
             )
@@ -94,7 +93,7 @@ class SelectMoveDestinationCollectionDialogViewModel(
             "Added a collection $addedCollectionId"
         }
 
-        _events.emit(
+        events.emit(
             Event.CollectionSelected(
                 collectionId = addedCollectionId,
             )
