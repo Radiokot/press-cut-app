@@ -2,29 +2,27 @@ package ua.com.radiokot.camerapp.cut.ui
 
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.SharedTransitionScope
-import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.displayCutoutPadding
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeContentPadding
+import androidx.compose.foundation.layout.safeGesturesPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.IntState
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.dropShadow
@@ -36,12 +34,10 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.zIndex
+import androidx.compose.ui.unit.max
 import androidx.core.graphics.createBitmap
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
-import kotlinx.coroutines.flow.distinctUntilChanged
-import kotlinx.coroutines.flow.transform
 import ua.com.radiokot.camerapp.stamps.ui.CaptionInput
 import ua.com.radiokot.camerapp.stamps.ui.StampSize
 import ua.com.radiokot.camerapp.ui.LeTextButton
@@ -59,16 +55,37 @@ fun StampSaveScreen(
     onAdjustmentsControllerValueChanged: (Int) -> Unit,
     sharedTransitionScope: SharedTransitionScope?,
     animatedVisibilityScope: AnimatedVisibilityScope?,
-) = Box(
-    contentAlignment = Alignment.Center,
+) = BoxWithConstraints(
     modifier = modifier
-        .safeContentPadding()
+        // IME is handled in the composition.
+        .safeGesturesPadding()
+        .displayCutoutPadding()
 ) {
+    val isScreenVeryTall = remember(maxHeight) {
+        maxHeight >= 640.dp
+    }
+    val isScreenQuiteTall = remember(maxHeight) {
+        maxHeight >= 560.dp
+    }
+    val imePadding = WindowInsets.ime.asPaddingValues()
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .fillMaxWidth()
-            .zIndex(10f)
+            .align(
+                if (isScreenVeryTall)
+                    Alignment.Center
+                else
+                    Alignment.TopCenter
+            )
+            .graphicsLayer {
+                translationY =
+                    if (isScreenVeryTall)
+                        -0.25f * imePadding.calculateBottomPadding().toPx()
+                    else
+                        0f
+            }
     ) {
         CaptionInput(
             inputState = captionInputState,
@@ -81,7 +98,12 @@ fun StampSaveScreen(
             bitmap = imageState.value,
             contentDescription = null,
             modifier = Modifier
-                .size(StampSize * 2f)
+                .size(
+                    if (isScreenQuiteTall)
+                        StampSize * 2f
+                    else
+                        StampSize * 1.5f
+                )
                 .run {
                     if (sharedTransitionScope == null || animatedVisibilityScope == null) {
                         return@run this
@@ -109,37 +131,10 @@ fun StampSaveScreen(
         )
     }
 
-    val bottomControlsAlpha = remember {
-        Animatable(1f)
-    }
-    val imePadding = WindowInsets.ime.asPaddingValues()
-    val keyboardTrendFlow = remember {
-        var previousPadding = 0f
-        snapshotFlow { imePadding.calculateBottomPadding().value }
-            .transform { currentPadding ->
-                val trend = currentPadding.compareTo(previousPadding)
-                previousPadding = currentPadding
-                if (trend != 0) {
-                    emit(trend)
-                }
-            }
-            .distinctUntilChanged()
-    }
-    LaunchedEffect(keyboardTrendFlow) {
-        keyboardTrendFlow.collect { trend ->
-            bottomControlsAlpha.animateTo(
-                targetValue = if (trend > 0) 0f else 1f
-            )
-        }
-    }
-
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .align(Alignment.BottomCenter)
-            .graphicsLayer {
-                alpha = bottomControlsAlpha.value
-            }
     ) {
         AdjustmentsController(
             items = adjustmentsControllerItems,

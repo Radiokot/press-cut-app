@@ -45,6 +45,6 @@
             android:name=".cut.ui.NewStampActivity"
             android:exported="true"
             android:theme="@style/NewStampStartingTheme"
-            android:windowSoftInputMode="adjustResize" />
+            android:windowSoftInputMode="adjustNothing" />
     </application>
 </manifest>
