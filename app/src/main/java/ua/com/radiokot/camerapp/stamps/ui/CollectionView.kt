@@ -279,7 +279,7 @@ private fun StampSampleView(
         }
     }
     LandscapistImage(
-        imageModel = { sample.imageUri.toUri() },
+        imageModel = sample.imageUri::toUri,
         requestBuilder = ImageRequest.Builder::noProgressive,
         imageOptions = imageOptions,
         modifier = modifier

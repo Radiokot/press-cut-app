@@ -1,41 +1,52 @@
 package ua.com.radiokot.camerapp.stamps.ui
 
+import android.view.WindowManager
 import androidx.activity.compose.BackHandler
-import androidx.compose.animation.AnimatedVisibility
+import androidx.activity.compose.LocalActivity
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibilityScope
+import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.VisibilityThreshold
 import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.displayCutoutPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.ime
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.safeContentPadding
+import androidx.compose.foundation.layout.safeGesturesPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.input.TextFieldState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -89,10 +100,19 @@ fun StampScreen(
     onSwipedToExit: () -> Unit,
     sharedTransitionScope: SharedTransitionScope?,
     animatedVisibilityScope: AnimatedVisibilityScope?,
-) = Box(
+) = BoxWithConstraints(
     modifier = modifier
-        .safeContentPadding()
+        // IME is handled in the composition.
+        .safeGesturesPadding()
+        .displayCutoutPadding()
 ) {
+    val isScreenVeryTall = remember(maxHeight) {
+        maxHeight >= 640.dp
+    }
+    val isScreenQuiteTall = remember(maxHeight) {
+        maxHeight >= 460.dp
+    }
+    val imePadding = WindowInsets.ime.asPaddingValues()
     val coroutineScope = rememberCoroutineScope()
     val detailsAlpha = remember {
         Animatable(0f)
@@ -108,13 +128,15 @@ fun StampScreen(
     var areActionsVisible by retain {
         mutableStateOf(false)
     }
-    val allCenterVerticalOffset = animateDpAsState(
+    val visibleActionsVerticalOffset by animateDpAsState(
         targetValue =
             if (areActionsVisible)
-                -(80.dp)
-            else 0.dp,
+                (-48).dp
+            else
+                0.dp,
         animationSpec = spring(
             stiffness = Spring.StiffnessMediumLow,
+            visibilityThreshold = Dp.VisibilityThreshold,
         )
     )
     val captionInputFocusRequester = remember(::FocusRequester)
@@ -127,46 +149,20 @@ fun StampScreen(
         )
     }
 
-    BackHandler(
-        enabled = areActionsVisible,
-        onBack = { areActionsVisible = false },
-    )
-
-    AnimatedVisibility(
-        visible = areActionsVisible,
-        enter = fadeIn() + slideInVertically(),
-        exit = fadeOut(),
-        modifier = Modifier
-            .width(StampSize.width * 2.5f)
-            .offset(
-                y = StampSize.height,
-            )
-            .align(Alignment.Center)
-            .graphicsLayer {
-                alpha = detailsAlpha.value
+    // Oh my God...
+    // Prevent window resize on soft keyboard appearance
+    // on old Android versions.
+    val window = LocalActivity.current?.window
+    if (window != null) {
+        val previousSoftInputMode = retain {
+            window.attributes.softInputMode
+        }
+        DisposableEffect(Unit) {
+            window.setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_ADJUST_NOTHING)
+            onDispose {
+                window.setSoftInputMode(previousSoftInputMode)
             }
-    ) {
-        Actions(
-            isCaptionSet = captionState.text.isNotEmpty(),
-            onAddCaption = {
-                areActionsVisible = false
-                onAddCaptionAction()
-                coroutineScope.launch {
-                    delay(100)
-                    captionInputFocusRequester.requestFocus()
-                }
-            },
-            onDelete = {
-                areActionsVisible = false
-                onDeleteAction()
-            },
-            onMove = {
-                areActionsVisible = false
-                onMoveAction()
-            },
-            modifier = Modifier
-                .fillMaxWidth()
-        )
+        }
     }
 
     Column(
@@ -175,20 +171,40 @@ fun StampScreen(
             .fillMaxWidth()
             .align(Alignment.Center)
             .graphicsLayer {
-                translationY = allCenterVerticalOffset.value.toPx()
+                translationY =
+                    if (isScreenVeryTall)
+                        -0.3f * imePadding.calculateBottomPadding().toPx() +
+                                visibleActionsVerticalOffset.toPx()
+                    else
+                        0f
             }
     ) {
-        CaptionInput(
-            isEnabled = isCaptionInputEnabled,
-            inputState = captionState,
-            focusRequester = captionInputFocusRequester,
+        Column(
+            verticalArrangement = Arrangement.Bottom,
             modifier = Modifier
-                .fillMaxWidth()
-                .padding(24.dp)
+                .run {
+                    if (!isScreenQuiteTall) {
+                        return@run this
+                    }
+
+                    weight(4f)
+                }
                 .graphicsLayer {
                     alpha = detailsAlpha.value
                 }
-        )
+        ) {
+            CaptionInput(
+                isEnabled = isCaptionInputEnabled,
+                inputState = captionState,
+                focusRequester = captionInputFocusRequester,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp)
+                    .graphicsLayer {
+                        alpha = detailsAlpha.value
+                    }
+            )
+        }
 
         Box(
             contentAlignment = Alignment.Center,
@@ -238,10 +254,15 @@ fun StampScreen(
                 }
         ) {
             LandscapistImage(
-                imageModel = { imageUri.toUri() },
+                imageModel = imageUri::toUri,
                 requestBuilder = ImageRequest.Builder::noProgressive,
                 modifier = Modifier
-                    .size(StampSize * 2f)
+                    .size(
+                        if (isScreenQuiteTall)
+                            StampSize * 2f
+                        else
+                            StampSize * 1.5f
+                    )
                     .run {
                         if (sharedTransitionScope == null || animatedVisibilityScope == null) {
                             return@run this
@@ -271,62 +292,120 @@ fun StampScreen(
             )
         }
 
-        val dateRowAlpha by animateFloatAsState(
-            targetValue = if (areActionsVisible) 0f else 1f,
-        )
-
-        Row(
-            verticalAlignment = Alignment.CenterVertically,
+        Column(
+            verticalArrangement = Arrangement.Top,
+            horizontalAlignment = Alignment.CenterHorizontally,
             modifier = Modifier
-                .heightIn(
-                    min = 64.dp
+                .weight(5f)
+                .verticalScroll(
+                    state = rememberScrollState()
                 )
                 .graphicsLayer {
-                    alpha = detailsAlpha.value * dateRowAlpha
+                    alpha = detailsAlpha.value
                 }
         ) {
-            Spacer(
+            AnimatedContent(
+                targetState = areActionsVisible,
+                transitionSpec = {
+                    val toShowActions = targetState
+                    ContentTransform(
+                        targetContentEnter =
+                            if (toShowActions)
+                                fadeIn() + slideInVertically()
+                            else
+                                fadeIn(),
+                        initialContentExit =
+                            if (!toShowActions)
+                                fadeOut() + slideOutVertically()
+                            else
+                                fadeOut(),
+                        sizeTransform = null,
+                    )
+                },
                 modifier = Modifier
-                    .width(40.dp)
-            )
+                    .width(StampSize.width * 2.5f)
+            ) { showActions ->
 
-            BasicText(
-                text = takenAt.toString(),
-                style = TextStyle(
-                    fontFamily = podkovaFamily,
-                    fontSize = 16.sp,
-                    color = Color(0xFFB9AC8C),
-                    textAlign = TextAlign.Center,
-                ),
-            )
+                if (!showActions) {
+                    Row(
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .heightIn(
+                                min = 64.dp
+                            )
+                            .fillMaxWidth()
+                    ) {
+                        Spacer(
+                            modifier = Modifier
+                                .width(40.dp)
+                        )
 
-            if (isEditable) {
-                Image(
-                    painter = painterResource(R.drawable.ic_pencil),
-                    contentDescription = "Edit",
-                    colorFilter = ColorFilter.tint(Color(0xFFB9AC8C)),
-                    modifier = Modifier
-                        .clickable(
-                            onClick = { areActionsVisible = !areActionsVisible },
+                        BasicText(
+                            text = takenAt.toString(),
+                            style = TextStyle(
+                                fontFamily = podkovaFamily,
+                                fontSize = 16.sp,
+                                color = Color(0xFFB9AC8C),
+                                textAlign = TextAlign.Center,
+                            ),
                         )
-                        .padding(
-                            vertical = 16.dp,
-                            horizontal = 12.dp,
-                        )
-                        .size(16.dp)
-                )
-            } else {
-                Spacer(
-                    modifier = Modifier
-                        .width(40.dp)
-                )
+
+                        if (isEditable) {
+                            Image(
+                                painter = painterResource(R.drawable.ic_pencil),
+                                contentDescription = "Edit",
+                                colorFilter = ColorFilter.tint(Color(0xFFB9AC8C)),
+                                modifier = Modifier
+                                    .clickable(
+                                        onClick = { areActionsVisible = !areActionsVisible },
+                                    )
+                                    .padding(
+                                        vertical = 16.dp,
+                                        horizontal = 12.dp,
+                                    )
+                                    .size(16.dp)
+                            )
+                        } else {
+                            Spacer(
+                                modifier = Modifier
+                                    .width(40.dp)
+                            )
+                        }
+                    }
+                } else {
+                    Actions(
+                        isCaptionSet = captionState.text.isNotEmpty(),
+                        onAddCaption = {
+                            areActionsVisible = false
+                            onAddCaptionAction()
+                            coroutineScope.launch {
+                                delay(100)
+                                captionInputFocusRequester.requestFocus()
+                            }
+                        },
+                        onDelete = {
+                            areActionsVisible = false
+                            onDeleteAction()
+                        },
+                        onMove = {
+                            areActionsVisible = false
+                            onMoveAction()
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(
+                                top = 32.dp,
+                                bottom = 24.dp,
+                            )
+                    )
+
+                    BackHandler {
+                        areActionsVisible = false
+                    }
+                }
             }
         }
-
-        Spacer(
-            modifier = Modifier
-                .fillMaxHeight(0.2f)
-        )
     }
 }
 
