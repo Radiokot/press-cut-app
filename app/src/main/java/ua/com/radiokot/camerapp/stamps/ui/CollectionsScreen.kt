@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.safeContent
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -62,29 +63,23 @@ fun CollectionsScreen(
     val contentPadding =
         safeContentPadding +
                 PaddingValues(
+                    start = 12.dp,
+                    end = 12.dp,
                     // Button height and spacing.
                     bottom = 120.dp,
                 )
 
     LazyVerticalGrid(
-        columns = GridCells.Adaptive(
-            minSize = StampSize.width * 1.5f,
-        ),
-        horizontalArrangement = Arrangement.spacedBy(
-            space = 16.dp,
-            alignment = Alignment.CenterHorizontally,
-        ),
+        columns = GridCells.FixedSize(CollectionViewSize.width * 1.05f),
+        horizontalArrangement = Arrangement.SpaceAround,
         verticalArrangement = Arrangement.spacedBy(
-            space = 16.dp,
+            space = 24.dp,
             alignment = Alignment.CenterVertically,
         ),
         contentPadding = contentPadding,
         state = rememberLazyGridState(),
         modifier = Modifier
             .fillMaxSize()
-            .padding(
-                horizontal = 16.dp,
-            )
     ) {
         items(
             items = itemsState.value,
@@ -138,7 +133,7 @@ private fun NewCollectionView(
     onClicked: () -> Unit,
 ) = Box(
     modifier = modifier
-        .height(StampSize.height)
+        .requiredSize(CollectionViewSize)
         .clickable(
             onClick = {
                 onClicked()
@@ -151,7 +146,7 @@ private fun NewCollectionView(
     Spacer(
         modifier = Modifier
             .fillMaxWidth()
-            .height(StampSize.height * 0.7f)
+            .height(CollectionViewSize.height * 0.7f)
             .drawWithCache {
                 val backOutline = CollectionViewShape.createOutline(
                     size = this.size,

@@ -66,8 +66,6 @@ fun CollectionActionsScreen(
         onLongClicked = {},
         sharedTransitionScope = sharedTransitionScope,
         animatedVisibilityScope = animatedVisibilityScope,
-        modifier = Modifier
-            .width(StampSize.width * 1.6f)
     )
 
     Spacer(modifier = Modifier.height(24.dp))

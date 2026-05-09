@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
@@ -28,6 +29,7 @@ import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -49,7 +51,7 @@ fun CollectionView(
     animatedVisibilityScope: AnimatedVisibilityScope?,
 ) = Box(
     modifier = modifier
-        .height(StampSize.height)
+        .requiredSize(CollectionViewSize)
         .combinedClickable(
             indication = null,
             interactionSource = null,
@@ -64,7 +66,7 @@ fun CollectionView(
     Spacer(
         modifier = Modifier
             .fillMaxWidth()
-            .height(StampSize.height * 0.7f)
+            .height(CollectionViewSize.height * 0.7f)
             .run {
                 if (sharedTransitionScope == null || animatedVisibilityScope == null) {
                     return@run this
@@ -241,6 +243,10 @@ private val LeftSampleRotationAngles = intArrayOf(-4, -5, -6)
 private val CenterSampleRotationAngles = intArrayOf(3, 2, -2, -3)
 private val RightSampleRotationAngles = intArrayOf(6, 5, 4)
 
+val CollectionViewSize = DpSize(
+    width = StampSize.width * 1.55f,
+    height = StampSize.height
+)
 val CollectionViewNameStyle = TextStyle(
     fontFamily = podkovaFamily,
     fontSize = 20.sp,
