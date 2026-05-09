@@ -15,8 +15,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeContentPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -47,6 +49,9 @@ fun CollectionActionsScreen(
     verticalArrangement = Arrangement.Center,
     modifier = modifier
         .safeContentPadding()
+        .verticalScroll(
+            state = rememberScrollState(),
+        )
 ) {
     val detailsAlpha = remember {
         Animatable(0f)
@@ -80,6 +85,8 @@ fun CollectionActionsScreen(
                 alpha = detailsAlpha.value
             }
     )
+
+    Spacer(modifier = Modifier.height(24.dp))
 }
 
 @Composable
