@@ -1,5 +1,6 @@
 package ua.com.radiokot.camerapp.stamps.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
@@ -32,6 +33,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeContent
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -48,6 +50,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.retain.retain
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -110,10 +114,9 @@ fun StampsScreen(
             }
         }
 ) {
-    val spacedBy = Arrangement.spacedBy(24.dp)
     val shadowColor = Color(0x7447525E)
-    val rotationAngles = remember {
-        intArrayOf(4, 3, 2, -2, -3, -4)
+    val rotationAngles = retain {
+        floatArrayOf(4f, 3f, 2f, -2f, -3f, -4f)
     }
     val safeContentPadding =
         WindowInsets.safeContent.asPaddingValues()
@@ -128,7 +131,7 @@ fun StampsScreen(
             nameInputFocusRequester.requestFocus()
         }
     }
-    val selectionAnimationSpec = remember {
+    val selectionAnimationSpec = retain {
         spring<Float>(
             dampingRatio = Spring.DampingRatioLowBouncy,
             stiffness = Spring.StiffnessMedium,
@@ -136,10 +139,8 @@ fun StampsScreen(
     }
 
     LazyVerticalGrid(
-        columns = GridCells.Adaptive(
-            minSize = StampSize.width * 1.05f,
-        ),
-        verticalArrangement = spacedBy,
+        columns = GridCells.FixedSize(StampSize.width * 1.15f),
+        horizontalArrangement = Arrangement.SpaceAround,
         contentPadding = contentPadding,
         modifier = Modifier
             .fillMaxSize()
@@ -197,7 +198,7 @@ fun StampsScreen(
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
-                    .height(StampSize.height * 1.05f)
+                    .height(StampSize.height * 1.2f)
                     .animateItem()
             ) {
                 val selectionAnimationProgressState = animateFloatAsState(
@@ -238,7 +239,6 @@ fun StampsScreen(
                             scaleY = scaleX
                             rotationZ =
                                 (rotationAngles[stamp.key.hashCode().absoluteValue % rotationAngles.size])
-                                    .toFloat()
                         }
                         .dropShadow(
                             shape = RectangleShape,
@@ -265,10 +265,10 @@ fun StampsScreen(
         }
     }
 
-    var visibleSelectedCount by remember {
+    var visibleSelectedCount by rememberSaveable {
         mutableIntStateOf(0)
     }
-    var areSelectionActionsVisible by remember {
+    var areSelectionActionsVisible by rememberSaveable {
         mutableStateOf(false)
     }
     val isSelectionVisible by remember {
@@ -294,11 +294,11 @@ fun StampsScreen(
         exit = fadeOut(),
         modifier = Modifier
             .align(Alignment.BottomEnd)
-            .width(StampSize.width * 2.5f)
             .padding(contentPadding)
             .padding(
                 horizontal = 24.dp,
             )
+            .width(StampSize.width * 2.5f)
     ) {
         SelectionActions(
             onMove = {
@@ -312,6 +312,10 @@ fun StampsScreen(
             modifier = Modifier
                 .fillMaxWidth()
         )
+
+        BackHandler {
+            areSelectionActionsVisible = false
+        }
     }
 
     AnimatedContent(

@@ -239,9 +239,9 @@ fun CollectionView(
     }
 }
 
-private val LeftSampleRotationAngles = intArrayOf(-4, -5, -6)
-private val CenterSampleRotationAngles = intArrayOf(3, 2, -2, -3)
-private val RightSampleRotationAngles = intArrayOf(6, 5, 4)
+private val LeftSampleRotationAngles = floatArrayOf(-4f, -5f, -6f)
+private val CenterSampleRotationAngles = floatArrayOf(3f, 2f, -2f, -3f)
+private val RightSampleRotationAngles = floatArrayOf(6f, 5f, 4f)
 
 val CollectionViewSize = DpSize(
     width = StampSize.width * 1.55f,
@@ -259,7 +259,7 @@ private fun StampSampleView(
     modifier: Modifier = Modifier,
     fallbackColor: Color,
     sample: CollectionListItem.StampSampleItem,
-    possibleRotationAngles: IntArray,
+    possibleRotationAngles: FloatArray,
     order: Int,
     sharedTransitionScope: SharedTransitionScope?,
     animatedVisibilityScope: AnimatedVisibilityScope?,
@@ -299,7 +299,6 @@ private fun StampSampleView(
             }
             .rotate(
                 (possibleRotationAngles[sample.key.hashCode().absoluteValue % possibleRotationAngles.size])
-                    .toFloat()
             )
             .run {
                 if (sample.imageUri.isNotEmpty()) {
