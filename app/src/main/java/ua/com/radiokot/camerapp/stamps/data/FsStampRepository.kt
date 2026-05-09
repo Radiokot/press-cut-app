@@ -288,7 +288,7 @@ class FsStampRepository(
         stampIds: Collection<String>,
     ): Flow<Pair<Int, Int>> {
 
-        val movedStampIds = Collections.synchronizedSet<String>(mutableSetOf())
+        val movedStampPathsById = Collections.synchronizedMap<String, Path>(mutableMapOf())
 
         return channelFlow {
             val progressChannel = this.channel
@@ -312,20 +312,23 @@ class FsStampRepository(
 
             stampIds.forEach { stampId ->
                 launch {
-                    val stampSourceFile = getStampFile(
-                        id = stampId,
-                        collectionId = sourceCollectionId,
-                    )
-                    Files.move(
-                        FileSystems.getDefault().getPath(stampSourceFile.path),
+                    val stampSourceFile =
+                        getStampFile(
+                            id = stampId,
+                            collectionId = sourceCollectionId,
+                        )
+                    val destinationPath =
                         FileSystems.getDefault().getPath(
                             destinationCollectionDirectoryPath,
                             stampSourceFile.name
-                        ),
+                        )
+                    Files.move(
+                        FileSystems.getDefault().getPath(stampSourceFile.path),
+                        destinationPath,
                         StandardCopyOption.ATOMIC_MOVE,
                     )
-                    movedStampIds += stampId
-                    progressChannel.send(movedStampIds.size to stampIds.size)
+                    movedStampPathsById[stampId] = destinationPath
+                    progressChannel.send(movedStampPathsById.size to stampIds.size)
                 }
             }
         }
@@ -333,9 +336,13 @@ class FsStampRepository(
                 if (isCacheInitialized.load()) {
                     cache.indices.forEach { i ->
                         val stamp = cache[i]
-                        if (stamp.id in movedStampIds) {
+                        if (stamp.id in movedStampPathsById) {
                             cache[i] = stamp.copy(
                                 newCollectionId = destinationCollectionId,
+                                newImageUri =
+                                    movedStampPathsById
+                                        .getValue(stamp.id)
+                                        .toImageUri(),
                             )
                         }
                     }

@@ -12,11 +12,12 @@ class Stamp(
 ) {
     fun copy(
         newCollectionId: String = this.collectionId,
+        newImageUri: String = this.imageUri,
         newCaption: String? = this.caption,
     ) = Stamp(
         id = id,
         collectionId = newCollectionId,
-        imageUri = imageUri,
+        imageUri = newImageUri,
         caption = newCaption,
         takenAtLocal = takenAtLocal,
         isReadOnly = isReadOnly,
