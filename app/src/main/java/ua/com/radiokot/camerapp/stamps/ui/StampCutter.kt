@@ -4,10 +4,8 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.foundation.layout.requiredWidth
-import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -29,6 +27,9 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.graphics.withSaveLayer
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.drawText
+import androidx.compose.ui.text.rememberTextMeasurer
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
@@ -114,6 +115,8 @@ fun StampCutter(
             modifier = Modifier
                 .fillMaxSize()
         ) {
+            val textMeasurer = rememberTextMeasurer()
+
             Spacer(
                 modifier = Modifier
                     .fillMaxSize()
@@ -149,6 +152,12 @@ fun StampCutter(
                         val outerDrawStyle = Stroke(
                             width = 2.dp.toPx(),
                         )
+                        val textStyle = TextStyle(
+                            fontFamily = podkovaFamily,
+                            color = Color(0xFFcbc4bb),
+                            fontSize = (innerPadding.y * 0.33f).toSp(),
+                            textAlign = TextAlign.Center,
+                        )
 
                         onDrawBehind {
                             drawRoundRect(
@@ -171,21 +180,21 @@ fun StampCutter(
                                 size = innerSize,
                                 style = outerDrawStyle,
                             )
+                            drawText(
+                                textMeasurer = textMeasurer,
+                                text = "tap to focus, hold to cut",
+                                style = textStyle,
+                                topLeft = Offset(
+                                    x = 0f,
+                                    y = size.height * 0.90f,
+                                ),
+                                size = Size(
+                                    width = size.width,
+                                    height = textStyle.fontSize.toPx(),
+                                )
+                            )
                         }
                     }
-            )
-
-            BasicText(
-                text = "tap to focus, hold to cut",
-                style = TextStyle(
-                    fontFamily = podkovaFamily,
-                    color = Color(0xFFcbc4bb),
-                ),
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .padding(
-                        bottom = 18.dp,
-                    )
             )
         }
     }

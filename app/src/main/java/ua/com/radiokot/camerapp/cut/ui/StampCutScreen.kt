@@ -23,13 +23,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.requiredHeight
-import androidx.compose.foundation.layout.requiredWidth
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -57,8 +55,7 @@ import androidx.compose.ui.layout.onPlaced
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.TextStyle
-import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.toSize
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -70,8 +67,8 @@ import kotlinx.coroutines.withContext
 import ua.com.radiokot.camerapp.R
 import ua.com.radiokot.camerapp.stamps.ui.StampCutter
 import ua.com.radiokot.camerapp.stamps.ui.StampSize
-import ua.com.radiokot.camerapp.ui.podkovaFamily
 import java.util.concurrent.TimeUnit
+import kotlin.math.min
 import kotlin.random.Random
 import kotlin.system.measureTimeMillis
 
@@ -87,7 +84,7 @@ fun StampCutScreen(
     sharedTransitionScope: SharedTransitionScope?,
     animatedVisibilityScope: AnimatedVisibilityScope?,
     modifier: Modifier = Modifier,
-) = Box(
+) = BoxWithConstraints(
     contentAlignment = Alignment.Center,
     modifier = modifier
 ) {
@@ -105,22 +102,24 @@ fun StampCutScreen(
             )
         }
     }
-    val soundPool = remember {
-        SoundPool.Builder()
-            .setAudioAttributes(
-                AudioAttributes
-                    .Builder()
-                    .setUsage(AudioAttributes.USAGE_GAME)
-                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                    .build()
-            )
-            .build()
+    val soundPool: SoundPool? = remember {
+        runCatching {
+            SoundPool.Builder()
+                .setAudioAttributes(
+                    AudioAttributes
+                        .Builder()
+                        .setUsage(AudioAttributes.USAGE_GAME)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                        .build()
+                )
+                .build()
+        }.getOrNull()
     }
 
     DisposableEffect(Unit) {
         onDispose {
             processCameraProvider?.unbindAll()
-            soundPool.release()
+            soundPool?.release()
         }
     }
 
@@ -179,7 +178,11 @@ fun StampCutScreen(
             }
         }
 
-        val playCutSound = remember {
+        val playCutSound: (() -> Unit)? = remember(soundPool) {
+            if (soundPool == null) {
+                return@remember null
+            }
+
             val cutSoundId =
                 soundPool.load(context, R.raw.cut, 1)
 
@@ -228,8 +231,10 @@ fun StampCutScreen(
                             val longPress = coroutineScope.launch {
                                 delay(viewConfiguration.longPressTimeoutMillis)
                                 cutterInteractionSource.emit(pressInteraction)
-                                withContext(Dispatchers.IO) {
-                                    playCutSound()
+                                if (playCutSound != null) {
+                                    withContext(Dispatchers.IO) {
+                                        playCutSound()
+                                    }
                                 }
                                 delay(50)
                                 cut()
@@ -255,25 +260,23 @@ fun StampCutScreen(
                     )
                 }
         )
-    } else {
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black)
-        ) {
-            BasicText(
-                text = "Opening the camera…",
-                style = TextStyle(
-                    fontFamily = podkovaFamily,
-                    color = Color.White,
-                    textAlign = TextAlign.Center,
-                )
-            )
-        }
     }
 
-    val frameSize = StampSize * 1.5f
+    var cutterSize = DpSize(
+        width = StampSize.width * 2.5f,
+        height = StampSize.height * 2.8f,
+    )
+    val cutterToScreenSizeRatio =
+        if (maxHeight < 300.dp || maxWidth < 300.dp)
+            0.9f
+        else
+            0.7f
+    val cutterSizeScale = min(
+        maxWidth * cutterToScreenSizeRatio / cutterSize.width,
+        maxHeight * cutterToScreenSizeRatio / cutterSize.height,
+    )
+    cutterSize *= cutterSizeScale
+    val frameSize = StampSize * 1.5f * cutterSizeScale
 
     Spacer(
         modifier = Modifier
@@ -338,8 +341,7 @@ fun StampCutScreen(
         frameSize = frameSize,
         interactionSource = cutterInteractionSource,
         modifier = Modifier
-            .requiredWidth(StampSize.width * 2.5f)
-            .requiredHeight(StampSize.height * 2.8f)
+            .requiredSize(cutterSize)
     )
 
     if (cutImage != null) {

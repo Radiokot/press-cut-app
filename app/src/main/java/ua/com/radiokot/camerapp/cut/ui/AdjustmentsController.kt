@@ -297,7 +297,7 @@ private fun ValueDial(
                 minValue = minValue,
                 step = step,
                 itemSpacingPx = spacingPx,
-                value = valueState.value,
+                value = valueState.intValue,
             )
         LazyListState(initialFirstVisibleItemIndex, initialFirstVisibleItemScrollOffset)
     }
@@ -322,7 +322,7 @@ private fun ValueDial(
 
     LaunchedEffect(internalValueFlow) {
         internalValueFlow.collect { newInternalValue ->
-            if (newInternalValue != valueState.value) {
+            if (newInternalValue != valueState.intValue) {
                 onValueChanged(newInternalValue)
                 hapticFeedback.performHapticFeedback(
                     HapticFeedbackType.GestureEnd
