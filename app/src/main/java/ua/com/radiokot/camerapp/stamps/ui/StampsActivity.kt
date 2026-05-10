@@ -35,6 +35,8 @@ import androidx.navigation.compose.rememberNavController
 import com.skydoves.landscapist.image.LocalLandscapist
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.compose.koinInject
+import ua.com.radiokot.camerapp.about.ui.AboutRoute
+import ua.com.radiokot.camerapp.about.ui.aboutDestination
 import ua.com.radiokot.camerapp.cut.ui.NewStampActivity
 import ua.com.radiokot.camerapp.intro.ui.PermissionsRoute
 import ua.com.radiokot.camerapp.intro.ui.PermissionsScreenViewModel
@@ -190,6 +192,13 @@ private fun SharedTransitionScope.StampsNavHost(
                 proceedToNewStamp(
                     collectionId = null,
                 )
+            },
+            onProceedToAbout = {
+                navController.navigate(
+                    route = AboutRoute,
+                ) {
+                    launchSingleTop = true
+                }
             }
         )
 
@@ -288,5 +297,7 @@ private fun SharedTransitionScope.StampsNavHost(
             },
             onDone = navController::navigateUp,
         )
+
+        aboutDestination()
     }
 }

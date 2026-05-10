@@ -17,6 +17,7 @@ fun NavGraphBuilder.collectionsDestination(
     ) -> Unit,
     onProceedToCollectionActions: (collectionId: String) -> Unit,
     onProceedToNewStamp: () -> Unit,
+    onProceedToAbout: () -> Unit,
 ) = composable(
     route = CollectionsRoute,
 ) {
@@ -54,6 +55,10 @@ fun NavGraphBuilder.collectionsDestination(
 
                 is CollectionsScreenViewModel.Event.ProceedToNewStamp -> {
                     onProceedToNewStamp()
+                }
+
+                is CollectionsScreenViewModel.Event.ProceedToAbout -> {
+                    onProceedToAbout()
                 }
             }
         }

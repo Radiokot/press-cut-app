@@ -122,7 +122,11 @@ class CollectionsScreenViewModel(
     }
 
     fun onMoreClicked() {
+        log.debug {
+            "onMoreClicked(): proceeding to the about"
+        }
 
+        events.tryEmit(Event.ProceedToAbout)
     }
 
     sealed interface Event {
@@ -136,5 +140,7 @@ class CollectionsScreenViewModel(
         ) : Event
 
         object ProceedToNewStamp : Event
+
+        object ProceedToAbout : Event
     }
 }

@@ -1,7 +1,11 @@
+import java.nio.charset.StandardCharsets
+import java.nio.file.Files
+
 plugins {
     id "com.android.application"
     id "org.jetbrains.kotlin.android"
     id "org.jetbrains.kotlin.plugin.compose"
+    id "com.jaredsburrows.license"
 }
 
 def ciSigningKeystoreFile = project.file("ci-signing.jks")
@@ -74,6 +78,14 @@ android {
         includeInApk false
         includeInBundle false
     }
+
+    licenseReport {
+        generateHtmlReport = true
+        generateCsvReport = false
+        generateJsonReport = false
+        generateTextReport = false
+        copyHtmlReportToAssets = true
+    }
 }
 
 dependencies {
@@ -126,5 +138,31 @@ dependencies {
 android.applicationVariants.configureEach { variant ->
     variant.outputs.configureEach { output ->
         outputFileName = "${variant.applicationId}-${variant.versionName}.apk"
+    }
+}
+
+// Pretty license report.
+project.afterEvaluate {
+    Task licenseReportTask = tasks.findByName("licenseReleaseReport")
+    licenseReportTask.configure {
+        // https://github.com/jaredsburrows/gradle-license-plugin/issues/368
+        notCompatibleWithConfigurationCache("LicenseReportTask uses Task.project at execution time")
+    }
+    licenseReportTask.outputs.upToDateWhen { false }
+    licenseReportTask.doLast {
+        def report = file("src/main/assets/open_source_licenses.html")
+        List<String> lines = Files.readAllLines(report.toPath(), StandardCharsets.UTF_8)
+        // Rename the header.
+        lines[7] = "<h2>Used open-source libraries</h2>"
+        // Normalize spacing, set the app font.
+        lines.add(
+                3,
+                "<style>@font-face { font-family: \"Podkova\"; src: url(\"file:///android_res/font/podkova_regular.ttf\");}</style>"
+        )
+        lines[4] = lines[4].replace(
+                "body { font-family: sans-serif; background-color: #ffffff; color: #000000; }",
+                "ul { padding-inline-start: 22px; } body { padding: 48px 16px 48px 16px; font-family: Podkova, sans-serif; background-color: #fff9eb; color: #000000; }"
+        )
+        Files.write(report.toPath(), lines, StandardCharsets.UTF_8)
     }
 }

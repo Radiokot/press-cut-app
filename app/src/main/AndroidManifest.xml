@@ -46,5 +46,9 @@
             android:exported="true"
             android:theme="@style/NewStampStartingTheme"
             android:windowSoftInputMode="adjustNothing" />
+
+        <activity
+            android:name=".about.ui.HtmlActivity"
+            android:exported="false" />
     </application>
 </manifest>
