@@ -6,6 +6,7 @@ import android.graphics.Bitmap
 import android.graphics.Color
 import androidx.annotation.FloatRange
 import androidx.compose.foundation.text.input.TextFieldState
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asAndroidBitmap
@@ -36,6 +37,7 @@ import kotlin.math.abs
 import kotlin.math.floor
 import kotlin.math.round
 
+@Immutable
 class StampSaveScreenViewModel(
     private val stampRepository: StampRepository,
     val imageAdjustmentsControllerViewModel: ImageAdjustmentsControllerViewModel,

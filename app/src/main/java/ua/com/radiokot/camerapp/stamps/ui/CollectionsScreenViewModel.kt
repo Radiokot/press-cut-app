@@ -1,5 +1,6 @@
 package ua.com.radiokot.camerapp.stamps.ui
 
+import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.collections.immutable.ImmutableList
@@ -18,6 +19,7 @@ import ua.com.radiokot.camerapp.stamps.domain.StampCollectionRepository
 import ua.com.radiokot.camerapp.util.eventSharedFlow
 import ua.com.radiokot.camerapp.util.lazyLogger
 
+@Immutable
 class CollectionsScreenViewModel(
     private val collectionRepository: StampCollectionRepository,
     private val getStampCollectionsWithSamplesUseCase: GetStampCollectionsWithSamplesUseCase,
@@ -117,6 +119,10 @@ class CollectionsScreenViewModel(
                 focusNameInput = true,
             )
         )
+    }
+
+    fun onMoreClicked() {
+
     }
 
     sealed interface Event {

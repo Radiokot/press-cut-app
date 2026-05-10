@@ -2,6 +2,7 @@
 
 package ua.com.radiokot.camerapp.stamps.ui
 
+import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.CancellationException
@@ -21,6 +22,7 @@ import ua.com.radiokot.camerapp.util.eventSharedFlow
 import ua.com.radiokot.camerapp.util.lazyLogger
 import kotlin.time.Duration.Companion.milliseconds
 
+@Immutable
 class MoveStampsScreenViewModel(
     stampRepository: StampRepository,
     parameters: Parameters,

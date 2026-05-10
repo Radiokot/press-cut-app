@@ -1,5 +1,6 @@
 package ua.com.radiokot.camerapp.stamps.ui
 
+import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Job
@@ -13,6 +14,7 @@ import ua.com.radiokot.camerapp.stamps.domain.StampCollectionWithSamples
 import ua.com.radiokot.camerapp.util.eventSharedFlow
 import ua.com.radiokot.camerapp.util.lazyLogger
 
+@Immutable
 class CollectionActionsScreenViewModel(
     private val collectionRepository: StampCollectionRepository,
     getStampCollectionsWithSamplesUseCase: GetStampCollectionsWithSamplesUseCase,

@@ -29,6 +29,7 @@ fun NavGraphBuilder.collectionsDestination(
         onItemLongClicked = viewModel::onItemLongClicked,
         onNewStampAction = viewModel::onNewStampAction,
         onNewCollectionAction = viewModel::onNewCollectionAction,
+        onMoreClicked = viewModel::onMoreClicked,
         sharedTransitionScope = sharedTransitionScope,
         animatedVisibilityScope = this@composable,
         modifier = Modifier

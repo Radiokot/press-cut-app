@@ -2,6 +2,7 @@ package ua.com.radiokot.camerapp.stamps.ui
 
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.SharedTransitionScope
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -36,11 +37,13 @@ import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
+import ua.com.radiokot.camerapp.R
 import ua.com.radiokot.camerapp.ui.LeTextButton
 import ua.com.radiokot.camerapp.ui.paperBackground
 import ua.com.radiokot.camerapp.util.plus
@@ -53,6 +56,7 @@ fun CollectionsScreen(
     onItemLongClicked: (CollectionListItem) -> Unit,
     onNewStampAction: () -> Unit,
     onNewCollectionAction: () -> Unit,
+    onMoreClicked: () -> Unit,
     sharedTransitionScope: SharedTransitionScope?,
     animatedVisibilityScope: AnimatedVisibilityScope?,
 ) = Box(
@@ -102,6 +106,20 @@ fun CollectionsScreen(
             )
         }
     }
+
+    Image(
+        painter = painterResource(R.drawable.ic_more_hor_stroked),
+        contentDescription = "More",
+        modifier = Modifier
+            .padding(safeContentPadding)
+            .clickable(
+                interactionSource = null,
+                indication = null,
+                onClick = onMoreClicked,
+            )
+            .padding(16.dp)
+            .align(Alignment.TopEnd)
+    )
 
     LeTextButton(
         text = "New Stamp",
@@ -278,6 +296,7 @@ private fun CollectionsScreenPreview() {
         onNewStampAction = {},
         onItemLongClicked = {},
         onNewCollectionAction = {},
+        onMoreClicked = {},
         sharedTransitionScope = null,
         animatedVisibilityScope = null,
         modifier = Modifier
