@@ -1,5 +1,6 @@
 package ua.com.radiokot.camerapp.stamps.ui
 
+import android.net.Uri
 import android.view.WindowManager
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
@@ -64,6 +65,7 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
@@ -71,17 +73,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.net.toUri
-import com.skydoves.landscapist.core.ImageRequest
+import com.skydoves.landscapist.ImageOptions
 import com.skydoves.landscapist.image.LandscapistImage
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import ua.com.radiokot.camerapp.R
-import ua.com.radiokot.camerapp.ui.noProgressive
 import ua.com.radiokot.camerapp.ui.paperBackground
 import ua.com.radiokot.camerapp.ui.podkovaFamily
+import ua.com.radiokot.camerapp.util.EmptyImageComponent
+import ua.com.radiokot.camerapp.util.noProgressive
 import java.time.LocalDate
 import kotlin.math.absoluteValue
 
@@ -92,7 +95,7 @@ fun StampScreen(
     isEditable: Boolean,
     captionState: TextFieldState,
     isCaptionInputEnabled: Boolean,
-    imageUri: String,
+    imageUri: Uri,
     takenAt: LocalDate,
     onAddCaptionAction: () -> Unit,
     onDeleteAction: () -> Unit,
@@ -253,9 +256,28 @@ fun StampScreen(
                     )
                 }
         ) {
+            val density = LocalDensity.current
+            val imageOptions = retain(density) {
+                with(density) {
+                    ImageOptions(
+                        requestSize = IntSize(
+                            width = (StampSize.width * 2f).roundToPx(),
+                            height = (StampSize.height * 2f).roundToPx(),
+                        )
+                    )
+                }
+            }
+            val imageRequestBuilder = retain(imageOptions) {
+                noProgressive(
+                    size = imageOptions.requestSize,
+                )
+            }
+
             LandscapistImage(
-                imageModel = imageUri::toUri,
-                requestBuilder = ImageRequest.Builder::noProgressive,
+                imageModel = { imageUri },
+                requestBuilder = imageRequestBuilder,
+                imageOptions = imageOptions,
+                component = EmptyImageComponent,
                 modifier = Modifier
                     .size(
                         if (isScreenQuiteTall)
@@ -283,7 +305,7 @@ fun StampScreen(
                         )
                     )
                     .run {
-                        if (imageUri.isNotEmpty()) {
+                        if (imageUri !== Uri.EMPTY) {
                             return@run this
                         }
 
@@ -513,7 +535,7 @@ private fun StampScreenPreview(
             isEditable = true,
             captionState = TextFieldState("My stamp"),
             isCaptionInputEnabled = false,
-            imageUri = "",
+            imageUri = Uri.EMPTY,
             takenAt = LocalDate.now(),
             onAddCaptionAction = { },
             onDeleteAction = { },

@@ -1,5 +1,6 @@
 package ua.com.radiokot.camerapp.stamps.ui
 
+import android.net.Uri
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
@@ -68,17 +69,18 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.net.toUri
-import com.skydoves.landscapist.core.ImageRequest
+import com.skydoves.landscapist.ImageOptions
 import com.skydoves.landscapist.image.LandscapistImage
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toPersistentList
 import ua.com.radiokot.camerapp.R
 import ua.com.radiokot.camerapp.ui.LeTextButton
-import ua.com.radiokot.camerapp.ui.noProgressive
 import ua.com.radiokot.camerapp.ui.podkovaFamily
+import ua.com.radiokot.camerapp.util.EmptyImageComponent
+import ua.com.radiokot.camerapp.util.noProgressive
 import ua.com.radiokot.camerapp.util.plus
 import kotlin.math.absoluteValue
 
@@ -134,6 +136,22 @@ fun StampsScreen(
         spring<Float>(
             dampingRatio = Spring.DampingRatioLowBouncy,
             stiffness = Spring.StiffnessMedium,
+        )
+    }
+    val density = LocalDensity.current
+    val stampImageOptions = retain(density) {
+        with(density) {
+            ImageOptions(
+                requestSize = IntSize(
+                    width = StampSize.width.roundToPx(),
+                    height = StampSize.height.roundToPx(),
+                )
+            )
+        }
+    }
+    val stampImageRequestBuilder = retain(stampImageOptions) {
+        noProgressive(
+            size = stampImageOptions.requestSize,
         )
     }
 
@@ -210,17 +228,12 @@ fun StampsScreen(
                 )
 
                 LandscapistImage(
-                    imageModel = stamp.thumbnailUrl::toUri,
-                    requestBuilder = ImageRequest.Builder::noProgressive,
+                    imageModel = stamp::imageUri,
+                    requestBuilder = stampImageRequestBuilder,
+                    imageOptions = stampImageOptions,
+                    component = EmptyImageComponent,
                     modifier = Modifier
                         .size(StampSize)
-                        .run {
-                            if (stamp.thumbnailUrl.isNotEmpty()) {
-                                return@run this
-                            }
-
-                            background(Color.Yellow)
-                        }
                         .run {
                             if (sharedTransitionScope == null || animatedVisibilityScope == null) {
                                 return@run this
@@ -246,6 +259,13 @@ fun StampsScreen(
                                 color = shadowColor,
                             )
                         )
+                        .run {
+                            if (stamp.imageUri !== Uri.EMPTY) {
+                                return@run this
+                            }
+
+                            background(Color.Yellow)
+                        }
                         .selectionEnvelope(
                             animationProgressState = selectionAnimationProgressState,
                         )
@@ -531,7 +551,7 @@ fun StampsScreenPreview(
     val stamps = (1..3)
         .map { i ->
             StampsScreenItem(
-                thumbnailUrl = "",
+                imageUri = Uri.EMPTY,
                 isSelected = false,
                 key = i.toString(),
             )

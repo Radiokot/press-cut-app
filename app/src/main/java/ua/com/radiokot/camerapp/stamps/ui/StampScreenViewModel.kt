@@ -1,7 +1,9 @@
 package ua.com.radiokot.camerapp.stamps.ui
 
+import android.net.Uri
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.runtime.Immutable
+import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Job
@@ -31,12 +33,14 @@ class StampScreenViewModel(
             ?: error("Stamp ${parameters.stampId} not found")
     }
 
-    val stampId: String by stamp::id
-    val imageUri: String by stamp::imageUri
-    val takenAt: LocalDate
-        get() = stamp.takenAtLocal.toLocalDate()
-    val isEditable: Boolean
-        get() = !stamp.isReadOnly
+    val stampId: String =
+        stamp.id
+    val imageUri: Uri =
+        stamp.imageUri.toUri()
+    val takenAt: LocalDate =
+        stamp.takenAtLocal.toLocalDate()
+    val isEditable: Boolean =
+        !stamp.isReadOnly
 
     val caption: TextFieldState = TextFieldState(initialText = stamp.caption ?: "")
     val isCaptionInputEnabled: StateFlow<Boolean>

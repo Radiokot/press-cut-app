@@ -1,6 +1,8 @@
 package ua.com.radiokot.camerapp.stamps.ui
 
+import android.net.Uri
 import androidx.compose.runtime.Immutable
+import androidx.core.net.toUri
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toPersistentList
 import ua.com.radiokot.camerapp.stamps.domain.StampCollectionWithSamples
@@ -19,7 +21,7 @@ data class CollectionListItem(
             collectionWithSamples.samples
                 .map { stamp ->
                     StampSampleItem(
-                        imageUri = stamp.imageUri,
+                        imageUri = stamp.imageUri.toUri(),
                         key = stamp.id,
                     )
                 }
@@ -29,7 +31,7 @@ data class CollectionListItem(
 
     @Immutable
     data class StampSampleItem(
-        val imageUri: String,
+        val imageUri: Uri,
         val key: String,
     )
 }

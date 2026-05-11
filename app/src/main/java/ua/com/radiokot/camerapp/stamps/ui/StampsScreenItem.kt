@@ -1,11 +1,13 @@
 package ua.com.radiokot.camerapp.stamps.ui
 
+import android.net.Uri
 import androidx.compose.runtime.Immutable
+import androidx.core.net.toUri
 import ua.com.radiokot.camerapp.stamps.domain.Stamp
 
 @Immutable
 data class StampsScreenItem(
-    val thumbnailUrl: String,
+    val imageUri: Uri,
     val isSelected: Boolean,
     val key: String,
 ) {
@@ -13,7 +15,7 @@ data class StampsScreenItem(
         stamp: Stamp,
         selectedStampIds: Set<String>,
     ) : this(
-        thumbnailUrl = stamp.imageUri,
+        imageUri = stamp.imageUri.toUri(),
         isSelected = stamp.id in selectedStampIds,
         key = stamp.id,
     )
