@@ -1,17 +1,17 @@
 <resources>
-    <string name="app_name">Camera App</string>
+    <string name="app_name">Press-Cut</string>
     <string name="new_stamp_shortcut">New stamp</string>
     <string name="about_text">
         <![CDATA[
         Hey, this is Oleg, the author.
         <br><br>
-        Many thanks for checking out this app.
+        Many thanks for checking out Press-Cut.
         If you like it, please <a href="https://radiokot.com.ua/tip">support my work\u00A0❤️</a>
         <br><br>
         To leave a suggestion or report a bug,
-        visit the <a href="https://github.com/Radiokot/camera-app">project\'s GitHub page</a>.
+        visit the <a href="https://github.com/Radiokot/press-cut-app">project\'s GitHub page</a>.
         <br><br>
-        The camera app is inspired by
+        Press-Cut is inspired by
         <a href="https://apps.apple.com/us/app/onestamp/id6760986254">OneStamp for iOS</a>,
         made by Weiqing Chu.
         The app uses many

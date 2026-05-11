@@ -27,7 +27,7 @@ val stampsModule = module {
     single(named(DIRECTORY_STAMPS)) {
         File(
             Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES),
-            "Stamps"
+            "PressCutStamps"
         ).also { dir ->
             if (!dir.exists()) {
                 check(dir.mkdirs()) {

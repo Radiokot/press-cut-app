@@ -57,7 +57,7 @@ class CameraApp : Application() {
             val logFolder =
                 File(
                     Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS),
-                    "CameraApp"
+                    "PressCutLogs"
                 )
                     .also(File::mkdirs)
 

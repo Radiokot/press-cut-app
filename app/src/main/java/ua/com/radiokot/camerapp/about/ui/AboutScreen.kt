@@ -60,7 +60,7 @@ fun AboutScreen(
         .padding(24.dp)
 ) {
     BasicText(
-        text = "Camera app",
+        text = "About",
         style = TextStyle(
             fontFamily = podkovaFamily,
             fontSize = 24.sp,
