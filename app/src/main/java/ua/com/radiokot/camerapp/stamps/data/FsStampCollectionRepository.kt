@@ -6,6 +6,7 @@ import com.ashampoo.kim.format.webp.WebPImageParser
 import com.ashampoo.kim.format.webp.WebPWriter
 import com.ashampoo.kim.input.AndroidInputStreamByteReader
 import com.ashampoo.kim.input.ByteArrayByteReader
+import com.ashampoo.kim.input.use
 import com.ashampoo.kim.output.OutputStreamByteWriter
 import com.ashampoo.xmp.XMPMeta
 import com.ashampoo.xmp.XMPMetaFactory
@@ -194,13 +195,11 @@ class FsStampCollectionRepository(
         val nameToSet = newName ?: collection.name
 
         val webpChunks =
-            WebPImageParser
-                .readChunks(
-                    AndroidInputStreamByteReader(
-                        inputStream = detailsFile.inputStream().buffered(),
-                        contentLength = detailsFile.length(),
-                    )
-                )
+            AndroidInputStreamByteReader(
+                inputStream = detailsFile.inputStream().buffered(),
+                contentLength = detailsFile.length(),
+            )
+                .use(WebPImageParser::readChunks)
 
         val xmpMeta =
             WebPImageParser
@@ -244,13 +243,11 @@ class FsStampCollectionRepository(
     ): StampCollection? = runCatching {
         val detailsFile = File(directory, DETAILS_FILE_NAME)
         val xmpMeta =
-            WebPImageParser
-                .parseMetadata(
-                    AndroidInputStreamByteReader(
-                        inputStream = detailsFile.inputStream().buffered(),
-                        contentLength = detailsFile.length(),
-                    )
-                )
+            AndroidInputStreamByteReader(
+                inputStream = detailsFile.inputStream().buffered(),
+                contentLength = detailsFile.length(),
+            )
+                .use(WebPImageParser::parseMetadata)
                 .xmp
                 ?.let(XMPMetaFactory::parseFromString)
 
