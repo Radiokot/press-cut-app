@@ -7,6 +7,7 @@ import ua.com.radiokot.camerapp.util.lazyLogger
 
 class EnsurePrimaryStampCollectionUseCase(
     private val collectionRepository: StampCollectionRepository,
+    private val stampRepository: StampRepository,
 ) {
     private val log by lazyLogger("EnsurePrimaryStampCollectionUC")
     private val leMutex = Mutex()
@@ -26,6 +27,14 @@ class EnsurePrimaryStampCollectionUseCase(
             collectionRepository.addStampCollection(
                 id = StampCollection.PRIMARY_ID,
                 name = "My stamps",
+            )
+
+            log.debug {
+                "invoke(): putting gift stamps into it"
+            }
+
+            stampRepository.addGiftStamps(
+                collectionId = StampCollection.PRIMARY_ID,
             )
 
             log.info {

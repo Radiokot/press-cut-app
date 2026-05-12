@@ -1,6 +1,7 @@
 package ua.com.radiokot.camerapp.stamps
 
 import android.os.Environment
+import org.koin.android.ext.koin.androidApplication
 import org.koin.core.module.dsl.viewModel
 import org.koin.core.qualifier.named
 import org.koin.dsl.bind
@@ -40,6 +41,8 @@ val stampsModule = module {
     single {
         FsStampRepository(
             stampDirectory = get(named(DIRECTORY_STAMPS)),
+            assetManager = androidApplication().assets,
+            giftStampsAssetsDirectoryName = "gift_stamps",
         )
     } bind StampRepository::class
 
@@ -65,6 +68,7 @@ val stampsModule = module {
     single {
         EnsurePrimaryStampCollectionUseCase(
             collectionRepository = get(),
+            stampRepository = get(),
         )
     }
 

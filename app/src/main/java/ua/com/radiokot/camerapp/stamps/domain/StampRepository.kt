@@ -59,4 +59,8 @@ interface StampRepository {
         destinationCollectionId: String,
         stampIds: Collection<String>,
     ): Flow<Pair<Int, Int>>
+
+    suspend fun addGiftStamps(
+        collectionId: String,
+    )
 }

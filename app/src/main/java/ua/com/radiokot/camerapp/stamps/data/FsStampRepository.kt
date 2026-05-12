@@ -2,6 +2,7 @@
 
 package ua.com.radiokot.camerapp.stamps.data
 
+import android.content.res.AssetManager
 import android.graphics.Bitmap
 import android.os.Build
 import androidx.core.text.isDigitsOnly
@@ -50,6 +51,8 @@ import kotlin.jvm.optionals.getOrNull
 
 class FsStampRepository(
     private val stampDirectory: File,
+    private val assetManager: AssetManager,
+    private val giftStampsAssetsDirectoryName: String,
 ) : StampRepository {
 
     private val log by lazyLogger("FsStampRepo")
@@ -349,6 +352,50 @@ class FsStampRepository(
                 }
             }
             .flowOn(Dispatchers.IO)
+    }
+
+    override suspend fun addGiftStamps(
+        collectionId: String,
+    ): Unit = withContext(Dispatchers.IO) {
+
+        val collectionDirectoryPath =
+            FileSystems
+                .getDefault()
+                .getPath(
+                    stampDirectory.absolutePath,
+                    collectionId,
+                )
+                .toString()
+
+        val addedFiles: List<File> =
+            assetManager
+                .list(giftStampsAssetsDirectoryName)
+                ?.map { giftStampFileName ->
+
+                    val destinationStampFile = File(
+                        collectionDirectoryPath,
+                        giftStampFileName
+                    )
+
+                    assetManager
+                        .open("$giftStampsAssetsDirectoryName/$giftStampFileName")
+                        .use { giftStampFileInputStream ->
+                            destinationStampFile
+                                .outputStream()
+                                .use { destinationStampFileOutputStream ->
+                                    giftStampFileInputStream.copyTo(destinationStampFileOutputStream)
+                                }
+                        }
+
+                    destinationStampFile
+                }
+                ?: emptyList()
+
+        if (isCacheInitialized.load()) {
+            cache += addedFiles
+                .map(File::toStamp)
+            sharedFlow.emit(cache)
+        }
     }
 
     private fun getStampFile(
