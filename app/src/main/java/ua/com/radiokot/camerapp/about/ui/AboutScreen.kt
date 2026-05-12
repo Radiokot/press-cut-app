@@ -70,9 +70,6 @@ fun AboutScreen(
             textAlign = TextAlign.Center,
         ),
         modifier = Modifier
-            .padding(
-                top = 24.dp,
-            )
             .fillMaxWidth()
     )
 

@@ -63,9 +63,6 @@ fun IntroScreen(
                 textAlign = TextAlign.Center,
             ),
             modifier = Modifier
-                .padding(
-                    top = 24.dp,
-                )
                 .fillMaxWidth()
         )
 
@@ -136,7 +133,7 @@ fun IntroScreen(
                     )
             )
         }
-        
+
         BasicText(
             text = "The stamps are stored as images in your phone's \"Pictures\" folder. " +
                     "They remain there even if you uninstall the app.",
