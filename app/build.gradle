@@ -1,3 +1,7 @@
+import com.android.tools.profgen.ArtProfileKt
+import com.android.tools.profgen.ArtProfileSerializer
+import com.android.tools.profgen.DexFile
+
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 
@@ -164,5 +168,34 @@ project.afterEvaluate {
                 "ul { padding-inline-start: 22px; } body { padding: 48px 16px 48px 16px; font-family: Podkova, sans-serif; background-color: #fff9eb; color: #000000; }"
         )
         Files.write(report.toPath(), lines, StandardCharsets.UTF_8)
+    }
+}
+
+// F-Droid reproducible builds fix: https://gist.github.com/obfusk/61046e09cee352ae6dd109911534b12e
+// Android Studio can't find the imports; this does not affect the actual build
+// since Gradle can find them just fine.
+
+project.afterEvaluate {
+    tasks.each { task ->
+        if (task.name.startsWith("compile") && task.name.endsWith("ReleaseArtProfile")) {
+            task.doLast {
+                outputs.files.each { file ->
+                    if (file.name.endsWith(".profm")) {
+                        println("Sorting ${file} ...")
+                        def version = ArtProfileSerializer.valueOf("METADATA_0_0_2")
+                        def profile = ArtProfileKt.ArtProfile(file)
+                        def keys = new ArrayList(profile.profileData.keySet())
+                        def sortedData = new LinkedHashMap()
+                        Collections.sort keys, new DexFile.Companion()
+                        keys.each { key -> sortedData[key] = profile.profileData[key] }
+                        new FileOutputStream(file).with {
+                            write(version.magicBytes$profgen)
+                            write(version.versionBytes$profgen)
+                            version.write$profgen(it, sortedData, "")
+                        }
+                    }
+                }
+            }
+        }
     }
 }
