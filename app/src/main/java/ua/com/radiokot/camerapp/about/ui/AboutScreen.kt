@@ -2,9 +2,11 @@ package ua.com.radiokot.camerapp.about.ui
 
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeContentPadding
@@ -43,6 +45,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import ua.com.radiokot.camerapp.R
 import ua.com.radiokot.camerapp.stamps.ui.StampSize
+import ua.com.radiokot.camerapp.ui.Vignette
 import ua.com.radiokot.camerapp.ui.paperBackground
 import ua.com.radiokot.camerapp.ui.podkovaFamily
 
@@ -73,12 +76,8 @@ fun AboutScreen(
             .fillMaxWidth()
     )
 
-    Image(
-        painter = painterResource(R.drawable.element_by_lisa_krymova_from_noun_project),
-        contentDescription = null,
-        colorFilter = ColorFilter.tint(Color(0xFFB9AC8C)),
+    Vignette(
         modifier = Modifier
-            .fillMaxWidth()
             .padding(
                 vertical = 32.dp,
             )
@@ -105,81 +104,97 @@ fun AboutScreen(
         )
     }
 
+    val textStyle = TextStyle(
+        fontFamily = podkovaFamily,
+        fontSize = 20.sp,
+    )
+
     BasicText(
         text = aboutTextAnnotated,
-        style = TextStyle(
-            fontFamily = podkovaFamily,
-            fontSize = 20.sp,
-        ),
+        style = textStyle,
         modifier = Modifier
             .fillMaxWidth()
     )
 
-    val negativeColorFilter = retain {
-        ColorFilter.colorMatrix(
-            ColorMatrix(
-                floatArrayOf(
-                    -1f, 0f, 0f, 0f, 255f,
-                    0f, -1f, 0f, 0f, 255f,
-                    0f, 0f, -1f, 0f, 255f,
-                    0f, 0f, 0f, 1f, 0f,
+    Box(
+        contentAlignment = Alignment.TopCenter,
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(StampSize.height * 1.8f)
+    ) {
+        val negativeColorFilter = retain {
+            ColorFilter.colorMatrix(
+                ColorMatrix(
+                    floatArrayOf(
+                        -1f, 0f, 0f, 0f, 255f,
+                        0f, -1f, 0f, 0f, 255f,
+                        0f, 0f, -1f, 0f, 255f,
+                        0f, 0f, 0f, 1f, 0f,
+                    )
                 )
             )
+        }
+        var isNegativeColorFilterApplied by remember {
+            mutableStateOf(false)
+        }
+
+        Image(
+            painter = painterResource(R.drawable.mrcat_stamp),
+            contentDescription = "Oleg K",
+            colorFilter =
+                if (isNegativeColorFilterApplied)
+                    negativeColorFilter
+                else
+                    null,
+            modifier = Modifier
+                .padding(
+                    top = 24.dp,
+                )
+                .offset(
+                    x = StampSize.width * 0.6f,
+                )
+                .size(StampSize)
+                .rotate(4f)
+                .dropShadow(
+                    shape = RectangleShape,
+                    shadow = Shadow(
+                        radius = 4.dp,
+                        color = Color(0x7447525E),
+                    )
+                )
+                .clickable(
+                    indication = null,
+                    interactionSource = null,
+                    onClick = { isNegativeColorFilterApplied = !isNegativeColorFilterApplied },
+                )
+                .zIndex(10f)
+        )
+
+        Image(
+            painter = painterResource(R.drawable.flowers_stamp),
+            contentDescription = "Flowers",
+            modifier = Modifier
+                .size(StampSize)
+                .offset(
+                    x = -StampSize.width * 0.6f,
+                    y = StampSize.height * 0.6f,
+                )
+                .rotate(-3f)
+                .dropShadow(
+                    shape = RectangleShape,
+                    shadow = Shadow(
+                        radius = 4.dp,
+                        color = Color(0x7447525E),
+                    )
+                )
         )
     }
-    var isNegativeColorFilterApplied by remember {
-        mutableStateOf(false)
-    }
 
-    Image(
-        painter = painterResource(R.drawable.mrcat_stamp),
-        contentDescription = "Oleg K",
-        colorFilter =
-            if (isNegativeColorFilterApplied)
-                negativeColorFilter
-            else
-                null,
+    BasicText(
+        text = "Reminder: The stamps are stored as images in your phone's \"Pictures\" folder.",
+        style = textStyle,
         modifier = Modifier
-            .padding(
-                top = 24.dp,
-            )
-            .offset(
-                x = StampSize.width * 0.6f,
-            )
-            .size(StampSize)
-            .rotate(4f)
-            .dropShadow(
-                shape = RectangleShape,
-                shadow = Shadow(
-                    radius = 4.dp,
-                    color = Color(0x7447525E),
-                )
-            )
-            .clickable(
-                indication = null,
-                interactionSource = null,
-                onClick = { isNegativeColorFilterApplied = !isNegativeColorFilterApplied },
-            )
-            .zIndex(10f)
-    )
-
-    Image(
-        painter = painterResource(R.drawable.flowers_stamp),
-        contentDescription = "Flowers",
-        modifier = Modifier
-            .size(StampSize)
-            .offset(
-                x = -StampSize.width * 0.6f,
-                y = -StampSize.height * 0.6f,
-            )
-            .rotate(-3f)
-            .dropShadow(
-                shape = RectangleShape,
-                shadow = Shadow(
-                    radius = 4.dp,
-                    color = Color(0x7447525E),
-                )
-            )
+            .fillMaxWidth()
     )
 }
 

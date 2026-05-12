@@ -36,6 +36,7 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableSet
 import ua.com.radiokot.camerapp.R
 import ua.com.radiokot.camerapp.ui.LeTextButton
+import ua.com.radiokot.camerapp.ui.Vignette
 import ua.com.radiokot.camerapp.ui.podkovaFamily
 
 @Composable
@@ -83,12 +84,8 @@ fun PermissionsScreen(
                 .fillMaxWidth()
         )
 
-        Image(
-            painter = painterResource(R.drawable.element_by_lisa_krymova_from_noun_project),
-            contentDescription = null,
-            colorFilter = ColorFilter.tint(Color(0xFFB9AC8C)),
+        Vignette(
             modifier = Modifier
-                .fillMaxWidth()
                 .padding(
                     vertical = 32.dp,
                 )

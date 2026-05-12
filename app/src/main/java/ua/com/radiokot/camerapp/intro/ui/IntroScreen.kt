@@ -1,26 +1,182 @@
 package ua.com.radiokot.camerapp.intro.ui
 
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeContentPadding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.dropShadow
+import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.RectangleShape
+import androidx.compose.ui.graphics.shadow.Shadow
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.zIndex
+import ua.com.radiokot.camerapp.R
+import ua.com.radiokot.camerapp.stamps.ui.StampSize
+import ua.com.radiokot.camerapp.ui.LeTextButton
+import ua.com.radiokot.camerapp.ui.Vignette
+import ua.com.radiokot.camerapp.ui.paperBackground
+import ua.com.radiokot.camerapp.ui.podkovaFamily
 
 @Composable
 fun IntroScreen(
     modifier: Modifier = Modifier,
+    onDone: () -> Unit,
 ) = Column(
-    horizontalAlignment = Alignment.CenterHorizontally,
     modifier = modifier
-        .verticalScroll(
-            state = rememberScrollState()
-        )
         .safeContentPadding()
         .padding(24.dp)
 ) {
 
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier
+            .weight(1f)
+            .fillMaxWidth()
+            .verticalScroll(
+                state = rememberScrollState()
+            )
+    ) {
+        BasicText(
+            text = "Mind a quick intro?",
+            style = TextStyle(
+                fontFamily = podkovaFamily,
+                fontSize = 24.sp,
+                textAlign = TextAlign.Center,
+            ),
+            modifier = Modifier
+                .padding(
+                    top = 24.dp,
+                )
+                .fillMaxWidth()
+        )
+
+        Vignette(
+            modifier = Modifier
+                .padding(
+                    vertical = 32.dp,
+                )
+        )
+
+        val textStyle = TextStyle(
+            fontFamily = podkovaFamily,
+            fontSize = 20.sp,
+        )
+
+        BasicText(
+            text = "With this app you can cut digital postage stamps from what your camera sees. " +
+                    "For free and without limits.",
+            style = textStyle,
+            modifier = Modifier
+                .fillMaxWidth()
+        )
+
+        Box(
+            contentAlignment = Alignment.TopCenter,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(StampSize.height * 1.7f)
+        ) {
+            Image(
+                painter = painterResource(R.drawable.flowers_stamp),
+                contentDescription = "Flowers",
+                modifier = Modifier
+                    .padding(
+                        top = 24.dp,
+                    )
+                    .offset(
+                        x = StampSize.width * 0.6f,
+                    )
+                    .size(StampSize)
+                    .rotate(4f)
+                    .dropShadow(
+                        shape = RectangleShape,
+                        shadow = Shadow(
+                            radius = 4.dp,
+                            color = Color(0x7447525E),
+                        )
+                    )
+                    .zIndex(10f)
+            )
+
+            Image(
+                painter = painterResource(R.drawable.panettone_stamp),
+                contentDescription = "Panettone",
+                modifier = Modifier
+                    .size(StampSize)
+                    .offset(
+                        x = -StampSize.width * 0.6f,
+                        y = StampSize.height * 0.4f,
+                    )
+                    .rotate(-3f)
+                    .dropShadow(
+                        shape = RectangleShape,
+                        shadow = Shadow(
+                            radius = 4.dp,
+                            color = Color(0x7447525E),
+                        )
+                    )
+            )
+        }
+        
+        BasicText(
+            text = "The stamps are stored as images in your phone's \"Pictures\" folder. " +
+                    "They remain there even if you uninstall the app.",
+            style = textStyle,
+            modifier = Modifier
+                .fillMaxWidth()
+        )
+
+        BasicText(
+            text = "If you ever need to back up your collection or transfer it to a new phone, " +
+                    "just copy the \"PressCutStamps\" contents from the \"Pictures\" folder.",
+            style = textStyle,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(
+                    top = 24.dp,
+                )
+        )
+    }
+
+    Spacer(
+        modifier = Modifier
+            .height(24.dp)
+    )
+
+    LeTextButton(
+        text = "All right",
+        onClick = onDone,
+    )
+}
+
+@Preview
+@Composable
+private fun IntroScreenPreview() {
+    IntroScreen(
+        onDone = {},
+        modifier = Modifier
+            .fillMaxSize()
+            .paperBackground(
+                drawBackgroundColor = true,
+            )
+    )
 }

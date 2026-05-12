@@ -58,7 +58,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.shadow.Shadow
@@ -78,6 +77,7 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toPersistentList
 import ua.com.radiokot.camerapp.R
 import ua.com.radiokot.camerapp.ui.LeTextButton
+import ua.com.radiokot.camerapp.ui.Vignette
 import ua.com.radiokot.camerapp.ui.podkovaFamily
 import ua.com.radiokot.camerapp.util.EmptyImageComponent
 import ua.com.radiokot.camerapp.util.noProgressive
@@ -196,12 +196,8 @@ fun StampsScreen(
                         }
                 )
 
-                Image(
-                    painter = painterResource(R.drawable.element_by_lisa_krymova_from_noun_project),
-                    contentDescription = null,
-                    colorFilter = ColorFilter.tint(Color(0xFFB9AC8C)),
+                Vignette(
                     modifier = Modifier
-                        .fillMaxWidth()
                         .padding(
                             top = 32.dp,
                         )

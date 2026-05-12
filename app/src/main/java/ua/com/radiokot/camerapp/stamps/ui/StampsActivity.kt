@@ -38,8 +38,10 @@ import org.koin.compose.koinInject
 import ua.com.radiokot.camerapp.about.ui.AboutRoute
 import ua.com.radiokot.camerapp.about.ui.aboutDestination
 import ua.com.radiokot.camerapp.cut.ui.NewStampActivity
+import ua.com.radiokot.camerapp.intro.ui.IntroRoute
 import ua.com.radiokot.camerapp.intro.ui.PermissionsRoute
 import ua.com.radiokot.camerapp.intro.ui.PermissionsScreenViewModel
+import ua.com.radiokot.camerapp.intro.ui.introDestination
 import ua.com.radiokot.camerapp.intro.ui.permissionsDestination
 import ua.com.radiokot.camerapp.ui.paperBackground
 import ua.com.radiokot.camerapp.util.lazyLogger
@@ -92,7 +94,8 @@ class StampsActivity : ComponentActivity() {
 
                 SharedTransitionLayout {
                     StampsNavHost(
-                        startWithPermissions = !areAllPermissionsGranted,
+                        arePermissionsNeeded = !areAllPermissionsGranted,
+                        isIntroNeeded = true,
                         modifier = Modifier
                             .fillMaxSize()
                     )
@@ -105,7 +108,8 @@ class StampsActivity : ComponentActivity() {
 @Composable
 private fun SharedTransitionScope.StampsNavHost(
     modifier: Modifier = Modifier,
-    startWithPermissions: Boolean,
+    arePermissionsNeeded: Boolean,
+    isIntroNeeded: Boolean,
 ) {
     val navController = rememberNavController()
     val totalScrollOffsetState = remember {
@@ -142,7 +146,9 @@ private fun SharedTransitionScope.StampsNavHost(
     NavHost(
         navController = navController,
         startDestination =
-            if (startWithPermissions)
+            if (isIntroNeeded)
+                IntroRoute
+            else if (arePermissionsNeeded)
                 PermissionsRoute
             else
                 CollectionsRoute,
@@ -154,6 +160,23 @@ private fun SharedTransitionScope.StampsNavHost(
             )
             .nestedScroll(totalScrollOffsetCounter)
     ) {
+        introDestination(
+            onDone = {
+                navController.navigate(
+                    route =
+                        if (arePermissionsNeeded)
+                            PermissionsRoute
+                        else
+                            CollectionsRoute,
+                ) {
+                    popUpTo(IntroRoute) {
+                        inclusive = true
+                    }
+                    launchSingleTop = true
+                }
+            }
+        )
+
         permissionsDestination(
             onDone = {
                 navController.navigate(
