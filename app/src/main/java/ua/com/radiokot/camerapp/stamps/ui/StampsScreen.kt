@@ -90,6 +90,7 @@ fun StampsScreen(
     collectionId: String,
     collectionNameInputState: TextFieldState,
     focusCollectionNameInput: Boolean,
+    showGiftMessage: Boolean,
     stamps: State<ImmutableList<StampsScreenItem>>,
     onStampClicked: (StampsScreenItem) -> Unit,
     onStampLongClicked: (StampsScreenItem) -> Unit,
@@ -202,8 +203,29 @@ fun StampsScreen(
                             top = 32.dp,
                         )
                 )
+
+                if (showGiftMessage) {
+                    BasicText(
+                        text = "Please take these stamps as a gift. " +
+                                "I hope you'll enjoy collecting your own!",
+                        style = TextStyle(
+                            fontFamily = podkovaFamily,
+                            fontSize = 16.sp,
+                            color = Color(0xff7e7a74),
+                            textAlign = TextAlign.Center
+                        ),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(
+                                top = 32.dp,
+                                start = 24.dp,
+                                end = 24.dp,
+                            )
+                    )
+                }
             }
         }
+
         items(
             items = stamps.value,
             key = StampsScreenItem::key,
@@ -560,6 +582,7 @@ fun StampsScreenPreview(
         collectionId = "",
         collectionNameInputState = TextFieldState("My stamps"),
         focusCollectionNameInput = false,
+        showGiftMessage = true,
         stamps = stamps.let(::mutableStateOf),
         onStampClicked = { },
         onStampLongClicked = { },

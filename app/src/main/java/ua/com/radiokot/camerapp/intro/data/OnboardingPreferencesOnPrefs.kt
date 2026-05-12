@@ -24,7 +24,31 @@ class OnboardingPreferencesOnPrefs(
         }
     }
 
+    override val isPrimaryCollectionGiftStampsMessageRequired: Boolean
+        get() = sharedPreferences.getBoolean(KEY_IS_GIFT_STAMPS_MESSAGE_REQUIRED, false)
+
+    override fun primaryCollectionGiftStampsMessageRequired() {
+        log.debug {
+            "giftStampsMessageRequired(): saving"
+        }
+
+        sharedPreferences.edit {
+            putBoolean(KEY_IS_GIFT_STAMPS_MESSAGE_REQUIRED, true)
+        }
+    }
+
+    override fun primaryCollectionGiftStampsMessageSeen() {
+        log.debug {
+            "giftStampsMessageSeen(): saving"
+        }
+
+        sharedPreferences.edit {
+            putBoolean(KEY_IS_GIFT_STAMPS_MESSAGE_REQUIRED, false)
+        }
+    }
+
     private companion object {
         private const val KEY_IS_INTRO_SEEN = "is_intro_seen"
+        private const val KEY_IS_GIFT_STAMPS_MESSAGE_REQUIRED = "is_gift_stamps_message_required"
     }
 }

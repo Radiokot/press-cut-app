@@ -62,6 +62,7 @@ fun NavGraphBuilder.stampsDestination(
         collectionId = viewModel.collectionId,
         collectionNameInputState = viewModel.collectionNameInput,
         focusCollectionNameInput = focusCollectionNameInput,
+        showGiftMessage = viewModel.showGiftMessage,
         stamps = stamps,
         onStampClicked = viewModel::onStampClicked,
         onStampLongClicked = viewModel::onStampLongClicked,

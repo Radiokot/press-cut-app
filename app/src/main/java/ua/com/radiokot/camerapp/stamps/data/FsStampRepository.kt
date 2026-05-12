@@ -367,14 +367,17 @@ class FsStampRepository(
                 )
                 .toString()
 
+        var id = System.currentTimeMillis()
+
         val addedFiles: List<File> =
             assetManager
                 .list(giftStampsAssetsDirectoryName)
                 ?.map { giftStampFileName ->
 
+                    // Avoid ID conflicts with existing stamps.
                     val destinationStampFile = File(
                         collectionDirectoryPath,
-                        giftStampFileName
+                        "${id++}.${giftStampFileName.substringAfterLast('.', "")}"
                     )
 
                     assetManager

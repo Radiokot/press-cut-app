@@ -69,6 +69,7 @@ val stampsModule = module {
         EnsurePrimaryStampCollectionUseCase(
             collectionRepository = get(),
             stampRepository = get(),
+            onboardingPreferences = get(),
         )
     }
 
@@ -76,6 +77,7 @@ val stampsModule = module {
         StampsScreenViewModel(
             stampRepository = get(),
             collectionRepository = get(),
+            onboardingPreferences = get(),
             parameters =
                 getOrNull()
                     ?: error("No StampsScreenViewModel.Parameters provided"),

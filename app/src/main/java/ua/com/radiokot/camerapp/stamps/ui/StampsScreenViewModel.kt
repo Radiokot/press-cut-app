@@ -10,6 +10,7 @@ import kotlinx.collections.immutable.persistentSetOf
 import kotlinx.collections.immutable.toPersistentList
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -21,6 +22,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import ua.com.radiokot.camerapp.intro.domain.OnboardingPreferences
 import ua.com.radiokot.camerapp.stamps.domain.Stamp
 import ua.com.radiokot.camerapp.stamps.domain.StampCollectionRepository
 import ua.com.radiokot.camerapp.stamps.domain.StampRepository
@@ -28,11 +30,13 @@ import ua.com.radiokot.camerapp.stamps.domain.StampSelections
 import ua.com.radiokot.camerapp.util.eventSharedFlow
 import ua.com.radiokot.camerapp.util.lazyLogger
 import ua.com.radiokot.camerapp.util.map
+import kotlin.time.Duration.Companion.seconds
 
 @Immutable
 class StampsScreenViewModel(
     private val stampRepository: StampRepository,
     private val collectionRepository: StampCollectionRepository,
+    private val onboardingPreferences: OnboardingPreferences,
     parameters: Parameters,
 ) : ViewModel() {
 
@@ -46,6 +50,10 @@ class StampsScreenViewModel(
         collection.id
     val collectionNameInput: TextFieldState =
         TextFieldState(initialText = collection.name)
+
+    val showGiftMessage: Boolean =
+        collection.isPrimary
+                && onboardingPreferences.isPrimaryCollectionGiftStampsMessageRequired
 
     private val selectedStampIds: MutableStateFlow<PersistentSet<String>> =
         MutableStateFlow(persistentSetOf())
@@ -100,6 +108,15 @@ class StampsScreenViewModel(
 
     val events: SharedFlow<Event>
         field = eventSharedFlow()
+
+    init {
+        if (showGiftMessage) {
+            viewModelScope.launch {
+                delay(3.seconds)
+                onboardingPreferences.primaryCollectionGiftStampsMessageSeen()
+            }
+        }
+    }
 
     fun onStampClicked(
         item: StampsScreenItem,
