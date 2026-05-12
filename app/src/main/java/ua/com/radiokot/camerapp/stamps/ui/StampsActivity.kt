@@ -33,11 +33,13 @@ import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
 import com.skydoves.landscapist.image.LocalLandscapist
+import org.koin.android.ext.android.inject
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.compose.koinInject
 import ua.com.radiokot.camerapp.about.ui.AboutRoute
 import ua.com.radiokot.camerapp.about.ui.aboutDestination
 import ua.com.radiokot.camerapp.cut.ui.NewStampActivity
+import ua.com.radiokot.camerapp.intro.domain.OnboardingPreferences
 import ua.com.radiokot.camerapp.intro.ui.IntroRoute
 import ua.com.radiokot.camerapp.intro.ui.PermissionsRoute
 import ua.com.radiokot.camerapp.intro.ui.PermissionsScreenViewModel
@@ -51,6 +53,7 @@ class StampsActivity : ComponentActivity() {
     private val log by lazyLogger("StampsActivity")
 
     private val permissionsScreenViewModel: PermissionsScreenViewModel by viewModel()
+    private val onboardingPreferences: OnboardingPreferences by inject()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
@@ -63,10 +66,12 @@ class StampsActivity : ComponentActivity() {
             permissionsScreenViewModel.areAllPermissionsGranted(
                 context = this,
             )
+        val isIntroSeen = onboardingPreferences.isIntroSeen
 
         log.debug {
-            "onCreate(): permissions checked:" +
-                    "\nareAllPermissionsGranted=$areAllPermissionsGranted"
+            "onCreate(): preconditions checked:" +
+                    "\nareAllPermissionsGranted=$areAllPermissionsGranted" +
+                    "\nisIntroSeen=$isIntroSeen"
         }
 
         setContent {
@@ -95,7 +100,8 @@ class StampsActivity : ComponentActivity() {
                 SharedTransitionLayout {
                     StampsNavHost(
                         arePermissionsNeeded = !areAllPermissionsGranted,
-                        isIntroNeeded = true,
+                        isIntroNeeded = !isIntroSeen,
+                        onIntroSeen = remember { onboardingPreferences::introSeen },
                         modifier = Modifier
                             .fillMaxSize()
                     )
@@ -110,6 +116,7 @@ private fun SharedTransitionScope.StampsNavHost(
     modifier: Modifier = Modifier,
     arePermissionsNeeded: Boolean,
     isIntroNeeded: Boolean,
+    onIntroSeen: () -> Unit,
 ) {
     val navController = rememberNavController()
     val totalScrollOffsetState = remember {
@@ -162,6 +169,8 @@ private fun SharedTransitionScope.StampsNavHost(
     ) {
         introDestination(
             onDone = {
+                onIntroSeen()
+
                 navController.navigate(
                     route =
                         if (arePermissionsNeeded)
