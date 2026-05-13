@@ -54,14 +54,17 @@ class NewStampActivity : ComponentActivity() {
         val collectionId: String? = intent.getStringExtra(COLLECTION_ID_EXTRA)
         val showToastOnSave = intent.getBooleanExtra(SHOW_TOAST_ON_SAVE_EXTRA, true)
 
-        val areAllPermissionsGranted =
-            permissionsScreenViewModel.areAllPermissionsGranted(
-                context = this,
-            )
+        val isPermissionActionRequired = permissionsScreenViewModel.isActionRequired
 
         log.debug {
             "onCreate(): permissions checked:" +
-                    "\nareAllPermissionsGranted=$areAllPermissionsGranted"
+                    "\nisPermissionActionRequired=$isPermissionActionRequired"
+        }
+
+        if (isPermissionActionRequired) {
+            log.info {
+                "Permission action is required"
+            }
         }
 
         setContent {
@@ -72,7 +75,7 @@ class NewStampActivity : ComponentActivity() {
                 val context = LocalContext.current
 
                 StampCutNavHost(
-                    startWithPermissions = !areAllPermissionsGranted,
+                    startWithPermissions = isPermissionActionRequired,
                     collectionId = collectionId,
                     onDidSave = {
                         if (showToastOnSave) {

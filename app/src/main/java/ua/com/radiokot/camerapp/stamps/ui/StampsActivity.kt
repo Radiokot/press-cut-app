@@ -62,16 +62,25 @@ class StampsActivity : ComponentActivity() {
         )
         super.onCreate(savedInstanceState)
 
-        val areAllPermissionsGranted =
-            permissionsScreenViewModel.areAllPermissionsGranted(
-                context = this,
-            )
+        val isPermissionActionRequired = permissionsScreenViewModel.isActionRequired
         val isIntroSeen = onboardingPreferences.isIntroSeen
 
         log.debug {
             "onCreate(): preconditions checked:" +
-                    "\nareAllPermissionsGranted=$areAllPermissionsGranted" +
+                    "\nisPermissionActionRequired=$isPermissionActionRequired" +
                     "\nisIntroSeen=$isIntroSeen"
+        }
+
+        if (isPermissionActionRequired) {
+            log.info {
+                "Permission action is required"
+            }
+        }
+
+        if (!isIntroSeen) {
+            log.info {
+                "Intro must be seen"
+            }
         }
 
         setContent {
@@ -99,7 +108,7 @@ class StampsActivity : ComponentActivity() {
 
                 SharedTransitionLayout {
                     StampsNavHost(
-                        arePermissionsNeeded = !areAllPermissionsGranted,
+                        arePermissionsNeeded = isPermissionActionRequired,
                         isIntroNeeded = !isIntroSeen,
                         onIntroSeen = remember { onboardingPreferences::introSeen },
                         modifier = Modifier

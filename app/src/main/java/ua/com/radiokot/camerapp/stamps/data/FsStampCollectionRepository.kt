@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import ua.com.radiokot.camerapp.SAF
 import ua.com.radiokot.camerapp.stamps.domain.StampCollection
 import ua.com.radiokot.camerapp.stamps.domain.StampCollectionRepository
 import ua.com.radiokot.camerapp.util.lazyLogger
@@ -64,7 +65,7 @@ class FsStampCollectionRepository(
                 ?: error("Can't access the directory: $stampDirectory")
 
         return@withContext directories
-            .mapNotNull(::toStampCollection)
+            .mapNotNull { toStampCollection(it) }
             .toPersistentList()
     }
 
@@ -191,7 +192,10 @@ class FsStampCollectionRepository(
         val directory = getStampCollectionDirectory(
             id = collection.id
         )
-        val detailsFile = File(directory, DETAILS_FILE_NAME)
+        var detailsFile = File(directory, DETAILS_FILE_NAME)
+        if (!detailsFile.canRead() || !detailsFile.canWrite()) {
+            detailsFile = SAF.unlock(detailsFile)
+        }
         val nameToSet = newName ?: collection.name
 
         val webpChunks =
@@ -238,10 +242,15 @@ class FsStampCollectionRepository(
         id
     )
 
-    private fun toStampCollection(
+    private suspend fun toStampCollection(
         directory: File,
     ): StampCollection? = runCatching {
-        val detailsFile = File(directory, DETAILS_FILE_NAME)
+
+        var detailsFile = File(directory, DETAILS_FILE_NAME)
+        if (!detailsFile.canRead() || !detailsFile.canWrite()) {
+            detailsFile = SAF.unlock(detailsFile)
+        }
+
         val xmpMeta =
             AndroidInputStreamByteReader(
                 inputStream = detailsFile.inputStream().buffered(),

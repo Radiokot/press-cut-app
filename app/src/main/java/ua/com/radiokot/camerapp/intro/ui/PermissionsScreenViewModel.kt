@@ -1,19 +1,26 @@
 package ua.com.radiokot.camerapp.intro.ui
 
 import android.Manifest
-import android.content.Context
+import android.app.Application
+import android.content.Intent
 import android.content.pm.PackageManager
+import android.net.Uri
 import android.os.Build
+import android.provider.DocumentsContract
 import androidx.compose.runtime.Immutable
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toPersistentList
 import kotlinx.coroutines.flow.SharedFlow
+import ua.com.radiokot.camerapp.SAF
 import ua.com.radiokot.camerapp.util.eventSharedFlow
 import ua.com.radiokot.camerapp.util.lazyLogger
 
 @Immutable
-class PermissionsScreenViewModel : ViewModel() {
+class PermissionsScreenViewModel(
+    stampDirectoryDocumentUri: Uri,
+    private val application: Application,
+) : AndroidViewModel(application) {
 
     private val log by lazyLogger("PermissionsScreenVM")
 
@@ -32,29 +39,73 @@ class PermissionsScreenViewModel : ViewModel() {
             }
         }
             .toPersistentList()
-            .also {
-                log.debug {
-                    "init(): required permissions collected:" +
-                            "\nrequiredPermissions=$it"
-                }
+
+    val documentTreeAccessUri: Uri =
+        DocumentsContract.buildTreeDocumentUri(
+            "com.android.externalstorage.documents",
+            stampDirectoryDocumentUri.toString()
+        )
+
+    val isDocumentTreeAccessRequired: Boolean
+        get() =
+            Build.VERSION.SDK_INT > Build.VERSION_CODES.Q &&
+                    application
+                        .contentResolver
+                        .persistedUriPermissions
+                        .none { permission ->
+                            permission.uri == documentTreeAccessUri
+                        }
+
+    val isActionRequired: Boolean
+        get() =
+            requiredPermissions
+                .any { application.checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED }
+                    || isDocumentTreeAccessRequired
+
+    fun onGrantAction() {
+        log.debug {
+            "onGrantAction(): emitting RequestRequiredPermissions"
+        }
+
+        events.tryEmit(Event.RequestRequiredPermissions)
+    }
+
+    fun onRequestedPermissionsGranted() {
+        if (isDocumentTreeAccessRequired) {
+            log.debug {
+                "onAllPermissionsGranted(): requesting document tree access:" +
+                        "\nuri=$documentTreeAccessUri"
             }
 
-    fun areAllPermissionsGranted(
-        context: Context,
-    ): Boolean =
-        requiredPermissions.all { permission ->
-            context.checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED
-        }
+            events.tryEmit(Event.RequestDocumentTreeAccess)
+        } else {
+            log.debug {
+                "onAllPermissionsGranted(): all permissions are granted, emitting Done"
+            }
 
-    fun onAllPermissionsGranted() {
+            events.tryEmit(Event.Done)
+        }
+    }
+
+    fun onDocumentTreeAccessGranted() {
         log.debug {
-            "onAllPermissionsGranted(): all permissions are granted, emitting Done"
+            "onDocumentTreeAccessGranted(): document tree access granted, emitting Done"
         }
+        application.contentResolver.takePersistableUriPermission(
+            documentTreeAccessUri,
+            Intent.FLAG_GRANT_READ_URI_PERMISSION
+                    or Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
+        )
 
+        SAF.uri = documentTreeAccessUri
         events.tryEmit(Event.Done)
     }
 
     sealed interface Event {
+        object RequestRequiredPermissions : Event
+
+        object RequestDocumentTreeAccess : Event
+
         object Done : Event
     }
 }

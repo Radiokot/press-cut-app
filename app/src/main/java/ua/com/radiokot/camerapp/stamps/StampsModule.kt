@@ -1,6 +1,7 @@
 package ua.com.radiokot.camerapp.stamps
 
 import android.os.Environment
+import androidx.core.net.toUri
 import org.koin.android.ext.koin.androidApplication
 import org.koin.core.module.dsl.viewModel
 import org.koin.core.qualifier.named
@@ -25,10 +26,12 @@ const val DIRECTORY_STAMPS = "stamps-dir"
 
 val stampsModule = module {
 
+    val stampDirectoryName = "PressCutStamps"
+
     single(named(DIRECTORY_STAMPS)) {
         File(
             Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES),
-            "PressCutStamps"
+            stampDirectoryName
         ).also { dir ->
             if (!dir.exists()) {
                 check(dir.mkdirs()) {
@@ -36,6 +39,10 @@ val stampsModule = module {
                 }
             }
         }
+    }
+
+    single(named(DIRECTORY_STAMPS)) {
+        "primary:${Environment.DIRECTORY_PICTURES}/$stampDirectoryName".toUri()
     }
 
     single {

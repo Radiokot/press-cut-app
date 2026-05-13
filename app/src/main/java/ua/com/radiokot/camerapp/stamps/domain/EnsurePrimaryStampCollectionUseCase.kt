@@ -52,7 +52,7 @@ class EnsurePrimaryStampCollectionUseCase(
             }
 
             log.info {
-                "Primary collection created"
+                "Primary collection created, gift stamps given"
             }
         } else {
             log.debug {
