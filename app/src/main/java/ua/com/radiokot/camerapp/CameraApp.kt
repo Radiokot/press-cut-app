@@ -23,7 +23,7 @@ class CameraApp : Application() {
     override fun onCreate() {
         super.onCreate()
 
-        SAF.context=this
+        SAF.context = this
 
         initLogging()
 
@@ -39,14 +39,14 @@ class CameraApp : Application() {
         }
     }
 
+    @Suppress(
+        "KotlinConstantConditions",
+        "RedundantSuppression",
+        "SimplifyBooleanWithConstants",
+    )
     private fun initLogging() {
         // The Logback configuration is in the app/src/main/assets/logback.xml
 
-        @Suppress(
-            "KotlinConstantConditions",
-            "RedundantSuppression",
-            "SimplifyBooleanWithConstants",
-        )
         System.setProperty(
             "LOG_LEVEL",
             if (BuildConfig.DEBUG || BuildConfig.BUILD_TYPE == "devRelease")
@@ -55,21 +55,23 @@ class CameraApp : Application() {
                 "INFO"
         )
 
-        try {
-            val logFolder =
-                File(
-                    Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS),
-                    "PressCutLogs"
-                )
-                    .also(File::mkdirs)
+        if (BuildConfig.BUILD_TYPE != "release") {
+            try {
+                val logFolder =
+                    File(
+                        Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS),
+                        "PressCutLogs"
+                    )
+                        .also(File::mkdirs)
 
-            System.setProperty(
-                "LOG_FILE_DIRECTORY",
-                logFolder.path
-            )
-        } catch (e: Exception) {
-            log.error(e) {
-                "initLogging(): failed log file folder initialization"
+                System.setProperty(
+                    "LOG_FILE_DIRECTORY",
+                    logFolder.path
+                )
+            } catch (e: Exception) {
+                log.error(e) {
+                    "initLogging(): failed log file folder initialization"
+                }
             }
         }
 
