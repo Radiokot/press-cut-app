@@ -59,6 +59,7 @@ val stampsModule = module {
             stampDirectory = get(named(DIRECTORY_STAMPS)),
             assetManager = androidApplication().assets,
             giftStampsAssetsDirectoryName = "gift_stamps",
+            safFileLocksmith = get(),
         )
     } bind StampRepository::class
 

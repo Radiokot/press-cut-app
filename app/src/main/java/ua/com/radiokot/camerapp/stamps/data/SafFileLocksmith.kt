@@ -32,7 +32,7 @@ class SafFileLocksmith(
         onlyMetadataChunks: Boolean,
     ): List<WebPChunk> = withContext(Dispatchers.IO) {
 
-        val fileDocumentUri =getFileDocumentUri(file)
+        val fileDocumentUri = getFileDocumentUri(file)
 
         val unlockedFile =
             File(
@@ -94,6 +94,52 @@ class SafFileLocksmith(
         return@withContext webpChunks
     }
 
+    suspend fun move(
+        lockedSourceFile: File,
+        destinationFile: File,
+    ): Unit = withContext(Dispatchers.IO) {
+
+        val fileDocumentUri = getFileDocumentUri(lockedSourceFile)
+
+        try {
+            log.debug {
+                "move(): copying from the locked file to the destination:" +
+                        "\nfileDocumentUri=$fileDocumentUri" +
+                        "\ndestinationFile=${destinationFile.absolutePath}"
+            }
+
+            contentResolver
+                .openInputStream(fileDocumentUri)!!
+                .use { safFileInputStream ->
+                    destinationFile.outputStream().use { destinationOutputStream ->
+                        safFileInputStream.copyTo(destinationOutputStream)
+                    }
+                }
+        } catch (e: Exception) {
+            ensureActive()
+
+            log.error(e) {
+                "unlockAndMove(): failed copying"
+            }
+
+            throw e
+        }
+
+        log.debug {
+            "unlockAndMove(): deleting the locked file:" +
+                    "\nfileDocumentUri=$fileDocumentUri"
+        }
+
+        check(DocumentsContract.deleteDocument(contentResolver, fileDocumentUri)) {
+            log.error {
+                "unlockAndMove(): failed deleting the locked file" +
+                        "\nfileDocumentUri=$fileDocumentUri"
+            }
+
+            "Failed deleting the locked file"
+        }
+    }
+
     suspend fun delete(
         file: File,
     ): Unit = withContext(Dispatchers.IO) {
@@ -101,13 +147,13 @@ class SafFileLocksmith(
         val fileDocumentUri = getFileDocumentUri(file)
 
         log.debug {
-            "unlockAndReadWebpChunks(): deleting the file:" +
+            "delete(): deleting the file:" +
                     "\nfileDocumentUri=$fileDocumentUri"
         }
 
         check(DocumentsContract.deleteDocument(contentResolver, fileDocumentUri)) {
             log.error {
-                "unlockAndReadWebpChunks(): failed deleting the file" +
+                "delete(): failed deleting the file" +
                         "\nfileDocumentUri=$fileDocumentUri"
             }
 

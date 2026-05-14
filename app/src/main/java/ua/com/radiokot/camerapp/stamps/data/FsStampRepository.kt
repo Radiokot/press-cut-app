@@ -42,8 +42,8 @@ import java.nio.file.StandardCopyOption
 import java.nio.file.attribute.BasicFileAttributes
 import java.time.LocalDateTime
 import java.time.ZoneId
-import java.util.Collections
 import java.util.Optional
+import java.util.concurrent.ConcurrentHashMap
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.io.path.absolutePathString
@@ -53,6 +53,7 @@ class FsStampRepository(
     private val stampDirectory: File,
     private val assetManager: AssetManager,
     private val giftStampsAssetsDirectoryName: String,
+    private val safFileLocksmith: SafFileLocksmith,
 ) : StampRepository {
 
     private val log by lazyLogger("FsStampRepo")
@@ -196,11 +197,18 @@ class FsStampRepository(
                 stamp.caption
 
         val webpChunks =
-            AndroidInputStreamByteReader(
-                inputStream = file.inputStream().buffered(),
-                contentLength = file.length(),
-            )
-                .use(WebPImageParser::readChunks)
+            if (file.canRead() && file.canWrite())
+                AndroidInputStreamByteReader(
+                    inputStream = file.inputStream().buffered(),
+                    contentLength = file.length(),
+                )
+                    .use(WebPImageParser::readChunks)
+            else
+                safFileLocksmith
+                    .unlockAndReadWebpChunks(
+                        file = file,
+                        onlyMetadataChunks = false,
+                    )
 
         val xmpMeta =
             WebPImageParser
@@ -250,8 +258,13 @@ class FsStampRepository(
                         id = stampId,
                         collectionId = collectionId,
                     )
+
                     if (file.exists()) {
-                        file.delete()
+                        if (file.canWrite()) {
+                            file.delete()
+                        } else {
+                            safFileLocksmith.delete(file)
+                        }
                     }
                 }
             }
@@ -272,7 +285,7 @@ class FsStampRepository(
             File(stampDirectory, sourceCollectionId)
         val stampIdsToMove =
             sourceCollectionDirectory
-                .listFiles { isStamp(it) && it.canWrite() }
+                .listFiles(::isStamp)
                 ?.map(File::nameWithoutExtension)
                 ?: emptyList()
 
@@ -289,18 +302,11 @@ class FsStampRepository(
         stampIds: Collection<String>,
     ): Flow<Pair<Int, Int>> {
 
-        val movedStampPathsById = Collections.synchronizedMap<String, Path>(mutableMapOf())
+        //                        Hi Revolut 👋
+        val movedStampPathsById = ConcurrentHashMap<String, Path>(mutableMapOf())
 
         return channelFlow {
             val progressChannel = this.channel
-            val destinationCollectionDirectoryPath =
-                FileSystems
-                    .getDefault()
-                    .getPath(
-                        stampDirectory.absolutePath,
-                        destinationCollectionId,
-                    )
-                    .toString()
 
             progressChannel.send(0 to stampIds.size)
 
@@ -318,17 +324,27 @@ class FsStampRepository(
                             id = stampId,
                             collectionId = sourceCollectionId,
                         )
-                    val destinationPath =
-                        FileSystems.getDefault().getPath(
-                            destinationCollectionDirectoryPath,
-                            stampSourceFile.name
+                    val stampDestinationFile =
+                        getStampFile(
+                            id = stampId,
+                            collectionId = destinationCollectionId,
                         )
-                    Files.move(
-                        FileSystems.getDefault().getPath(stampSourceFile.path),
-                        destinationPath,
-                        StandardCopyOption.ATOMIC_MOVE,
-                    )
-                    movedStampPathsById[stampId] = destinationPath
+                    val stampDestinationPath =
+                        FileSystems.getDefault().getPath(stampDestinationFile.path)
+
+                    if (stampSourceFile.canWrite()) {
+                        Files.move(
+                            FileSystems.getDefault().getPath(stampSourceFile.path),
+                            stampDestinationPath,
+                            StandardCopyOption.ATOMIC_MOVE,
+                        )
+                    } else {
+                        safFileLocksmith.move(
+                            lockedSourceFile = stampSourceFile,
+                            destinationFile = stampDestinationFile,
+                        )
+                    }
+                    movedStampPathsById[stampId] = stampDestinationPath
                     progressChannel.send(movedStampPathsById.size to stampIds.size)
                 }
             }
@@ -337,7 +353,7 @@ class FsStampRepository(
                 if (isCacheInitialized.load()) {
                     cache.indices.forEach { i ->
                         val stamp = cache[i]
-                        if (stamp.id in movedStampPathsById) {
+                        if (movedStampPathsById.containsKey(stamp.id)) {
                             cache[i] = stamp.copy(
                                 newCollectionId = destinationCollectionId,
                                 newImageUri =
