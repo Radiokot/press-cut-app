@@ -90,10 +90,6 @@ android {
         generateTextReport = false
         copyHtmlReportToAssets = true
     }
-
-    aaptOptions {
-        noCompress ''
-    }
 }
 
 dependencies {
