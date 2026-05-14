@@ -52,8 +52,10 @@ android {
             } else {
                 signingConfig signingConfigs.debug
             }
+            // F-Droid
+            //noinspection NotShrinkingResources
+            shrinkResources false
             minifyEnabled true
-            shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
 
@@ -62,8 +64,6 @@ android {
             initWith release
             signingConfig signingConfigs.debug
             minifyEnabled false
-            //noinspection NotShrinkingResources
-            shrinkResources false
         }
     }
 

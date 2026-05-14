@@ -34,3 +34,7 @@
 -keep class org.slf4j.** { *; }
 -keep class io.github.oshai.** { *; }
 -dontwarn com.oracle.svm.core.annotate.**
+
+# F-Droid
+-keep class kotlinx.coroutines.CoroutineExceptionHandler
+-keep class kotlinx.coroutines.internal.MainDispatcherFactory
