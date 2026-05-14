@@ -1,0 +1,8 @@
+Cut digital postage stamps from what your camera sees. For free and without limits.
+
+The stamps are stored as images in your phone's "Pictures" folder.
+They remain there even if you uninstall the app.
+
+If you ever need to back up your collection or transfer it to a new phone, just copy the "PressCutStamps" contents from the "Pictures" folder.
+
+Press-Cut is inspired by OneStamp for iOS, made by Weiqing Chu. The app uses many open-source libraries and icons from Noun Project (details in the app).
