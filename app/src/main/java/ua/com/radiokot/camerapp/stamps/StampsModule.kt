@@ -9,6 +9,7 @@ import org.koin.dsl.bind
 import org.koin.dsl.module
 import ua.com.radiokot.camerapp.stamps.data.FsStampCollectionRepository
 import ua.com.radiokot.camerapp.stamps.data.FsStampRepository
+import ua.com.radiokot.camerapp.stamps.data.SafFileLocksmith
 import ua.com.radiokot.camerapp.stamps.domain.EnsurePrimaryStampCollectionUseCase
 import ua.com.radiokot.camerapp.stamps.domain.GetSortedStampCollectionsUseCase
 import ua.com.radiokot.camerapp.stamps.domain.GetStampCollectionsWithSamplesUseCase
@@ -46,6 +47,14 @@ val stampsModule = module {
     }
 
     single {
+        SafFileLocksmith(
+            stampDirectory = get(named(DIRECTORY_STAMPS)),
+            stampDirectoryDocumentUri = get(named(DIRECTORY_STAMPS)),
+            contentResolver = androidApplication().contentResolver,
+        )
+    }
+
+    single {
         FsStampRepository(
             stampDirectory = get(named(DIRECTORY_STAMPS)),
             assetManager = androidApplication().assets,
@@ -56,6 +65,7 @@ val stampsModule = module {
     single {
         FsStampCollectionRepository(
             stampDirectory = get(named(DIRECTORY_STAMPS)),
+            safFileLocksmith = get(),
         )
     } bind StampCollectionRepository::class
 

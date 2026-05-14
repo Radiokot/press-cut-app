@@ -22,7 +22,6 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import ua.com.radiokot.camerapp.SAF
 import ua.com.radiokot.camerapp.stamps.domain.StampCollection
 import ua.com.radiokot.camerapp.stamps.domain.StampCollectionRepository
 import ua.com.radiokot.camerapp.util.lazyLogger
@@ -34,6 +33,7 @@ import kotlin.concurrent.atomics.ExperimentalAtomicApi
 
 class FsStampCollectionRepository(
     private val stampDirectory: File,
+    private val safFileLocksmith: SafFileLocksmith,
 ) : StampCollectionRepository {
 
     private val log by lazyLogger("FsStampCollectionRepo")
@@ -158,7 +158,7 @@ class FsStampCollectionRepository(
             }
 
             coroutineScope.launch {
-                // Even if rm fails to delete all the files (read-only stamps),
+                // Even if rm fails to delete all the files,
                 // consider the collection deleted.
                 // It won't re-appear because the details file gets deleted.
 
@@ -170,9 +170,13 @@ class FsStampCollectionRepository(
                         .waitFor()
 
                 if (exitCode != 0) {
-                    log.warn {
-                        "deleteStampCollection(): rm didn't finish successfully:" +
+                    log.debug {
+                        "deleteStampCollection(): rm didn't finish successfully, trying SAF locksmith" +
                                 "\ncommand=$rmCommand"
+                    }
+
+                    runCatching {
+                        safFileLocksmith.delete(directory)
                     }
                 }
             }
@@ -192,18 +196,21 @@ class FsStampCollectionRepository(
         val directory = getStampCollectionDirectory(
             id = collection.id
         )
-        var detailsFile = File(directory, DETAILS_FILE_NAME)
-        if (!detailsFile.canRead() || !detailsFile.canWrite()) {
-            detailsFile = SAF.unlock(detailsFile)
-        }
+        val detailsFile = File(directory, DETAILS_FILE_NAME)
         val nameToSet = newName ?: collection.name
 
         val webpChunks =
-            AndroidInputStreamByteReader(
-                inputStream = detailsFile.inputStream().buffered(),
-                contentLength = detailsFile.length(),
-            )
-                .use(WebPImageParser::readChunks)
+            if (detailsFile.canRead() && detailsFile.canWrite())
+                AndroidInputStreamByteReader(
+                    inputStream = detailsFile.inputStream().buffered(),
+                    contentLength = detailsFile.length(),
+                )
+                    .use(WebPImageParser::readChunks)
+            else
+                safFileLocksmith.unlockAndReadWebpChunks(
+                    file = detailsFile,
+                    onlyMetadataChunks = false,
+                )
 
         val xmpMeta =
             WebPImageParser
@@ -246,17 +253,28 @@ class FsStampCollectionRepository(
         directory: File,
     ): StampCollection? = runCatching {
 
-        var detailsFile = File(directory, DETAILS_FILE_NAME)
-        if (!detailsFile.canRead() || !detailsFile.canWrite()) {
-            detailsFile = SAF.unlock(detailsFile)
-        }
+        val detailsFile = File(directory, DETAILS_FILE_NAME)
+        val webpChunks =
+            if (detailsFile.canRead() && detailsFile.canWrite())
+                AndroidInputStreamByteReader(
+                    inputStream = detailsFile.inputStream().buffered(),
+                    contentLength = detailsFile.length(),
+                )
+                    .use { reader ->
+                        WebPImageParser.readChunks(
+                            byteReader = reader,
+                            stopAfterMetadataRead = true,
+                        )
+                    }
+            else
+                safFileLocksmith.unlockAndReadWebpChunks(
+                    file = detailsFile,
+                    onlyMetadataChunks = true,
+                )
 
         val xmpMeta =
-            AndroidInputStreamByteReader(
-                inputStream = detailsFile.inputStream().buffered(),
-                contentLength = detailsFile.length(),
-            )
-                .use(WebPImageParser::parseMetadata)
+            WebPImageParser
+                .parseMetadataFromChunks(webpChunks)
                 .xmp
                 ?.let(XMPMetaFactory::parseFromString)
 

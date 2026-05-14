@@ -23,8 +23,6 @@ class CameraApp : Application() {
     override fun onCreate() {
         super.onCreate()
 
-        SAF.context = this
-
         initLogging()
 
         startKoin {

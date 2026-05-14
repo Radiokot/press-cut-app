@@ -12,7 +12,6 @@ import androidx.lifecycle.AndroidViewModel
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toPersistentList
 import kotlinx.coroutines.flow.SharedFlow
-import ua.com.radiokot.camerapp.SAF
 import ua.com.radiokot.camerapp.util.eventSharedFlow
 import ua.com.radiokot.camerapp.util.lazyLogger
 
@@ -91,13 +90,13 @@ class PermissionsScreenViewModel(
         log.debug {
             "onDocumentTreeAccessGranted(): document tree access granted, emitting Done"
         }
+
         application.contentResolver.takePersistableUriPermission(
             documentTreeAccessUri,
             Intent.FLAG_GRANT_READ_URI_PERMISSION
                     or Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
         )
 
-        SAF.uri = documentTreeAccessUri
         events.tryEmit(Event.Done)
     }
 
