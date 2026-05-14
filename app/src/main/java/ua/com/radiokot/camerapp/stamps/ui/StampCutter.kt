@@ -1,3 +1,22 @@
+/* Copyright 2026 Oleg Koretsky
+
+   This file is part of the Press-Cut,
+   a digital postage stamp cutter Android app.
+
+   Press-Cut is free software: you can redistribute it
+   and/or modify it under the terms of the GNU General Public License
+   as published by the Free Software Foundation, either version 3 of the License,
+   or (at your option) any later version.
+
+   Press-Cut is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+   See the GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with Press-Cut. If not, see <http://www.gnu.org/licenses/>.
+*/
+
 package ua.com.radiokot.camerapp.stamps.ui
 
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -35,7 +54,7 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import ua.com.radiokot.camerapp.ui.LeButton
 import ua.com.radiokot.camerapp.ui.paperBackground
-import ua.com.radiokot.camerapp.ui.podkovaFamily
+import ua.com.radiokot.camerapp.ui.PodkovaFamily
 
 @Composable
 fun StampCutter(
@@ -153,7 +172,7 @@ fun StampCutter(
                             width = 2.dp.toPx(),
                         )
                         val textStyle = TextStyle(
-                            fontFamily = podkovaFamily,
+                            fontFamily = PodkovaFamily,
                             color = Color(0xFFcbc4bb),
                             fontSize = (innerPadding.y * 0.33f).toSp(),
                             textAlign = TextAlign.Center,

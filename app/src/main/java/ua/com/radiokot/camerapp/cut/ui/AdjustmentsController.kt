@@ -1,3 +1,22 @@
+/* Copyright 2026 Oleg Koretsky
+
+   This file is part of the Press-Cut,
+   a digital postage stamp cutter Android app.
+
+   Press-Cut is free software: you can redistribute it
+   and/or modify it under the terms of the GNU General Public License
+   as published by the Free Software Foundation, either version 3 of the License,
+   or (at your option) any later version.
+
+   Press-Cut is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+   See the GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with Press-Cut. If not, see <http://www.gnu.org/licenses/>.
+*/
+
 package ua.com.radiokot.camerapp.cut.ui
 
 import android.icu.text.DecimalFormat
@@ -56,7 +75,7 @@ import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import ua.com.radiokot.camerapp.ui.paperBackground
-import ua.com.radiokot.camerapp.ui.podkovaFamily
+import ua.com.radiokot.camerapp.ui.PodkovaFamily
 import ua.com.radiokot.camerapp.ui.rememberSnapFlingBehavior
 
 @Composable
@@ -76,7 +95,7 @@ fun AdjustmentsController(
             style = TextStyle(
                 fontSize = 16.sp,
                 textAlign = TextAlign.Center,
-                fontFamily = podkovaFamily,
+                fontFamily = PodkovaFamily,
             ),
             modifier = Modifier
                 .fillMaxWidth()
@@ -211,7 +230,7 @@ private fun ItemSelector(
                     text = item.title.first().toString(),
                     style = TextStyle(
                         fontSize = 18.sp,
-                        fontFamily = podkovaFamily,
+                        fontFamily = PodkovaFamily,
                         fontWeight = FontWeight.Bold,
                         color = Color(0xFFB9AC8C),
                     )
@@ -265,7 +284,7 @@ private fun ItemSelector(
                         valueNumberFormat
                             .format(valueState.intValue),
                     style = TextStyle(
-                        fontFamily = podkovaFamily,
+                        fontFamily = PodkovaFamily,
                         fontWeight = FontWeight.Medium
                     )
                 )
