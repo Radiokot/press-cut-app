@@ -57,7 +57,8 @@ fun AboutScreen(
     horizontalAlignment = Alignment.CenterHorizontally,
     modifier = modifier
         .verticalScroll(
-            state = rememberScrollState()
+            state = rememberScrollState(),
+            overscrollEffect = null,
         )
         .safeContentPadding()
         .padding(24.dp)

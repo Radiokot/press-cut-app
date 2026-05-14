@@ -166,6 +166,7 @@ private fun ItemSelector(
             lazyListState = rowState,
             frictionMultiplier = 6f,
         ),
+        overscrollEffect = null,
         contentPadding =
             PaddingValues(
                 start = (maxWidth - itemSize) / 2,
@@ -350,6 +351,7 @@ private fun ValueDial(
 
     LazyRow(
         state = rowState,
+        overscrollEffect = null,
         contentPadding =
             PaddingValues(
                 horizontal = (maxWidth - 2.dp) / 2,

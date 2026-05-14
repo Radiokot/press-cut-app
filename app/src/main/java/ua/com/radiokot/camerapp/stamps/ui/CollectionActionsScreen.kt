@@ -51,6 +51,7 @@ fun CollectionActionsScreen(
         .safeContentPadding()
         .verticalScroll(
             state = rememberScrollState(),
+            overscrollEffect = null,
         )
 ) {
     val detailsAlpha = remember {

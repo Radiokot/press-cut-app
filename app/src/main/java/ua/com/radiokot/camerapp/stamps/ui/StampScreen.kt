@@ -319,7 +319,8 @@ fun StampScreen(
             modifier = Modifier
                 .weight(5f)
                 .verticalScroll(
-                    state = rememberScrollState()
+                    state = rememberScrollState(),
+                    overscrollEffect = null,
                 )
                 .graphicsLayer {
                     alpha = detailsAlpha.value

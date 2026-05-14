@@ -160,6 +160,7 @@ fun StampsScreen(
         columns = GridCells.FixedSize(StampSize.width * 1.15f),
         horizontalArrangement = Arrangement.SpaceAround,
         contentPadding = contentPadding,
+        overscrollEffect = null,
         modifier = Modifier
             .fillMaxSize()
     ) {

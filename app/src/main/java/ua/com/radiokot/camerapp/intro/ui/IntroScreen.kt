@@ -52,7 +52,8 @@ fun IntroScreen(
             .weight(1f)
             .fillMaxWidth()
             .verticalScroll(
-                state = rememberScrollState()
+                state = rememberScrollState(),
+                overscrollEffect = null,
             )
     ) {
         BasicText(

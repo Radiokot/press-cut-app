@@ -83,6 +83,7 @@ fun CollectionsScreen(
         ),
         contentPadding = contentPadding,
         state = rememberLazyGridState(),
+        overscrollEffect = null,
         modifier = Modifier
             .fillMaxSize()
     ) {

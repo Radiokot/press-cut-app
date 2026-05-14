@@ -73,6 +73,7 @@ fun PermissionsScreen(
             .weight(1f)
             .verticalScroll(
                 state = rememberScrollState(),
+                overscrollEffect = null,
             )
     ) {
         if (Manifest.permission.CAMERA in permissionSet) {

@@ -80,6 +80,7 @@ fun SelectMoveDestinationCollectionDialog(
         )
 
         LazyColumn(
+            overscrollEffect = null,
             modifier = Modifier
                 .weight(
                     weight = 1f,
