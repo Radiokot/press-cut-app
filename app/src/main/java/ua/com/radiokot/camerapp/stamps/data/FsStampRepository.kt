@@ -175,7 +175,6 @@ class FsStampRepository(
                 caption = caption,
                 imageUri = outputFile.toPath().toImageUri(),
                 takenAtLocal = takenAtLocal,
-                isReadOnly = false,
             )
             sharedFlow.emit(cache)
         }
@@ -456,7 +455,6 @@ private fun File.toStamp(): Stamp {
                     .toInstant()
                     .atZone(ZoneId.systemDefault())
                     .toLocalDateTime(),
-        isReadOnly = !canWrite(),
     )
 }
 

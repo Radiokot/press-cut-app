@@ -39,12 +39,10 @@ class StampScreenViewModel(
         stamp.imageUri.toUri()
     val takenAt: LocalDate =
         stamp.takenAtLocal.toLocalDate()
-    val isEditable: Boolean =
-        !stamp.isReadOnly
 
     val caption: TextFieldState = TextFieldState(initialText = stamp.caption ?: "")
     val isCaptionInputEnabled: StateFlow<Boolean>
-        field = MutableStateFlow(isEditable && stamp.caption != null)
+        field = MutableStateFlow(stamp.caption != null)
 
     val events: SharedFlow<Event>
         field = eventSharedFlow()
@@ -53,10 +51,6 @@ class StampScreenViewModel(
     private var isMoved = false
 
     fun onAddCaptionAction() {
-        check(isEditable) {
-            "Can't add a caption for a read-only stamp"
-        }
-
         log.debug {
             "onAddCaptionAction(): enabling caption input"
         }
@@ -65,10 +59,6 @@ class StampScreenViewModel(
     }
 
     fun onDeleteAction() {
-        check(isEditable) {
-            "Can't delete a read-only stamp"
-        }
-
         log.debug {
             "onDeleteAction(): deleting"
         }
@@ -81,10 +71,6 @@ class StampScreenViewModel(
     }
 
     fun onMoveAction() {
-        check(isEditable) {
-            "Can't move a read-only stamp"
-        }
-
         log.debug {
             "onMoveAction(): proceeding to destination collection selection"
         }
@@ -168,7 +154,7 @@ class StampScreenViewModel(
     }
 
     override fun onCleared() {
-        if (isEditable && !(isDeleted || isMoved)) {
+        if (!(isDeleted || isMoved)) {
             runBlocking {
                 saveUpdates()
             }

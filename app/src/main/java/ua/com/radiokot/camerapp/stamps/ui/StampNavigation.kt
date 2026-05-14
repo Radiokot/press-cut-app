@@ -42,7 +42,6 @@ fun NavGraphBuilder.stampDestination(
 
     StampScreen(
         stampId = viewModel.stampId,
-        isEditable = viewModel.isEditable,
         captionState = viewModel.caption,
         isCaptionInputEnabled = isCaptionInputEnabled,
         onAddCaptionAction = viewModel::onAddCaptionAction,

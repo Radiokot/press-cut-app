@@ -2,7 +2,6 @@
 
 package ua.com.radiokot.camerapp.stamps.ui
 
-import android.widget.Toast
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.layout.fillMaxSize
@@ -95,22 +94,6 @@ fun NavGraphBuilder.stampsDestination(
                     onProceedToNewStamp(
                         event.collectionId,
                     )
-                }
-
-                is StampsScreenViewModel.Event.ShowSomeStampsCantBeDeletedExplanation -> {
-                    Toast.makeText(
-                        context,
-                        "Some stamps could not be deleted",
-                        Toast.LENGTH_LONG,
-                    ).show()
-                }
-
-                is StampsScreenViewModel.Event.ShowSomeStampsCantBeMovedExplanation -> {
-                    Toast.makeText(
-                        context,
-                        "Some stamps could not be moved",
-                        Toast.LENGTH_LONG,
-                    ).show()
                 }
 
                 is StampsScreenViewModel.Event.ProceedToMoveDestinationCollectionSelection -> {

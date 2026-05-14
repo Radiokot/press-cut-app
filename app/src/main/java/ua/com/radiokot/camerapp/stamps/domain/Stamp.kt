@@ -8,7 +8,6 @@ class Stamp(
     val imageUri: String,
     val caption: String?,
     val takenAtLocal: LocalDateTime,
-    val isReadOnly: Boolean,
 ) {
     fun copy(
         newCollectionId: String = this.collectionId,
@@ -20,7 +19,6 @@ class Stamp(
         imageUri = newImageUri,
         caption = newCaption,
         takenAtLocal = takenAtLocal,
-        isReadOnly = isReadOnly,
     )
 
     override fun equals(other: Any?): Boolean {

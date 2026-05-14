@@ -92,7 +92,6 @@ import kotlin.math.absoluteValue
 fun StampScreen(
     modifier: Modifier = Modifier,
     stampId: String,
-    isEditable: Boolean,
     captionState: TextFieldState,
     isCaptionInputEnabled: Boolean,
     imageUri: Uri,
@@ -373,27 +372,20 @@ fun StampScreen(
                             ),
                         )
 
-                        if (isEditable) {
-                            Image(
-                                painter = painterResource(R.drawable.ic_pencil),
-                                contentDescription = "Edit",
-                                colorFilter = ColorFilter.tint(Color(0xFFB9AC8C)),
-                                modifier = Modifier
-                                    .clickable(
-                                        onClick = { areActionsVisible = !areActionsVisible },
-                                    )
-                                    .padding(
-                                        vertical = 16.dp,
-                                        horizontal = 12.dp,
-                                    )
-                                    .size(16.dp)
-                            )
-                        } else {
-                            Spacer(
-                                modifier = Modifier
-                                    .width(40.dp)
-                            )
-                        }
+                        Image(
+                            painter = painterResource(R.drawable.ic_pencil),
+                            contentDescription = "Edit",
+                            colorFilter = ColorFilter.tint(Color(0xFFB9AC8C)),
+                            modifier = Modifier
+                                .clickable(
+                                    onClick = { areActionsVisible = !areActionsVisible },
+                                )
+                                .padding(
+                                    vertical = 16.dp,
+                                    horizontal = 12.dp,
+                                )
+                                .size(16.dp)
+                        )
                     }
                 } else {
                     Actions(
@@ -532,7 +524,6 @@ private fun StampScreenPreview(
     ) {
         StampScreen(
             stampId = "",
-            isEditable = true,
             captionState = TextFieldState("My stamp"),
             isCaptionInputEnabled = false,
             imageUri = Uri.EMPTY,

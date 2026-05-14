@@ -75,17 +75,6 @@ class StampsScreenViewModel(
             .stateIn(viewModelScope)
     }
 
-    private val selectedEditableStampIds: Set<String>
-        get() =
-            collectionStamps
-                .value
-                .mapNotNullTo(mutableSetOf()) { stamp ->
-                    if (stamp.id !in selectedStampIds.value || stamp.isReadOnly)
-                        null
-                    else
-                        stamp.id
-                }
-
     val items: StateFlow<ImmutableList<StampsScreenItem>> = runBlocking {
         combine(
             collectionStamps,
@@ -178,14 +167,9 @@ class StampsScreenViewModel(
     fun onMoveDestinationCollectionSelected(
         destinationCollectionId: String,
     ) {
-        val stampToMoveIds = selectedEditableStampIds
-        val anyReadOnlyStamps = selectedStampIds.value.size != stampToMoveIds.size
+        val stampToMoveIds = selectedStampIds.value
 
         clearSelection()
-
-        if (anyReadOnlyStamps) {
-            events.tryEmit(Event.ShowSomeStampsCantBeMovedExplanation)
-        }
 
         if (stampToMoveIds.isEmpty()) {
             return
@@ -241,15 +225,13 @@ class StampsScreenViewModel(
 
     private suspend fun deleteSelectedStamps() {
 
-        val stampToDeleteIds = selectedEditableStampIds
-        val anyReadOnlyStamps = selectedStampIds.value.size != stampToDeleteIds.size
+        val stampToDeleteIds = selectedStampIds.value
 
         clearSelection()
 
         log.debug {
             "deleteStamps(): deleting:" +
                     "\nstampToDeleteIds=${stampToDeleteIds.size}" +
-                    "\nanyReadOnlyStamps=$anyReadOnlyStamps" +
                     "\ncollectionId=$collectionId"
         }
 
@@ -258,17 +240,8 @@ class StampsScreenViewModel(
             stampIds = stampToDeleteIds,
         )
 
-        if (!anyReadOnlyStamps) {
-            log.info {
-                "Deleted ${stampToDeleteIds.size} stamps from the collection $collectionId"
-            }
-        } else {
-            log.info {
-                "Deleted ${stampToDeleteIds.size} stamps from the collection $collectionId, " +
-                        "read-only stamps remained"
-            }
-
-            events.emit(Event.ShowSomeStampsCantBeDeletedExplanation)
+        log.info {
+            "Deleted ${stampToDeleteIds.size} stamps from the collection $collectionId"
         }
     }
 
@@ -356,9 +329,6 @@ class StampsScreenViewModel(
             val destinationCollectionId: String,
             val stampSelectionIndex: Int,
         ) : Event
-
-        object ShowSomeStampsCantBeDeletedExplanation : Event
-        object ShowSomeStampsCantBeMovedExplanation : Event
 
         object Done : Event
     }
