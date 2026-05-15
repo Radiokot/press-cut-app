@@ -50,9 +50,10 @@ fun NavGraphBuilder.permissionsDestination(
     val documentTreeAccessRequestLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocumentTree(),
         onResult = { resultUri ->
-            if (resultUri == viewModel.documentTreeAccessUri) {
+            if (resultUri == viewModel.requiredDocumentTreeAccessUri) {
                 viewModel.onDocumentTreeAccessGranted()
             } else if (resultUri != null) {
+                println("OOLEG re $resultUri")
                 Toast.makeText(
                     context,
                     "Sorry, but the permission is required for the exact directory",
@@ -92,7 +93,9 @@ fun NavGraphBuilder.permissionsDestination(
                 }
 
                 is PermissionsScreenViewModel.Event.RequestDocumentTreeAccess -> {
-                    documentTreeAccessRequestLauncher.launch(viewModel.documentTreeAccessUri)
+                    documentTreeAccessRequestLauncher.launch(
+                        event.initialUri
+                    )
                 }
 
                 is PermissionsScreenViewModel.Event.Done -> {

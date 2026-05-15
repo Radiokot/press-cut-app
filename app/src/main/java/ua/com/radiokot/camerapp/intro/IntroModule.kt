@@ -43,6 +43,7 @@ val introModule = module {
 
     viewModel {
         PermissionsScreenViewModel(
+            stampDirectory = get(named(DIRECTORY_STAMPS)),
             stampDirectoryDocumentUri = get(named(DIRECTORY_STAMPS)),
             application = androidApplication(),
         )

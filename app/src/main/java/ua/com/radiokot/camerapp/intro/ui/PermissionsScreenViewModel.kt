@@ -33,10 +33,12 @@ import kotlinx.collections.immutable.toPersistentList
 import kotlinx.coroutines.flow.SharedFlow
 import ua.com.radiokot.camerapp.util.eventSharedFlow
 import ua.com.radiokot.camerapp.util.lazyLogger
+import java.io.File
 
 @Immutable
 class PermissionsScreenViewModel(
-    stampDirectoryDocumentUri: Uri,
+    private val stampDirectory: File,
+    private val stampDirectoryDocumentUri: Uri,
     private val application: Application,
 ) : AndroidViewModel(application) {
 
@@ -58,7 +60,7 @@ class PermissionsScreenViewModel(
         }
             .toPersistentList()
 
-    val documentTreeAccessUri: Uri =
+    val requiredDocumentTreeAccessUri: Uri =
         DocumentsContract.buildTreeDocumentUri(
             "com.android.externalstorage.documents",
             stampDirectoryDocumentUri.toString()
@@ -71,7 +73,7 @@ class PermissionsScreenViewModel(
                         .contentResolver
                         .persistedUriPermissions
                         .none { permission ->
-                            permission.uri == documentTreeAccessUri
+                            permission.uri == requiredDocumentTreeAccessUri
                         }
 
     val isActionRequired: Boolean
@@ -90,12 +92,28 @@ class PermissionsScreenViewModel(
 
     fun onRequestedPermissionsGranted() {
         if (isDocumentTreeAccessRequired) {
+            // Using document URI as initial instead of tree
+            // is important for compatibility.
+            val initialUri =
+                DocumentsContract.buildDocumentUri(
+                    "com.android.externalstorage.documents",
+                    stampDirectoryDocumentUri.toString()
+                )
+
             log.debug {
                 "onAllPermissionsGranted(): requesting document tree access:" +
-                        "\nuri=$documentTreeAccessUri"
+                        "\ninitialUri=$initialUri"
             }
 
-            events.tryEmit(Event.RequestDocumentTreeAccess)
+            if (!stampDirectory.exists()) {
+                stampDirectory.mkdirs()
+            }
+
+            events.tryEmit(
+                Event.RequestDocumentTreeAccess(
+                    initialUri = initialUri,
+                )
+            )
         } else {
             log.debug {
                 "onAllPermissionsGranted(): all permissions are granted, emitting Done"
@@ -111,7 +129,7 @@ class PermissionsScreenViewModel(
         }
 
         application.contentResolver.takePersistableUriPermission(
-            documentTreeAccessUri,
+            requiredDocumentTreeAccessUri,
             Intent.FLAG_GRANT_READ_URI_PERMISSION
                     or Intent.FLAG_GRANT_WRITE_URI_PERMISSION,
         )
@@ -122,7 +140,9 @@ class PermissionsScreenViewModel(
     sealed interface Event {
         object RequestRequiredPermissions : Event
 
-        object RequestDocumentTreeAccess : Event
+        class RequestDocumentTreeAccess(
+            val initialUri: Uri,
+        ) : Event
 
         object Done : Event
     }
