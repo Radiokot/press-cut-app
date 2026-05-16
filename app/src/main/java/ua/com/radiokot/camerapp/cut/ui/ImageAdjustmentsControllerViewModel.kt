@@ -26,17 +26,32 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
+import ua.com.radiokot.camerapp.cut.domain.BrightnessImageAdjustment
+import ua.com.radiokot.camerapp.cut.domain.ContrastImageAdjustment
+import ua.com.radiokot.camerapp.cut.domain.ImageAdjustment
+import ua.com.radiokot.camerapp.cut.domain.VibranceImageAdjustment
 import ua.com.radiokot.camerapp.util.lazyLogger
 
 @Immutable
 class ImageAdjustmentsControllerViewModel : ViewModel() {
 
     private val log by lazyLogger("ImageAdjControllerVM")
+
+    private val brightnessAdjustment = BrightnessImageAdjustment()
+    private val contrastAdjustment = ContrastImageAdjustment()
+    private val vibranceAdjustment = VibranceImageAdjustment()
+    private val adjustmentList = listOf(
+        brightnessAdjustment,
+        contrastAdjustment,
+        vibranceAdjustment,
+    )
 
     val items = persistentListOf(
         AdjustmentControllerItem(
@@ -80,6 +95,24 @@ class ImageAdjustmentsControllerViewModel : ViewModel() {
             .flatMapLatest { _currentValue }
             .stateIn(viewModelScope, SharingStarted.Eagerly, _currentValue.value)
 
+    val adjustments: Flow<List<ImageAdjustment>> =
+        combine(
+            contrastValue,
+            brightnessValue,
+            vibranceValue,
+            transform = {
+                    contrastValue,
+                    brightnessValue,
+                    vibranceValue,
+                ->
+                contrastAdjustment.value = (contrastValue / 100f)
+                brightnessAdjustment.value = (brightnessValue / 100f)
+                vibranceAdjustment.value = (vibranceValue / 100f)
+
+                adjustmentList
+            }
+        )
+
     fun onCurrentItemChanged(newItem: AdjustmentControllerItem) {
         log.debug {
             "onCurrentItemChanged(): setting new item:" +
@@ -90,12 +123,6 @@ class ImageAdjustmentsControllerViewModel : ViewModel() {
     }
 
     fun onValueChanged(newValue: Int) {
-        log.debug {
-            "onValueChanged(): setting new value:" +
-                    "\nnewVale=$newValue" +
-                    "\ncurrentItem=${currentItem.value}"
-        }
-
         _currentValue.value = newValue
     }
 

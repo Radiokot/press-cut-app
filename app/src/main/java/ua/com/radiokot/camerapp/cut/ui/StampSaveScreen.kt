@@ -194,6 +194,12 @@ private fun StampSaveScreenPreview(
                 key = "contrast",
             ),
             AdjustmentControllerItem(
+                title = "Saturation",
+                minValue = -100,
+                maxValue = 100,
+                key = "saturation",
+            ),
+            AdjustmentControllerItem(
                 title = "Vibrance",
                 minValue = -100,
                 maxValue = 100,
