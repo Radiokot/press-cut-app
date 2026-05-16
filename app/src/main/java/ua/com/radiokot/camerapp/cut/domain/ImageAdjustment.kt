@@ -95,12 +95,13 @@ class TemperatureImageAdjustment(
     // GPUImageWhiteBalanceFilter
     // https://github.com/wasabeef/android-gpuimage/blob/ceea576ec931c2968431ad46f1fb2e6d68a542e2/library/src/main/java/jp/co/cyberagent/android/gpuimage/filter/GPUImageWhiteBalanceFilter.java
 
+    private val processed = IntArray(3)
+
     override fun apply(rgb: IntArray) {
         if (value == 0f) {
             return
         }
 
-        val processed = IntArray(3)
         for (i in 0..2) {
             val base = rgb[i]
             val blend = WARM_FILTER[i]

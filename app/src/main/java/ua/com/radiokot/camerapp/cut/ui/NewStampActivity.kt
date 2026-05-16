@@ -234,7 +234,8 @@ private fun SharedTransitionScope.StampCutNavHost(
 
             StampSaveScreen(
                 captionInputState = viewModel.captionInput,
-                imageState = viewModel.adjustedStampImage.collectAsState(),
+                imageState = viewModel.previewStampImage.collectAsState(),
+                onImagePreviewSizeChanged = viewModel::onPreviewSizeChanged,
                 onSaveAction = viewModel::onSaveAction,
                 adjustmentsControllerItems = imageAdjustmentsControllerViewModel.items,
                 currentAdjustmentsControllerItemState =

@@ -17,7 +17,7 @@
    along with Press-Cut. If not, see <http://www.gnu.org/licenses/>.
 */
 
-@file:OptIn(ExperimentalCoroutinesApi::class)
+@file:OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
 
 package ua.com.radiokot.camerapp.cut.ui
 
@@ -26,12 +26,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.sample
 import kotlinx.coroutines.flow.stateIn
 import ua.com.radiokot.camerapp.cut.domain.BrightnessImageAdjustment
 import ua.com.radiokot.camerapp.cut.domain.ContrastImageAdjustment
@@ -39,6 +41,7 @@ import ua.com.radiokot.camerapp.cut.domain.ImageAdjustment
 import ua.com.radiokot.camerapp.cut.domain.TemperatureImageAdjustment
 import ua.com.radiokot.camerapp.cut.domain.VibranceImageAdjustment
 import ua.com.radiokot.camerapp.util.lazyLogger
+import kotlin.time.Duration.Companion.milliseconds
 
 @Immutable
 class ImageAdjustmentsControllerViewModel : ViewModel() {
@@ -96,26 +99,23 @@ class ImageAdjustmentsControllerViewModel : ViewModel() {
             .flatMapLatest { _currentValue }
             .stateIn(viewModelScope, SharingStarted.Eagerly, _currentValue.value)
 
-    val adjustments: Flow<List<ImageAdjustment>> =
+    val adjustments: StateFlow<Array<ImageAdjustment>> =
         combine(
-            contrastValue,
-            brightnessValue,
-            vibranceValue,
-            temperatureValue,
-            transform = {
-                    contrastValue,
-                    brightnessValue,
-                    vibranceValue,
-                    temperatureValue,
-                ->
-                listOf(
-                    ContrastImageAdjustment(contrastValue / 100f),
-                    BrightnessImageAdjustment(brightnessValue / 100f),
-                    VibranceImageAdjustment(vibranceValue / 100f),
-                    TemperatureImageAdjustment(temperatureValue / 100f),
-                )
-            }
+            contrastValue
+                .sample(10.milliseconds)
+                .map { ContrastImageAdjustment(it / 100f) },
+            brightnessValue
+                .sample(10.milliseconds)
+                .map { BrightnessImageAdjustment(it / 100f) },
+            vibranceValue
+                .sample(10.milliseconds)
+                .map { VibranceImageAdjustment(it / 100f) },
+            temperatureValue
+                .sample(10.milliseconds)
+                .map { TemperatureImageAdjustment(it / 100f) },
+            transform = ::arrayOf,
         )
+            .stateIn(viewModelScope, SharingStarted.Lazily, emptyArray())
 
     fun onCurrentItemChanged(newItem: AdjustmentControllerItem) {
         log.debug {

@@ -38,6 +38,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.IntState
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -51,7 +52,9 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.shadow.Shadow
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.createBitmap
 import kotlinx.collections.immutable.ImmutableList
@@ -65,6 +68,7 @@ fun StampSaveScreen(
     modifier: Modifier = Modifier,
     captionInputState: TextFieldState,
     imageState: State<ImageBitmap>,
+    onImagePreviewSizeChanged: (IntSize) -> Unit,
     onSaveAction: () -> Unit,
     adjustmentsControllerItems: ImmutableList<AdjustmentControllerItem>,
     currentAdjustmentsControllerItemState: State<AdjustmentControllerItem>,
@@ -112,16 +116,30 @@ fun StampSaveScreen(
                 .padding(24.dp)
         )
 
+        val imageSize = remember(isScreenQuiteTall) {
+            if (isScreenQuiteTall)
+                StampSize * 2f
+            else
+                StampSize * 1.5f
+        }
+
+        val density = LocalDensity.current
+        LaunchedEffect(imageSize, density) {
+            onImagePreviewSizeChanged(
+                with(density) {
+                    IntSize(
+                        width = imageSize.width.roundToPx(),
+                        height = imageSize.height.roundToPx(),
+                    )
+                }
+            )
+        }
+
         Image(
             bitmap = imageState.value,
             contentDescription = null,
             modifier = Modifier
-                .size(
-                    if (isScreenQuiteTall)
-                        StampSize * 2f
-                    else
-                        StampSize * 1.5f
-                )
+                .size(imageSize)
                 .run {
                     if (sharedTransitionScope == null || animatedVisibilityScope == null) {
                         return@run this
@@ -221,6 +239,7 @@ private fun StampSaveScreenPreview(
     StampSaveScreen(
         captionInputState = captionState,
         imageState = frameImage.let(::mutableStateOf),
+        onImagePreviewSizeChanged = { },
         onSaveAction = { },
         adjustmentsControllerItems = adjustmentsControllerItems,
         currentAdjustmentsControllerItemState =

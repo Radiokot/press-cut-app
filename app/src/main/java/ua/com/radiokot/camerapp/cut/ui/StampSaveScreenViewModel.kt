@@ -26,21 +26,23 @@ import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.asImageBitmap
-import androidx.compose.ui.util.fastAny
-import androidx.compose.ui.util.fastForEach
+import androidx.compose.ui.unit.IntSize
 import androidx.core.graphics.createBitmap
+import androidx.core.graphics.scale
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.mapLatest
@@ -64,29 +66,35 @@ class StampSaveScreenViewModel(
 
     private val originalStampImageBitmap: Bitmap =
         parameters.stampImageBitmap
-    val adjustedStampImage: StateFlow<ImageBitmap> =
-        imageAdjustmentsControllerViewModel
-            .adjustments
-            .mapLatest { adjustments ->
-                val width = originalStampImageBitmap.width
-                val height = originalStampImageBitmap.height
-
-                val pixels = IntArray(width * height)
-                originalStampImageBitmap.getPixels(pixels, 0, width, 0, 0, width, height)
-
-                applyImageAdjustments(
-                    pixels = pixels,
-                    adjustments = adjustments,
+    private val previewSize: MutableStateFlow<IntSize> =
+        MutableStateFlow(IntSize(100, 100))
+    private val previewSizeOriginalStampImageBitmap: Flow<Bitmap> =
+        previewSize
+            .map { size ->
+                originalStampImageBitmap.scale(
+                    width =
+                        size
+                            .width
+                            .coerceAtMost(originalStampImageBitmap.width),
+                    height =
+                        size
+                            .height
+                            .coerceAtMost(originalStampImageBitmap.height),
                 )
+            }
+            .flowOn(Dispatchers.Default)
 
-                val resultBitmap = createBitmap(
-                    width = width,
-                    height = height,
-                    config = originalStampImageBitmap.config!!,
-                )
-                resultBitmap.setPixels(pixels, 0, width, 0, 0, width, height)
-
-                resultBitmap.asImageBitmap()
+    val previewStampImage: StateFlow<ImageBitmap> =
+        previewSizeOriginalStampImageBitmap
+            .flatMapLatest { previewSizeOriginalStampImageBitmap ->
+                imageAdjustmentsControllerViewModel
+                    .adjustments
+                    .mapLatest { adjustments ->
+                        applyImageAdjustments(
+                            image = previewSizeOriginalStampImageBitmap,
+                            adjustments = adjustments,
+                        ).asImageBitmap()
+                    }
             }
             .flowOn(Dispatchers.Default)
             .stateIn(
@@ -104,7 +112,7 @@ class StampSaveScreenViewModel(
             imageAdjustmentsControllerViewModel
                 .adjustments
                 .map { adjustments ->
-                    adjustments.fastAny { it.value != 0f }
+                    adjustments.any { it.value != 0f }
                 },
             transform = { anyCaption, anyAdjustments ->
                 anyCaption || anyAdjustments
@@ -116,6 +124,17 @@ class StampSaveScreenViewModel(
         field = eventSharedFlow()
 
     private var saveJob: Job? = null
+
+    fun onPreviewSizeChanged(
+        size: IntSize,
+    ) {
+        log.debug {
+            "onPreviewSizeChanged(): switching size:" +
+                    "\nsize=$size"
+        }
+
+        previewSize.tryEmit(size)
+    }
 
     fun onSaveAction() {
         if (saveJob?.isActive == true) {
@@ -143,15 +162,22 @@ class StampSaveScreenViewModel(
                 .trim()
                 .takeIf(String::isNotEmpty)
 
+        val imageBitmap =
+            applyImageAdjustments(
+                image = originalStampImageBitmap,
+                adjustments = imageAdjustmentsControllerViewModel.adjustments.value,
+            )
+
         log.debug {
             "saveStamp(): saving:" +
                     "\ncollectionId=$collectionId," +
-                    "\ncaption=$caption"
+                    "\ncaption=$caption," +
+                    "\nimageBitmap=${imageBitmap.width}x${imageBitmap.height}"
         }
 
         stampRepository.addStamp(
             collectionId = collectionId,
-            imageBitmap = adjustedStampImage.value.asAndroidBitmap(),
+            imageBitmap = imageBitmap,
             caption = caption,
         )
 
@@ -163,9 +189,36 @@ class StampSaveScreenViewModel(
     }
 
     private fun applyImageAdjustments(
+        image: Bitmap,
+        adjustments: Array<ImageAdjustment>,
+    ): Bitmap {
+        val width = image.width
+        val height = image.height
+
+        val pixels = IntArray(width * height)
+        image.getPixels(pixels, 0, width, 0, 0, width, height)
+
+        applyImageAdjustments(
+            pixels = pixels,
+            adjustments = adjustments,
+        )
+
+        val resultBitmap = createBitmap(
+            width = width,
+            height = height,
+            config = originalStampImageBitmap.config!!,
+        )
+        resultBitmap.setPixels(pixels, 0, width, 0, 0, width, height)
+
+        return resultBitmap
+    }
+
+    private fun applyImageAdjustments(
         pixels: IntArray,
-        adjustments: List<ImageAdjustment>,
+        adjustments: Array<ImageAdjustment>,
     ) {
+        val rgb = IntArray(3)
+
         for (pixelIndex in pixels.indices) {
             val pixel = pixels[pixelIndex]
 
@@ -174,14 +227,12 @@ class StampSaveScreenViewModel(
                 continue
             }
 
-            val rgb = intArrayOf(
-                (pixel shr 16) and 0xFF,
-                (pixel shr 8) and 0xFF,
-                pixel and 0xFF,
-            )
+            rgb[0] = (pixel shr 16) and 0xFF
+            rgb[1] = (pixel shr 8) and 0xFF
+            rgb[2] = pixel and 0xFF
 
-            adjustments.fastForEach { adjustment ->
-                adjustment.apply(rgb)
+            for (i in adjustments.indices) {
+                adjustments[i].apply(rgb)
             }
 
             pixels[pixelIndex] =
