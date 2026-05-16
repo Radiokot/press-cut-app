@@ -36,6 +36,7 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.sample
 import kotlinx.coroutines.flow.stateIn
 import ua.com.radiokot.camerapp.cut.domain.BrightnessImageAdjustment
+import ua.com.radiokot.camerapp.cut.domain.GlitchImageAdjustment
 import ua.com.radiokot.camerapp.cut.domain.ContrastImageAdjustment
 import ua.com.radiokot.camerapp.cut.domain.ImageAdjustment
 import ua.com.radiokot.camerapp.cut.domain.TemperatureImageAdjustment
@@ -71,20 +72,23 @@ class ImageAdjustmentsControllerViewModel : ViewModel() {
             title = "Temperature",
             minValue = -100,
             maxValue = 100,
-            key = "temperature",
+            key = TEMPERATURE_KEY,
+        ),
+        AdjustmentControllerItem(
+            title = "Glitch",
+            minValue = 0,
+            maxValue = 100,
+            key = GLITCH_KEY,
         ),
     )
 
     val currentItem: StateFlow<AdjustmentControllerItem>
         field = MutableStateFlow(items.first())
-    val brightnessValue: StateFlow<Int>
-        field = MutableStateFlow(0)
-    val contrastValue: StateFlow<Int>
-        field = MutableStateFlow(0)
-    val vibranceValue: StateFlow<Int>
-        field = MutableStateFlow(0)
-    val temperatureValue: StateFlow<Int>
-        field = MutableStateFlow(0)
+    private val brightnessValue: MutableStateFlow<Int> = MutableStateFlow(0)
+    private val contrastValue: MutableStateFlow<Int> = MutableStateFlow(0)
+    private val vibranceValue: MutableStateFlow<Int> = MutableStateFlow(0)
+    private val temperatureValue: MutableStateFlow<Int> = MutableStateFlow(0)
+    private val chaosValue: MutableStateFlow<Int> = MutableStateFlow(0)
 
     private val _currentValue: MutableStateFlow<Int>
         get() = when (currentItem.value.key) {
@@ -92,6 +96,7 @@ class ImageAdjustmentsControllerViewModel : ViewModel() {
             CONTRAST_KEY -> contrastValue
             VIBRANCE_KEY -> vibranceValue
             TEMPERATURE_KEY -> temperatureValue
+            GLITCH_KEY -> chaosValue
             else -> error("Unknown key")
         }
     val currentValue: StateFlow<Int> =
@@ -113,6 +118,9 @@ class ImageAdjustmentsControllerViewModel : ViewModel() {
             temperatureValue
                 .sample(10.milliseconds)
                 .map { TemperatureImageAdjustment(it / 100f) },
+            chaosValue
+                .sample(10.milliseconds)
+                .map { GlitchImageAdjustment(it / 100f) },
             transform = ::arrayOf,
         )
             .stateIn(viewModelScope, SharingStarted.Lazily, emptyArray())
@@ -135,5 +143,6 @@ class ImageAdjustmentsControllerViewModel : ViewModel() {
         private const val CONTRAST_KEY = "contrast"
         private const val VIBRANCE_KEY = "vibrance"
         private const val TEMPERATURE_KEY = "temperature"
+        private const val GLITCH_KEY = "glitch"
     }
 }

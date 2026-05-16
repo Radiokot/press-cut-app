@@ -53,7 +53,6 @@ fun NavGraphBuilder.permissionsDestination(
             if (resultUri == viewModel.requiredDocumentTreeAccessUri) {
                 viewModel.onDocumentTreeAccessGranted()
             } else if (resultUri != null) {
-                println("OOLEG re $resultUri")
                 Toast.makeText(
                     context,
                     "Sorry, but the permission is required for the exact directory",

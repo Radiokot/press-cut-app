@@ -74,8 +74,8 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
-import ua.com.radiokot.camerapp.ui.paperBackground
 import ua.com.radiokot.camerapp.ui.PodkovaFamily
+import ua.com.radiokot.camerapp.ui.paperBackground
 import ua.com.radiokot.camerapp.ui.rememberSnapFlingBehavior
 
 @Composable
@@ -310,6 +310,7 @@ private fun ValueDial(
         spacingDp.toPx()
     }
     val rowState = rememberSaveable(
+        minValue,
         saver = LazyListState.Saver,
     ) {
         val (initialFirstVisibleItemIndex, initialFirstVisibleItemScrollOffset) =
@@ -351,7 +352,7 @@ private fun ValueDial(
         }
     }
 
-    LaunchedEffect(valueFlow, minValue) {
+    LaunchedEffect(valueFlow) {
         valueFlow
             .filter { it != internalValueState.intValue }
             .collect { valueToSnapTo ->

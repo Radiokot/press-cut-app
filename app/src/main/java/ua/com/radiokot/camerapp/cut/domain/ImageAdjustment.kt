@@ -21,6 +21,7 @@ package ua.com.radiokot.camerapp.cut.domain
 
 import androidx.annotation.FloatRange
 import androidx.compose.ui.util.fastCoerceIn
+import kotlin.math.abs
 
 sealed interface ImageAdjustment {
 
@@ -79,7 +80,7 @@ class VibranceImageAdjustment(
         val chroma = (max - min) / 255f
         val luma = (r * 0.299f + g * 0.587f + b * 0.114f).toInt()
 
-        // Muted pixels get a strong boost, vivid pixels get little/none
+        // Muted pixels get a strong boost, vivid pixels get little/none.
         val multiplier = 1f + value * (1f - chroma)
 
         rgb[0] = (luma + (r - luma) * multiplier).toInt().fastCoerceIn(0, 255)
@@ -136,5 +137,44 @@ class TemperatureImageAdjustment(
 
     private companion object {
         private val WARM_FILTER = intArrayOf(237, 138, 0)
+    }
+}
+
+class GlitchImageAdjustment(
+    @FloatRange(from = -1.0, to = 1.0)
+    override val value: Float,
+) : ImageAdjustment {
+
+    private val intensity = abs(value)
+
+    override fun apply(rgb: IntArray) {
+        if (intensity < 0.01f) {
+            return
+        }
+
+        // Derive a deterministic "glitch key" from the pixel's own values.
+        val seed = (rgb[0] * 0x1F + rgb[1] * 0x3D + rgb[2] * 0x7) and 0xFF
+        val xorMask = (intensity * 255f).toInt()
+
+        rgb[0] = (rgb[0] xor (seed and xorMask)).fastCoerceIn(0, 255)
+        rgb[1] = (rgb[1] xor ((seed shr 1) and xorMask)).fastCoerceIn(0, 255)
+        rgb[2] = (rgb[2] xor ((seed shr 2) and xorMask)).fastCoerceIn(0, 255)
+    }
+}
+
+class ChannelNegativeImageAdjustment(
+    @FloatRange(from = -1.0, to = 1.0)
+    override val value: Float,
+) : ImageAdjustment {
+
+    private val inversionIndex =
+        when {
+            value < -0.33f -> 0
+            value > 0.33f -> 2
+            else -> 1
+        }
+
+    override fun apply(rgb: IntArray) {
+        rgb[inversionIndex] = 255 - rgb[inversionIndex]
     }
 }
