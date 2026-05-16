@@ -36,6 +36,7 @@ import kotlinx.coroutines.flow.stateIn
 import ua.com.radiokot.camerapp.cut.domain.BrightnessImageAdjustment
 import ua.com.radiokot.camerapp.cut.domain.ContrastImageAdjustment
 import ua.com.radiokot.camerapp.cut.domain.ImageAdjustment
+import ua.com.radiokot.camerapp.cut.domain.TemperatureImageAdjustment
 import ua.com.radiokot.camerapp.cut.domain.VibranceImageAdjustment
 import ua.com.radiokot.camerapp.util.lazyLogger
 
@@ -43,15 +44,6 @@ import ua.com.radiokot.camerapp.util.lazyLogger
 class ImageAdjustmentsControllerViewModel : ViewModel() {
 
     private val log by lazyLogger("ImageAdjControllerVM")
-
-    private val brightnessAdjustment = BrightnessImageAdjustment()
-    private val contrastAdjustment = ContrastImageAdjustment()
-    private val vibranceAdjustment = VibranceImageAdjustment()
-    private val adjustmentList = listOf(
-        brightnessAdjustment,
-        contrastAdjustment,
-        vibranceAdjustment,
-    )
 
     val items = persistentListOf(
         AdjustmentControllerItem(
@@ -72,6 +64,12 @@ class ImageAdjustmentsControllerViewModel : ViewModel() {
             maxValue = 100,
             key = VIBRANCE_KEY,
         ),
+        AdjustmentControllerItem(
+            title = "Temperature",
+            minValue = -100,
+            maxValue = 100,
+            key = "temperature",
+        ),
     )
 
     val currentItem: StateFlow<AdjustmentControllerItem>
@@ -82,12 +80,15 @@ class ImageAdjustmentsControllerViewModel : ViewModel() {
         field = MutableStateFlow(0)
     val vibranceValue: StateFlow<Int>
         field = MutableStateFlow(0)
+    val temperatureValue: StateFlow<Int>
+        field = MutableStateFlow(0)
 
     private val _currentValue: MutableStateFlow<Int>
         get() = when (currentItem.value.key) {
             BRIGHTNESS_KEY -> brightnessValue
             CONTRAST_KEY -> contrastValue
             VIBRANCE_KEY -> vibranceValue
+            TEMPERATURE_KEY -> temperatureValue
             else -> error("Unknown key")
         }
     val currentValue: StateFlow<Int> =
@@ -100,16 +101,19 @@ class ImageAdjustmentsControllerViewModel : ViewModel() {
             contrastValue,
             brightnessValue,
             vibranceValue,
+            temperatureValue,
             transform = {
                     contrastValue,
                     brightnessValue,
                     vibranceValue,
+                    temperatureValue,
                 ->
-                contrastAdjustment.value = (contrastValue / 100f)
-                brightnessAdjustment.value = (brightnessValue / 100f)
-                vibranceAdjustment.value = (vibranceValue / 100f)
-
-                adjustmentList
+                listOf(
+                    ContrastImageAdjustment(contrastValue / 100f),
+                    BrightnessImageAdjustment(brightnessValue / 100f),
+                    VibranceImageAdjustment(vibranceValue / 100f),
+                    TemperatureImageAdjustment(temperatureValue / 100f),
+                )
             }
         )
 
@@ -130,5 +134,6 @@ class ImageAdjustmentsControllerViewModel : ViewModel() {
         private const val BRIGHTNESS_KEY = "brightness"
         private const val CONTRAST_KEY = "contrast"
         private const val VIBRANCE_KEY = "vibrance"
+        private const val TEMPERATURE_KEY = "temperature"
     }
 }

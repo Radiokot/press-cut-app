@@ -24,19 +24,16 @@ import androidx.compose.ui.util.fastCoerceIn
 
 sealed interface ImageAdjustment {
 
-    /**
-     * From -1 to 1.
-     */
-    @setparam:FloatRange(from = -1.0, to = 1.0)
     @get:FloatRange(from = -1.0, to = 1.0)
-    var value: Float
+    val value: Float
 
     fun apply(rgb: IntArray)
 }
 
-class BrightnessImageAdjustment : ImageAdjustment {
-
-    override var value: Float = 0f
+class BrightnessImageAdjustment(
+    @FloatRange(from = -1.0, to = 1.0)
+    override val value: Float,
+) : ImageAdjustment {
 
     override fun apply(rgb: IntArray) {
         if (value == 0f) {
@@ -49,9 +46,10 @@ class BrightnessImageAdjustment : ImageAdjustment {
     }
 }
 
-class ContrastImageAdjustment : ImageAdjustment {
-
-    override var value: Float = 0f
+class ContrastImageAdjustment(
+    @FloatRange(from = -1.0, to = 1.0)
+    override val value: Float,
+) : ImageAdjustment {
 
     override fun apply(rgb: IntArray) {
         if (value == 0f) {
@@ -65,9 +63,10 @@ class ContrastImageAdjustment : ImageAdjustment {
     }
 }
 
-class VibranceImageAdjustment : ImageAdjustment {
-
-    override var value: Float = 0f
+class VibranceImageAdjustment(
+    @FloatRange(from = -1.0, to = 1.0)
+    override val value: Float,
+) : ImageAdjustment {
 
     override fun apply(rgb: IntArray) {
         if (value == 0f) {
@@ -86,5 +85,55 @@ class VibranceImageAdjustment : ImageAdjustment {
         rgb[0] = (luma + (r - luma) * multiplier).toInt().fastCoerceIn(0, 255)
         rgb[1] = (luma + (g - luma) * multiplier).toInt().fastCoerceIn(0, 255)
         rgb[2] = (luma + (b - luma) * multiplier).toInt().fastCoerceIn(0, 255)
+    }
+}
+
+class TemperatureImageAdjustment(
+    @FloatRange(from = -1.0, to = 1.0)
+    override val value: Float,
+) : ImageAdjustment {
+    // GPUImageWhiteBalanceFilter
+    // https://github.com/wasabeef/android-gpuimage/blob/ceea576ec931c2968431ad46f1fb2e6d68a542e2/library/src/main/java/jp/co/cyberagent/android/gpuimage/filter/GPUImageWhiteBalanceFilter.java
+
+    override fun apply(rgb: IntArray) {
+        if (value == 0f) {
+            return
+        }
+
+        val processed = IntArray(3)
+        for (i in 0..2) {
+            val base = rgb[i]
+            val blend = WARM_FILTER[i]
+
+            processed[i] = if (base < 128) {
+                2 * base * blend / 255
+            } else {
+                255 - 2 * (255 - base) * (255 - blend) / 255
+            }
+        }
+
+        if (value >= 0f) {
+            val strength = (value * 256f + 0.5f).toInt()
+            val inverse = 256 - strength
+
+            for (i in 0..2) {
+                val v = (rgb[i] * inverse + processed[i] * strength + 128) shr 8
+                rgb[i] = v.fastCoerceIn(0, 255)
+            }
+        } else {
+            val coldStrength = -value
+
+            val scaleR = ((1f - 0.3f * coldStrength) * 256f + 0.5f).toInt()
+            val scaleG = ((1f - 0.1f * coldStrength) * 256f + 0.5f).toInt()
+            val scaleB = (0.6f * coldStrength * 256f + 0.5f).toInt()
+
+            rgb[0] = (rgb[0] * scaleR + 128 shr 8).fastCoerceIn(0, 255)
+            rgb[1] = (rgb[1] * scaleG + 128 shr 8).fastCoerceIn(0, 255)
+            rgb[2] = ((rgb[2] * 256 + (255 - rgb[2]) * scaleB + 128) shr 8).fastCoerceIn(0, 255)
+        }
+    }
+
+    private companion object {
+        private val WARM_FILTER = intArrayOf(237, 138, 0)
     }
 }

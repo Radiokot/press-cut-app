@@ -70,6 +70,7 @@ android {
     kotlin {
         compilerOptions {
             freeCompilerArgs.add("-Xexplicit-backing-fields")
+            freeCompilerArgs.add("-XXLanguage:+PropertyParamAnnotationDefaultTargetMode")
         }
     }
 
