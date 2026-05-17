@@ -17,23 +17,37 @@
    along with Press-Cut. If not, see <http://www.gnu.org/licenses/>.
 */
 
-package ua.com.radiokot.camerapp.stamps.ui
+package ua.com.radiokot.camerapp.stamps.domain
 
-import androidx.compose.foundation.Image
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.vector.PathBuilder
 import androidx.compose.ui.graphics.vector.PathNode
-import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.DpSize
-import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.IntSize
 
-object StampShapeA {
+sealed interface StampShape {
+
+    val name: String
+    val path: List<PathNode>
+    val size: IntSize
+
+    companion object {
+
+        fun fromName(
+            name: String,
+        ): StampShape = when (name) {
+
+            StampShapeA.name -> StampShapeA
+
+            else -> throw IllegalArgumentException("Unknown shape name $name")
+        }
+    }
+}
+
+object StampShapeA : StampShape {
+
+    override val name = "a"
 
     // https://composables.com/svg-to-compose
-    val path: List<PathNode> = PathBuilder().apply {
+    override val path: List<PathNode> = PathBuilder().apply {
         moveTo(100f, 121.1f)
         verticalLineTo(115f)
         curveToRelative(-4f, 0.4f, -4f, -6.7f, 0f, -6.2f)
@@ -109,61 +123,9 @@ object StampShapeA {
         arcToRelative(3f, 3f, 0f, false, true, 3.1f, -2.9f)
     }.nodes
 
-    val size = DpSize(
-        width = 100.dp,
-        height = 124.dp,
-    )
-
-    val fill: ImageVector by lazy {
-        ImageVector.Builder(
-            name = "StampA.Fill",
-            defaultWidth = size.width,
-            defaultHeight = size.height,
-            viewportWidth = size.width.value,
-            viewportHeight = size.height.value,
+    override val size: IntSize =
+        IntSize(
+            width = 100,
+            height = 124,
         )
-            .addPath(
-                pathData = path,
-                fill = SolidColor(Color.Black),
-            )
-            .build()
-    }
-
-    val stroke: ImageVector by lazy {
-        ImageVector.Builder(
-            name = "StampA.Stroke",
-            defaultWidth = size.width,
-            defaultHeight = size.height,
-            viewportWidth = size.width.value,
-            viewportHeight = size.height.value,
-        )
-            .addPath(
-                pathData = path,
-                stroke = SolidColor(Color.Red),
-                strokeLineWidth = 0.4f,
-            )
-            .build()
-    }
-}
-
-@Preview(
-    name = "Fill",
-)
-@Composable
-private fun StampShapeAFillPreview() {
-    Image(
-        imageVector = StampShapeA.fill,
-        contentDescription = null,
-    )
-}
-
-@Preview(
-    name = "Stroke",
-)
-@Composable
-private fun StampShapeAStrokePreview() {
-    Image(
-        imageVector = StampShapeA.stroke,
-        contentDescription = null,
-    )
 }

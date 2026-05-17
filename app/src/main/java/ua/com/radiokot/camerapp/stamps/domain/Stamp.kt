@@ -27,6 +27,7 @@ class Stamp(
     val imageUri: String,
     val caption: String?,
     val takenAtLocal: LocalDateTime,
+    val shape: StampShape,
 ) {
     fun copy(
         newCollectionId: String = this.collectionId,
@@ -38,6 +39,7 @@ class Stamp(
         imageUri = newImageUri,
         caption = newCaption,
         takenAtLocal = takenAtLocal,
+        shape = shape,
     )
 
     override fun equals(other: Any?): Boolean {

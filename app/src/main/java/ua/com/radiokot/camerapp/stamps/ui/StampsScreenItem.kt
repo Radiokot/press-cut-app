@@ -27,6 +27,7 @@ import ua.com.radiokot.camerapp.stamps.domain.Stamp
 @Immutable
 data class StampsScreenItem(
     val imageUri: Uri,
+    val shape: UiStampShape,
     val isSelected: Boolean,
     val key: String,
 ) {
@@ -35,6 +36,7 @@ data class StampsScreenItem(
         selectedStampIds: Set<String>,
     ) : this(
         imageUri = stamp.imageUri.toUri(),
+        shape = UiStampShape.fromShape(stamp.shape),
         isSelected = stamp.id in selectedStampIds,
         key = stamp.id,
     )

@@ -50,6 +50,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import ua.com.radiokot.camerapp.stamps.domain.Stamp
 import ua.com.radiokot.camerapp.stamps.domain.StampRepository
+import ua.com.radiokot.camerapp.stamps.domain.StampShapeA
 import ua.com.radiokot.camerapp.util.lazyLogger
 import java.io.ByteArrayOutputStream
 import java.io.File
@@ -195,6 +196,8 @@ class FsStampRepository(
                 caption = caption,
                 imageUri = outputFile.toPath().toImageUri(),
                 takenAtLocal = takenAtLocal,
+                // TODO write the shape to metadata
+                shape = StampShapeA,
             )
             sharedFlow.emit(cache)
         }
@@ -490,6 +493,8 @@ private fun File.toStamp(): Stamp {
                     .toInstant()
                     .atZone(ZoneId.systemDefault())
                     .toLocalDateTime(),
+        // TODO read the shape from metadata.
+        shape = StampShapeA,
     )
 }
 

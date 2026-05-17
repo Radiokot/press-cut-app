@@ -53,8 +53,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import ua.com.radiokot.camerapp.ui.LeButton
-import ua.com.radiokot.camerapp.ui.paperBackground
 import ua.com.radiokot.camerapp.ui.PodkovaFamily
+import ua.com.radiokot.camerapp.ui.paperBackground
 
 @Composable
 fun StampCutter(
@@ -66,8 +66,8 @@ fun StampCutter(
         contentAlignment = Alignment.Center,
         modifier = modifier,
     ) {
-        val stampPainter = rememberVectorPainter(StampShapeA.fill)
-        val stampStrokePainter = rememberVectorPainter(StampShapeA.stroke)
+        val stampPainter = rememberVectorPainter(UiStampShapeA.fill)
+        val stampStrokePainter = rememberVectorPainter(UiStampShapeA.stroke)
         val strokeColor = Color(0xFF6B624B)
 
         Spacer(

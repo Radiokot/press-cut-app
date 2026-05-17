@@ -137,7 +137,7 @@ private fun Envelope() {
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
-            .size(StampShapeA.size * 1.2f)
+            .size(UiStampShapeA.size * 1.2f)
     ) {
         val shadowColor = Color(0x7447525E)
         val animationProgress = remember {
@@ -162,11 +162,11 @@ private fun Envelope() {
         }
 
         Image(
-            painter = rememberVectorPainter(StampShapeA.fill),
+            painter = rememberVectorPainter(UiStampShapeA.fill),
             colorFilter = ColorFilter.tint(Color(0xff757a80)),
             contentDescription = null,
             modifier = Modifier
-                .size(StampShapeA.size)
+                .size(UiStampShapeA.size)
                 .dropShadow(
                     shape = RectangleShape,
                     shadow = Shadow(

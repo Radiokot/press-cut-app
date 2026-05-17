@@ -60,7 +60,7 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import ua.com.radiokot.camerapp.stamps.ui.StampShapeA
+import ua.com.radiokot.camerapp.stamps.domain.StampShapeA
 import ua.com.radiokot.camerapp.util.eventSharedFlow
 import ua.com.radiokot.camerapp.util.lazyLogger
 import ua.com.radiokot.camerapp.util.map
@@ -272,7 +272,7 @@ class StampCutScreenViewModel : ViewModel() {
                 .asAndroidPath()
                 .apply {
                     transform(Matrix().apply {
-                        val scale = resultBitmap.width / StampShapeA.size.width.value
+                        val scale = resultBitmap.width / StampShapeA.size.width.toFloat()
                         setScale(scale, scale)
                     })
                 }

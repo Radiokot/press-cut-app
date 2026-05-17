@@ -96,8 +96,8 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toPersistentList
 import ua.com.radiokot.camerapp.R
 import ua.com.radiokot.camerapp.ui.LeTextButton
-import ua.com.radiokot.camerapp.ui.Vignette
 import ua.com.radiokot.camerapp.ui.PodkovaFamily
+import ua.com.radiokot.camerapp.ui.Vignette
 import ua.com.radiokot.camerapp.util.EmptyImageComponent
 import ua.com.radiokot.camerapp.util.noProgressive
 import ua.com.radiokot.camerapp.util.plus
@@ -590,6 +590,7 @@ fun StampsScreenPreview(
         .map { i ->
             StampsScreenItem(
                 imageUri = Uri.EMPTY,
+                shape = UiStampShapeA,
                 isSelected = false,
                 key = i.toString(),
             )
