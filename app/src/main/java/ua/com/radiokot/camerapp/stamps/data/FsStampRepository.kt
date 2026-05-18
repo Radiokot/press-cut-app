@@ -48,8 +48,11 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import ua.com.radiokot.camerapp.stamps.data.PressCutXmpNamespace.getStampShape
+import ua.com.radiokot.camerapp.stamps.data.PressCutXmpNamespace.setStampShape
 import ua.com.radiokot.camerapp.stamps.domain.Stamp
 import ua.com.radiokot.camerapp.stamps.domain.StampRepository
+import ua.com.radiokot.camerapp.stamps.domain.StampShape
 import ua.com.radiokot.camerapp.stamps.domain.StampShapeA
 import ua.com.radiokot.camerapp.util.lazyLogger
 import java.io.ByteArrayOutputStream
@@ -145,6 +148,7 @@ class FsStampRepository(
     override suspend fun addStamp(
         collectionId: String,
         imageBitmap: Bitmap,
+        shape: StampShape,
         caption: String?,
     ): Unit = withContext(Dispatchers.IO) {
 
@@ -178,6 +182,7 @@ class FsStampRepository(
         val xmpMeta = XMPMetaFactory.create().setStampDetails(
             caption = caption,
             takenAtLocal = takenAtLocal,
+            shape = shape,
         )
 
         WebPWriter.writeImage(
@@ -196,8 +201,7 @@ class FsStampRepository(
                 caption = caption,
                 imageUri = outputFile.toPath().toImageUri(),
                 takenAtLocal = takenAtLocal,
-                // TODO write the shape to metadata
-                shape = StampShapeA,
+                shape = shape,
             )
             sharedFlow.emit(cache)
         }
@@ -241,6 +245,7 @@ class FsStampRepository(
         xmpMeta.setStampDetails(
             caption = captionToSet,
             takenAtLocal = stamp.takenAtLocal,
+            shape = stamp.shape,
         )
 
         WebPWriter
@@ -461,9 +466,13 @@ class FsStampRepository(
 private fun XMPMeta.setStampDetails(
     caption: String?,
     takenAtLocal: LocalDateTime,
+    shape: StampShape,
 ) = apply {
     setTitle(caption)
     setDateTimeOriginal(takenAtLocal.toString())
+    if (shape != StampShapeA) {
+        setStampShape(shape.name)
+    }
 }
 
 private fun File.toStamp(): Stamp {
@@ -493,8 +502,11 @@ private fun File.toStamp(): Stamp {
                     .toInstant()
                     .atZone(ZoneId.systemDefault())
                     .toLocalDateTime(),
-        // TODO read the shape from metadata.
-        shape = StampShapeA,
+        shape =
+            xmpMeta
+                ?.getStampShape()
+                ?.let(StampShape::fromName)
+                ?: StampShapeA,
     )
 }
 

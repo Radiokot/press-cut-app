@@ -36,6 +36,7 @@ interface StampRepository {
     suspend fun addStamp(
         collectionId: String,
         imageBitmap: Bitmap,
+        shape: StampShape,
         caption: String?,
     )
 

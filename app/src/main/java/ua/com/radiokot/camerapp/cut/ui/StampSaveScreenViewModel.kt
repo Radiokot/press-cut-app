@@ -52,6 +52,7 @@ import kotlinx.coroutines.withContext
 import ua.com.radiokot.camerapp.cut.domain.ImageAdjustment
 import ua.com.radiokot.camerapp.stamps.domain.StampCollection
 import ua.com.radiokot.camerapp.stamps.domain.StampRepository
+import ua.com.radiokot.camerapp.stamps.domain.StampShapeA
 import ua.com.radiokot.camerapp.util.eventSharedFlow
 import ua.com.radiokot.camerapp.util.lazyLogger
 
@@ -179,6 +180,7 @@ class StampSaveScreenViewModel(
             collectionId = collectionId,
             imageBitmap = imageBitmap,
             caption = caption,
+            shape = StampShapeA,
         )
 
         log.info {
