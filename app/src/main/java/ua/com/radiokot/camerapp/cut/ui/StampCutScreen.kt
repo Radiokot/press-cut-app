@@ -85,7 +85,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import ua.com.radiokot.camerapp.R
 import ua.com.radiokot.camerapp.stamps.ui.StampCutter
-import ua.com.radiokot.camerapp.stamps.ui.StampSize
+import ua.com.radiokot.camerapp.stamps.ui.UiStampShapeA
 import java.util.concurrent.TimeUnit
 import kotlin.math.min
 import kotlin.random.Random
@@ -282,8 +282,8 @@ fun StampCutScreen(
     }
 
     var cutterSize = DpSize(
-        width = StampSize.width * 2.5f,
-        height = StampSize.height * 2.8f,
+        width = UiStampShapeA.size.width * 2.5f,
+        height =  UiStampShapeA.size.height * 2.8f,
     )
     val cutterToScreenSizeRatio =
         if (maxHeight < 300.dp || maxWidth < 300.dp)
@@ -295,7 +295,7 @@ fun StampCutScreen(
         maxHeight * cutterToScreenSizeRatio / cutterSize.height,
     )
     cutterSize *= cutterSizeScale
-    val frameSize = StampSize * 1.5f * cutterSizeScale
+    val frameSize =  UiStampShapeA.size * 1.5f * cutterSizeScale
 
     Spacer(
         modifier = Modifier

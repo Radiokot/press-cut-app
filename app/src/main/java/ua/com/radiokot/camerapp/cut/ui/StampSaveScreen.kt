@@ -60,7 +60,7 @@ import androidx.core.graphics.createBitmap
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import ua.com.radiokot.camerapp.stamps.ui.CaptionInput
-import ua.com.radiokot.camerapp.stamps.ui.StampSize
+import ua.com.radiokot.camerapp.stamps.ui.UiStampShapeA
 import ua.com.radiokot.camerapp.ui.LeTextButton
 
 @Composable
@@ -118,9 +118,9 @@ fun StampSaveScreen(
 
         val imageSize = remember(isScreenQuiteTall) {
             if (isScreenQuiteTall)
-                StampSize * 2f
+                UiStampShapeA.size * 2f
             else
-                StampSize * 1.5f
+                UiStampShapeA.size * 1.5f
         }
 
         val density = LocalDensity.current
@@ -231,8 +231,8 @@ private fun StampSaveScreenPreview(
 
     val frameImage = remember {
         createBitmap(
-            width = StampSize.width.value.toInt(),
-            height = StampSize.height.value.toInt(),
+            width = UiStampShapeA.size.width.value.toInt(),
+            height = UiStampShapeA.size.height.value.toInt(),
         ).asImageBitmap()
     }
 

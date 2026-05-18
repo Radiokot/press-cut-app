@@ -67,6 +67,7 @@ fun NavGraphBuilder.stampDestination(
         onDeleteAction = viewModel::onDeleteAction,
         onMoveAction = viewModel::onMoveAction,
         imageUri = viewModel.imageUri,
+        shape = viewModel.shape,
         takenAt = viewModel.takenAt,
         onSwipedToExit = onDone,
         sharedTransitionScope = sharedTransitionScope,

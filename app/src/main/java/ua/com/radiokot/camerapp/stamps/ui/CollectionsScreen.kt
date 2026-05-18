@@ -194,7 +194,7 @@ private fun NewCollectionView(
                 )
                 val frontBackgroundColor = Color(0xFFFFF9EB)
                 val strokeColor = Color(0xFF6B624B)
-                val strokeInterval = StampSize.width.toPx() * 0.08f
+                val strokeInterval = StampContainerBaseSize.width.toPx() * 0.08f
                 val dashStrokeStyle = Stroke(
                     cap = StrokeCap.Round,
                     join = StrokeJoin.Round,
@@ -206,7 +206,7 @@ private fun NewCollectionView(
                 val frontOutline = CollectionViewShape.createOutline(
                     size = Size(
                         width = this.size.width + 1f,
-                        height = StampSize.height.toPx() * 0.5f,
+                        height = StampContainerBaseSize.height.toPx() * 0.5f,
                     ),
                     layoutDirection = layoutDirection,
                     density = this,
@@ -250,7 +250,7 @@ private fun NewCollectionView(
         contentAlignment = Alignment.Center,
         modifier = Modifier
             .fillMaxWidth()
-            .height(StampSize.height * 0.5f)
+            .height(StampContainerBaseSize.height * 0.5f)
             .align(Alignment.BottomCenter)
             .padding(8.dp)
     ) {
@@ -273,6 +273,7 @@ private fun CollectionsScreenPreview() {
             someStamps = persistentListOf(
                 CollectionListItem.StampSampleItem(
                     imageUri = Uri.EMPTY,
+                    shape = UiStampShapeA,
                     key = "",
                 ),
             ),
@@ -283,10 +284,12 @@ private fun CollectionsScreenPreview() {
             someStamps = persistentListOf(
                 CollectionListItem.StampSampleItem(
                     imageUri = Uri.EMPTY,
+                    shape = UiStampShapeA,
                     key = "1",
                 ),
                 CollectionListItem.StampSampleItem(
                     imageUri = Uri.EMPTY,
+                    shape = UiStampShapeA,
                     key = "2",
                 ),
             ),
@@ -297,14 +300,17 @@ private fun CollectionsScreenPreview() {
             someStamps = persistentListOf(
                 CollectionListItem.StampSampleItem(
                     imageUri = Uri.EMPTY,
+                    shape = UiStampShapeA,
                     key = "1",
                 ),
                 CollectionListItem.StampSampleItem(
                     imageUri = Uri.EMPTY,
+                    shape = UiStampShapeA,
                     key = "2",
                 ),
                 CollectionListItem.StampSampleItem(
                     imageUri = Uri.EMPTY,
+                    shape = UiStampShapeA,
                     key = "3",
                 ),
             ),

@@ -56,6 +56,8 @@ class StampScreenViewModel(
         stamp.id
     val imageUri: Uri =
         stamp.imageUri.toUri()
+    val shape: UiStampShape =
+        UiStampShape.fromShape(stamp.shape)
     val takenAt: LocalDate =
         stamp.takenAtLocal.toLocalDate()
 

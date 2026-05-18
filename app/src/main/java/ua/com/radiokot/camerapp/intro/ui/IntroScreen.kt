@@ -49,11 +49,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import ua.com.radiokot.camerapp.R
-import ua.com.radiokot.camerapp.stamps.ui.StampSize
+import ua.com.radiokot.camerapp.stamps.ui.UiStampShapeA
 import ua.com.radiokot.camerapp.ui.LeTextButton
+import ua.com.radiokot.camerapp.ui.PodkovaFamily
 import ua.com.radiokot.camerapp.ui.Vignette
 import ua.com.radiokot.camerapp.ui.paperBackground
-import ua.com.radiokot.camerapp.ui.PodkovaFamily
 
 @Composable
 fun IntroScreen(
@@ -110,7 +110,7 @@ fun IntroScreen(
             contentAlignment = Alignment.TopCenter,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(StampSize.height * 1.7f)
+                .height(UiStampShapeA.size.height * 1.7f)
         ) {
             Image(
                 painter = painterResource(R.drawable.flowers_stamp),
@@ -120,9 +120,9 @@ fun IntroScreen(
                         top = 24.dp,
                     )
                     .offset(
-                        x = StampSize.width * 0.6f,
+                        x = UiStampShapeA.size.width * 0.6f,
                     )
-                    .size(StampSize)
+                    .size(UiStampShapeA.size)
                     .rotate(4f)
                     .dropShadow(
                         shape = RectangleShape,
@@ -138,10 +138,10 @@ fun IntroScreen(
                 painter = painterResource(R.drawable.panettone_stamp),
                 contentDescription = "Panettone",
                 modifier = Modifier
-                    .size(StampSize)
+                    .size(UiStampShapeA.size)
                     .offset(
-                        x = -StampSize.width * 0.6f,
-                        y = StampSize.height * 0.4f,
+                        x = -UiStampShapeA.size.width * 0.6f,
+                        y = UiStampShapeA.size.height * 0.4f,
                     )
                     .rotate(-3f)
                     .dropShadow(

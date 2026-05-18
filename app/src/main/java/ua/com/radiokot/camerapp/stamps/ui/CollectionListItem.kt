@@ -41,6 +41,7 @@ data class CollectionListItem(
                 .map { stamp ->
                     StampSampleItem(
                         imageUri = stamp.imageUri.toUri(),
+                        shape = UiStampShape.fromShape(stamp.shape),
                         key = stamp.id,
                     )
                 }
@@ -51,6 +52,7 @@ data class CollectionListItem(
     @Immutable
     data class StampSampleItem(
         val imageUri: Uri,
+        val shape: UiStampShape,
         val key: String,
     )
 }

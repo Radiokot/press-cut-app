@@ -19,5 +19,7 @@
 
 package ua.com.radiokot.camerapp.stamps.ui
 
-val StampSize
-    get() = UiStampShapeA.size
+import androidx.compose.ui.unit.DpSize
+
+val StampContainerBaseSize: DpSize =
+    UiStampShapeA.size

@@ -231,10 +231,10 @@ private fun StampCutterPreview(
             .paperBackground()
     ) {
         StampCutter(
-            frameSize = StampSize * 1.5f,
+            frameSize = UiStampShapeA.size * 1.5f,
             modifier = Modifier
-                .requiredWidth(StampSize.width * 2.5f)
-                .requiredHeight(StampSize.height * 2.8f)
+                .requiredWidth(UiStampShapeA.size.width * 2.5f)
+                .requiredHeight(UiStampShapeA.size.height * 2.8f)
         )
     }
 }

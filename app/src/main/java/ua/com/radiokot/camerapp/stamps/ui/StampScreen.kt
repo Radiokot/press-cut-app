@@ -92,18 +92,15 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.skydoves.landscapist.ImageOptions
 import com.skydoves.landscapist.image.LandscapistImage
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import ua.com.radiokot.camerapp.R
-import ua.com.radiokot.camerapp.ui.paperBackground
 import ua.com.radiokot.camerapp.ui.PodkovaFamily
+import ua.com.radiokot.camerapp.ui.paperBackground
 import ua.com.radiokot.camerapp.util.EmptyImageComponent
-import ua.com.radiokot.camerapp.util.noProgressive
 import java.time.LocalDate
 import kotlin.math.absoluteValue
 
@@ -114,6 +111,7 @@ fun StampScreen(
     captionState: TextFieldState,
     isCaptionInputEnabled: Boolean,
     imageUri: Uri,
+    shape: UiStampShape,
     takenAt: LocalDate,
     onAddCaptionAction: () -> Unit,
     onDeleteAction: () -> Unit,
@@ -274,34 +272,23 @@ fun StampScreen(
                     )
                 }
         ) {
-            val density = LocalDensity.current
-            val imageOptions = retain(density) {
-                with(density) {
-                    ImageOptions(
-                        requestSize = IntSize(
-                            width = (StampSize.width * 2f).roundToPx(),
-                            height = (StampSize.height * 2f).roundToPx(),
-                        )
+            val stampImageLoadingOptions =
+                shape
+                    .getPreviewImageLoadingOptions(
+                        density = LocalDensity.current,
                     )
-                }
-            }
-            val imageRequestBuilder = retain(imageOptions) {
-                noProgressive(
-                    size = imageOptions.requestSize,
-                )
-            }
 
             LandscapistImage(
                 imageModel = { imageUri },
-                requestBuilder = imageRequestBuilder,
-                imageOptions = imageOptions,
+                requestBuilder = stampImageLoadingOptions.requestBuilder,
+                imageOptions = stampImageLoadingOptions.imageOptions,
                 component = EmptyImageComponent,
                 modifier = Modifier
                     .size(
                         if (isScreenQuiteTall)
-                            StampSize * 2f
+                            shape.size * 2f
                         else
-                            StampSize * 1.5f
+                            shape.size * 1.5f
                     )
                     .run {
                         if (sharedTransitionScope == null || animatedVisibilityScope == null) {
@@ -364,7 +351,7 @@ fun StampScreen(
                     )
                 },
                 modifier = Modifier
-                    .width(StampSize.width * 2.5f)
+                    .width(StampContainerBaseSize.width * 2.5f)
             ) { showActions ->
 
                 if (!showActions) {
@@ -547,6 +534,7 @@ private fun StampScreenPreview(
             captionState = TextFieldState("My stamp"),
             isCaptionInputEnabled = false,
             imageUri = Uri.EMPTY,
+            shape = UiStampShapeA,
             takenAt = LocalDate.now(),
             onAddCaptionAction = { },
             onDeleteAction = { },

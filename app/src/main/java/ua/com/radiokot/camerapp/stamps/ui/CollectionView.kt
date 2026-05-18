@@ -38,7 +38,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.retain.retain
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.dropShadow
@@ -50,15 +49,11 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.DpSize
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.skydoves.landscapist.ImageOptions
-import com.skydoves.landscapist.core.ImageRequest
 import com.skydoves.landscapist.image.LandscapistImage
 import ua.com.radiokot.camerapp.ui.PodkovaFamily
 import ua.com.radiokot.camerapp.util.EmptyImageComponent
-import ua.com.radiokot.camerapp.util.noProgressive
 import kotlin.math.absoluteValue
 
 @Composable
@@ -111,26 +106,6 @@ fun CollectionView(
             .align(Alignment.BottomCenter)
     )
 
-    // To avoid flicker when opening the stamps screen,
-    // make the library load the image in a size
-    // that matches the stamp size on the stamps screen.
-    val density = LocalDensity.current
-    val sampleImageOptions = retain(density) {
-        with(density) {
-            ImageOptions(
-                requestSize = IntSize(
-                    width = StampSize.width.roundToPx(),
-                    height = StampSize.height.roundToPx(),
-                )
-            )
-        }
-    }
-    val sampleImageRequestBuilder = retain(sampleImageOptions) {
-        noProgressive(
-            size = sampleImageOptions.requestSize,
-        )
-    }
-
     when (item.someStamps.size) {
         1 -> {
             StampSampleView(
@@ -138,8 +113,6 @@ fun CollectionView(
                 order = 0,
                 possibleRotationAngles = CenterSampleRotationAngles,
                 fallbackColor = Color.Yellow,
-                imageOptions = sampleImageOptions,
-                imageRequestBuilder = sampleImageRequestBuilder,
                 sharedTransitionScope = sharedTransitionScope,
                 animatedVisibilityScope = animatedVisibilityScope,
                 modifier = Modifier
@@ -156,14 +129,12 @@ fun CollectionView(
                 order = 0,
                 possibleRotationAngles = RightSampleRotationAngles,
                 fallbackColor = Color.Red,
-                imageOptions = sampleImageOptions,
-                imageRequestBuilder = sampleImageRequestBuilder,
                 sharedTransitionScope = sharedTransitionScope,
                 animatedVisibilityScope = animatedVisibilityScope,
                 modifier = Modifier
                     .align(Alignment.Center)
                     .offset(
-                        x = StampSize.width * 0.2f,
+                        x = StampContainerBaseSize.width * 0.2f,
                         y = -(8.dp),
                     )
             )
@@ -172,14 +143,12 @@ fun CollectionView(
                 order = 1,
                 possibleRotationAngles = LeftSampleRotationAngles,
                 fallbackColor = Color.Yellow,
-                imageOptions = sampleImageOptions,
-                imageRequestBuilder = sampleImageRequestBuilder,
                 sharedTransitionScope = sharedTransitionScope,
                 animatedVisibilityScope = animatedVisibilityScope,
                 modifier = Modifier
                     .align(Alignment.Center)
                     .offset(
-                        x = -StampSize.width * 0.2f,
+                        x = -StampContainerBaseSize.width * 0.2f,
                         y = -(4.dp),
                     )
             )
@@ -191,14 +160,12 @@ fun CollectionView(
                 order = 0,
                 possibleRotationAngles = RightSampleRotationAngles,
                 fallbackColor = Color.Yellow,
-                imageOptions = sampleImageOptions,
-                imageRequestBuilder = sampleImageRequestBuilder,
                 sharedTransitionScope = sharedTransitionScope,
                 animatedVisibilityScope = animatedVisibilityScope,
                 modifier = Modifier
                     .align(Alignment.Center)
                     .offset(
-                        x = StampSize.width * 0.25f,
+                        x = StampContainerBaseSize.width * 0.25f,
                         y = -(2.dp),
                     )
             )
@@ -207,8 +174,6 @@ fun CollectionView(
                 order = 1,
                 possibleRotationAngles = CenterSampleRotationAngles,
                 fallbackColor = Color.Red,
-                imageOptions = sampleImageOptions,
-                imageRequestBuilder = sampleImageRequestBuilder,
                 sharedTransitionScope = sharedTransitionScope,
                 animatedVisibilityScope = animatedVisibilityScope,
                 modifier = Modifier
@@ -222,14 +187,12 @@ fun CollectionView(
                 order = 2,
                 possibleRotationAngles = LeftSampleRotationAngles,
                 fallbackColor = Color.Magenta,
-                imageOptions = sampleImageOptions,
-                imageRequestBuilder = sampleImageRequestBuilder,
                 sharedTransitionScope = sharedTransitionScope,
                 animatedVisibilityScope = animatedVisibilityScope,
                 modifier = Modifier
                     .align(Alignment.Center)
                     .offset(
-                        x = -StampSize.width * 0.25f,
+                        x = -StampContainerBaseSize.width * 0.25f,
                         y = -(8.dp),
                     )
             )
@@ -240,7 +203,7 @@ fun CollectionView(
         contentAlignment = Alignment.Center,
         modifier = Modifier
             .fillMaxWidth()
-            .height(StampSize.height * 0.5f)
+            .height(StampContainerBaseSize.height * 0.5f)
             .align(Alignment.BottomCenter)
             .run {
                 if (sharedTransitionScope == null || animatedVisibilityScope == null) {
@@ -296,8 +259,8 @@ private val CenterSampleRotationAngles = floatArrayOf(3f, 2f, -2f, -3f)
 private val RightSampleRotationAngles = floatArrayOf(6f, 5f, 4f)
 
 val CollectionViewSize = DpSize(
-    width = StampSize.width * 1.55f,
-    height = StampSize.height
+    width = StampContainerBaseSize.width * 1.55f,
+    height = StampContainerBaseSize.height
 )
 val CollectionViewNameStyle = TextStyle(
     fontFamily = PodkovaFamily,
@@ -313,18 +276,23 @@ private fun StampSampleView(
     sample: CollectionListItem.StampSampleItem,
     possibleRotationAngles: FloatArray,
     order: Int,
-    imageOptions: ImageOptions,
-    imageRequestBuilder: ImageRequest.Builder.() -> Unit,
     sharedTransitionScope: SharedTransitionScope?,
     animatedVisibilityScope: AnimatedVisibilityScope?,
-) =
+) {
+    val stampImageLoadingOptions =
+        sample
+            .shape
+            .getListImageLoadingOptions(
+                density = LocalDensity.current,
+            )
+
     LandscapistImage(
         imageModel = sample::imageUri,
-        requestBuilder = imageRequestBuilder,
-        imageOptions = imageOptions,
+        requestBuilder = stampImageLoadingOptions.requestBuilder,
+        imageOptions = stampImageLoadingOptions.imageOptions,
         component = EmptyImageComponent,
         modifier = modifier
-            .size(StampSize * 0.85f)
+            .size(sample.shape.size * 0.85f)
             .run {
                 if (sharedTransitionScope == null || animatedVisibilityScope == null) {
                     return@run this
@@ -356,3 +324,4 @@ private fun StampSampleView(
                 )
             )
     )
+}

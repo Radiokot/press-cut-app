@@ -100,7 +100,7 @@ fun CollectionActionsScreen(
         onMoveStamps = onMoveStampsAction,
         onDelete = onDeleteAction,
         modifier = Modifier
-            .width(StampSize.width * 2.5f)
+            .width(StampContainerBaseSize.width * 2.5f)
             .graphicsLayer {
                 alpha = detailsAlpha.value
             }

@@ -87,10 +87,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.skydoves.landscapist.ImageOptions
 import com.skydoves.landscapist.image.LandscapistImage
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toPersistentList
@@ -99,7 +97,6 @@ import ua.com.radiokot.camerapp.ui.LeTextButton
 import ua.com.radiokot.camerapp.ui.PodkovaFamily
 import ua.com.radiokot.camerapp.ui.Vignette
 import ua.com.radiokot.camerapp.util.EmptyImageComponent
-import ua.com.radiokot.camerapp.util.noProgressive
 import ua.com.radiokot.camerapp.util.plus
 import kotlin.math.absoluteValue
 
@@ -159,24 +156,9 @@ fun StampsScreen(
         )
     }
     val density = LocalDensity.current
-    val stampImageOptions = retain(density) {
-        with(density) {
-            ImageOptions(
-                requestSize = IntSize(
-                    width = StampSize.width.roundToPx(),
-                    height = StampSize.height.roundToPx(),
-                )
-            )
-        }
-    }
-    val stampImageRequestBuilder = retain(stampImageOptions) {
-        noProgressive(
-            size = stampImageOptions.requestSize,
-        )
-    }
 
     LazyVerticalGrid(
-        columns = GridCells.FixedSize(StampSize.width * 1.15f),
+        columns = GridCells.FixedSize(StampContainerBaseSize.width * 1.15f),
         horizontalArrangement = Arrangement.SpaceAround,
         contentPadding = contentPadding,
         overscrollEffect = null,
@@ -253,7 +235,7 @@ fun StampsScreen(
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier
-                    .height(StampSize.height * 1.2f)
+                    .height(StampContainerBaseSize.height * 1.2f)
                     .animateItem()
             ) {
                 val selectionAnimationProgressState = animateFloatAsState(
@@ -264,14 +246,20 @@ fun StampsScreen(
                             0f,
                     animationSpec = selectionAnimationSpec,
                 )
+                val stampImageLoadingOptions =
+                    stamp
+                        .shape
+                        .getListImageLoadingOptions(
+                            density = density,
+                        )
 
                 LandscapistImage(
                     imageModel = stamp::imageUri,
-                    requestBuilder = stampImageRequestBuilder,
-                    imageOptions = stampImageOptions,
+                    requestBuilder = stampImageLoadingOptions.requestBuilder,
+                    imageOptions = stampImageLoadingOptions.imageOptions,
                     component = EmptyImageComponent,
                     modifier = Modifier
-                        .size(StampSize)
+                        .size(stamp.shape.size)
                         .run {
                             if (sharedTransitionScope == null || animatedVisibilityScope == null) {
                                 return@run this
@@ -355,7 +343,7 @@ fun StampsScreen(
             .padding(
                 horizontal = 24.dp,
             )
-            .width(StampSize.width * 2.5f)
+            .width(StampContainerBaseSize.width * 2.5f)
     ) {
         SelectionActions(
             onMove = {
