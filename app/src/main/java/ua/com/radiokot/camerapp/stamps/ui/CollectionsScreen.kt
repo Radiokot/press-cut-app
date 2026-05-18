@@ -66,6 +66,7 @@ import kotlinx.collections.immutable.toImmutableList
 import ua.com.radiokot.camerapp.R
 import ua.com.radiokot.camerapp.ui.LeTextButton
 import ua.com.radiokot.camerapp.ui.paperBackground
+import ua.com.radiokot.camerapp.util.StableHolder
 import ua.com.radiokot.camerapp.util.plus
 
 @Composable
@@ -272,7 +273,7 @@ private fun CollectionsScreenPreview() {
             name = "My stamps",
             someStamps = persistentListOf(
                 CollectionListItem.StampSampleItem(
-                    imageUri = Uri.EMPTY,
+                    imageUri = StableHolder(Uri.EMPTY),
                     shape = UiStampShapeA,
                     key = "",
                 ),
@@ -283,12 +284,12 @@ private fun CollectionsScreenPreview() {
             name = "RED",
             someStamps = persistentListOf(
                 CollectionListItem.StampSampleItem(
-                    imageUri = Uri.EMPTY,
+                    imageUri = StableHolder(Uri.EMPTY),
                     shape = UiStampShapeA,
                     key = "1",
                 ),
                 CollectionListItem.StampSampleItem(
-                    imageUri = Uri.EMPTY,
+                    imageUri = StableHolder(Uri.EMPTY),
                     shape = UiStampShapeA,
                     key = "2",
                 ),
@@ -299,17 +300,17 @@ private fun CollectionsScreenPreview() {
             name = "Food",
             someStamps = persistentListOf(
                 CollectionListItem.StampSampleItem(
-                    imageUri = Uri.EMPTY,
+                    imageUri = StableHolder(Uri.EMPTY),
                     shape = UiStampShapeA,
                     key = "1",
                 ),
                 CollectionListItem.StampSampleItem(
-                    imageUri = Uri.EMPTY,
+                    imageUri = StableHolder(Uri.EMPTY),
                     shape = UiStampShapeA,
                     key = "2",
                 ),
                 CollectionListItem.StampSampleItem(
-                    imageUri = Uri.EMPTY,
+                    imageUri = StableHolder(Uri.EMPTY),
                     shape = UiStampShapeA,
                     key = "3",
                 ),

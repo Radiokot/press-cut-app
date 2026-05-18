@@ -287,7 +287,7 @@ private fun StampSampleView(
             )
 
     LandscapistImage(
-        imageModel = sample::imageUri,
+        imageModel = sample.imageUri::value,
         requestBuilder = stampImageLoadingOptions.requestBuilder,
         imageOptions = stampImageLoadingOptions.imageOptions,
         component = EmptyImageComponent,
@@ -310,7 +310,7 @@ private fun StampSampleView(
                 (possibleRotationAngles[sample.key.hashCode().absoluteValue % possibleRotationAngles.size])
             )
             .run {
-                if (sample.imageUri !== Uri.EMPTY) {
+                if (sample.imageUri.value !== Uri.EMPTY) {
                     return@run this
                 }
 

@@ -17,28 +17,22 @@
    along with Press-Cut. If not, see <http://www.gnu.org/licenses/>.
 */
 
-package ua.com.radiokot.camerapp.stamps.ui
+package ua.com.radiokot.camerapp.util
 
-import android.net.Uri
 import androidx.compose.runtime.Immutable
-import androidx.core.net.toUri
-import ua.com.radiokot.camerapp.stamps.domain.Stamp
-import ua.com.radiokot.camerapp.util.StableHolder
 
 @Immutable
-data class StampsScreenItem(
-    val imageUri: StableHolder<Uri>,
-    val shape: UiStampShape,
-    val isSelected: Boolean,
-    val key: String,
-) {
-    constructor(
-        stamp: Stamp,
-        selectedStampIds: Set<String>,
-    ) : this(
-        imageUri = StableHolder(stamp.imageUri.toUri()),
-        shape = UiStampShape.fromShape(stamp.shape),
-        isSelected = stamp.id in selectedStampIds,
-        key = stamp.id,
-    )
+class StableHolder<T>(val value: T) {
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is StableHolder<*>) return false
+
+        if (value != other.value) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        return value?.hashCode() ?: 0
+    }
 }

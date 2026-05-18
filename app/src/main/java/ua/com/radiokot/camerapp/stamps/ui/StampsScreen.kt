@@ -97,6 +97,7 @@ import ua.com.radiokot.camerapp.ui.LeTextButton
 import ua.com.radiokot.camerapp.ui.PodkovaFamily
 import ua.com.radiokot.camerapp.ui.Vignette
 import ua.com.radiokot.camerapp.util.EmptyImageComponent
+import ua.com.radiokot.camerapp.util.StableHolder
 import ua.com.radiokot.camerapp.util.plus
 import kotlin.math.absoluteValue
 
@@ -254,7 +255,7 @@ fun StampsScreen(
                         )
 
                 LandscapistImage(
-                    imageModel = stamp::imageUri,
+                    imageModel = stamp.imageUri::value,
                     requestBuilder = stampImageLoadingOptions.requestBuilder,
                     imageOptions = stampImageLoadingOptions.imageOptions,
                     component = EmptyImageComponent,
@@ -286,7 +287,7 @@ fun StampsScreen(
                             )
                         )
                         .run {
-                            if (stamp.imageUri !== Uri.EMPTY) {
+                            if (stamp.imageUri.value !== Uri.EMPTY) {
                                 return@run this
                             }
 
@@ -577,7 +578,7 @@ fun StampsScreenPreview(
     val stamps = (1..3)
         .map { i ->
             StampsScreenItem(
-                imageUri = Uri.EMPTY,
+                imageUri = StableHolder(Uri.EMPTY),
                 shape = UiStampShapeA,
                 isSelected = false,
                 key = i.toString(),

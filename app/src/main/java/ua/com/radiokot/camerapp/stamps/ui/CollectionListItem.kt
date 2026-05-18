@@ -25,6 +25,7 @@ import androidx.core.net.toUri
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toPersistentList
 import ua.com.radiokot.camerapp.stamps.domain.StampCollectionWithSamples
+import ua.com.radiokot.camerapp.util.StableHolder
 
 @Immutable
 data class CollectionListItem(
@@ -40,7 +41,7 @@ data class CollectionListItem(
             collectionWithSamples.samples
                 .map { stamp ->
                     StampSampleItem(
-                        imageUri = stamp.imageUri.toUri(),
+                        imageUri = StableHolder(stamp.imageUri.toUri()),
                         shape = UiStampShape.fromShape(stamp.shape),
                         key = stamp.id,
                     )
@@ -51,7 +52,7 @@ data class CollectionListItem(
 
     @Immutable
     data class StampSampleItem(
-        val imageUri: Uri,
+        val imageUri: StableHolder<Uri>,
         val shape: UiStampShape,
         val key: String,
     )

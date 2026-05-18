@@ -101,6 +101,7 @@ import ua.com.radiokot.camerapp.R
 import ua.com.radiokot.camerapp.ui.PodkovaFamily
 import ua.com.radiokot.camerapp.ui.paperBackground
 import ua.com.radiokot.camerapp.util.EmptyImageComponent
+import ua.com.radiokot.camerapp.util.StableHolder
 import java.time.LocalDate
 import kotlin.math.absoluteValue
 
@@ -110,9 +111,9 @@ fun StampScreen(
     stampId: String,
     captionState: TextFieldState,
     isCaptionInputEnabled: Boolean,
-    imageUri: Uri,
+    imageUri: StableHolder<Uri>,
     shape: UiStampShape,
-    takenAt: LocalDate,
+    takenAt: StableHolder<LocalDate>,
     onAddCaptionAction: () -> Unit,
     onDeleteAction: () -> Unit,
     onMoveAction: () -> Unit,
@@ -279,7 +280,7 @@ fun StampScreen(
                     )
 
             LandscapistImage(
-                imageModel = { imageUri },
+                imageModel = imageUri::value,
                 requestBuilder = stampImageLoadingOptions.requestBuilder,
                 imageOptions = stampImageLoadingOptions.imageOptions,
                 component = EmptyImageComponent,
@@ -310,7 +311,7 @@ fun StampScreen(
                         )
                     )
                     .run {
-                        if (imageUri !== Uri.EMPTY) {
+                        if (imageUri.value !== Uri.EMPTY) {
                             return@run this
                         }
 
@@ -370,7 +371,7 @@ fun StampScreen(
                         )
 
                         BasicText(
-                            text = takenAt.toString(),
+                            text = takenAt.value.toString(),
                             style = TextStyle(
                                 fontFamily = PodkovaFamily,
                                 fontSize = 16.sp,
@@ -533,9 +534,9 @@ private fun StampScreenPreview(
             stampId = "",
             captionState = TextFieldState("My stamp"),
             isCaptionInputEnabled = false,
-            imageUri = Uri.EMPTY,
+            imageUri = StableHolder(Uri.EMPTY),
             shape = UiStampShapeA,
-            takenAt = LocalDate.now(),
+            takenAt = StableHolder(LocalDate.now()),
             onAddCaptionAction = { },
             onDeleteAction = { },
             onMoveAction = { },
