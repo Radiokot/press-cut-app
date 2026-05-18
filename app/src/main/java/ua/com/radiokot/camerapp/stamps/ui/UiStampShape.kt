@@ -20,20 +20,24 @@
 package ua.com.radiokot.camerapp.stamps.ui
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.tooling.preview.PreviewParameter
-import androidx.compose.ui.tooling.preview.datasource.CollectionPreviewParameterProvider
+import androidx.compose.ui.tooling.preview.PreviewParameterProvider
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.IntSize
@@ -42,6 +46,7 @@ import com.skydoves.landscapist.ImageOptions
 import com.skydoves.landscapist.core.ImageRequest
 import ua.com.radiokot.camerapp.stamps.domain.StampShape
 import ua.com.radiokot.camerapp.stamps.domain.StampShapeA
+import ua.com.radiokot.camerapp.stamps.domain.StampShapeOneStampSquare
 import ua.com.radiokot.camerapp.util.noProgressive
 import java.util.Objects
 import java.util.concurrent.ConcurrentHashMap
@@ -107,8 +112,8 @@ interface UiStampShape {
         fun fromShape(
             shape: StampShape,
         ): UiStampShape = when (shape) {
-
             StampShapeA -> UiStampShapeA
+            StampShapeOneStampSquare -> UiStampShapeOneStampSquare
         }
     }
 }
@@ -180,11 +185,57 @@ object UiStampShapeA : UiStampShape {
     }
 }
 
-private class ShapeParameterProvider : CollectionPreviewParameterProvider<UiStampShape>(
-    listOf(
-        UiStampShapeA,
+object UiStampShapeOneStampSquare : UiStampShape {
+
+    override val size = DpSize(
+        width = StampShapeOneStampSquare.size.width.dp,
+        height = StampShapeOneStampSquare.size.height.dp,
     )
-)
+
+    override val fill: ImageVector by lazy {
+        ImageVector.Builder(
+            name = "OneStampSquare.Fill",
+            defaultWidth = size.width,
+            defaultHeight = size.height,
+            viewportWidth = size.width.value,
+            viewportHeight = size.height.value,
+        )
+            .addPath(
+                pathData = StampShapeOneStampSquare.path,
+                fill = SolidColor(Color.Black),
+            )
+            .build()
+    }
+
+    override val stroke: ImageVector by lazy {
+        ImageVector.Builder(
+            name = "OneStampSquare.Stroke",
+            defaultWidth = size.width,
+            defaultHeight = size.height,
+            viewportWidth = size.width.value,
+            viewportHeight = size.height.value,
+        )
+            .addPath(
+                pathData = StampShapeOneStampSquare.path,
+                stroke = SolidColor(Color.Red),
+                strokeLineWidth = 0.4f,
+            )
+            .build()
+    }
+}
+
+private class ShapeParameterProvider : PreviewParameterProvider<UiStampShape> {
+    private val shapes = listOf(
+        UiStampShapeA,
+        UiStampShapeOneStampSquare,
+    )
+
+    override val values: Sequence<UiStampShape>
+        get() = shapes.asSequence()
+
+    override fun getDisplayName(index: Int): String? =
+        shapes[index]::class.simpleName
+}
 
 @Preview
 @Composable
@@ -198,24 +249,33 @@ private fun UiStampShapePreview(
         modifier = Modifier
             .padding(16.dp)
     ) {
-        BasicText(shape::class.simpleName!!)
-        Spacer(
-            modifier = Modifier
-                .height(16.dp)
-        )
         BasicText("Fill")
-        Image(
-            imageVector = shape.fill,
-            contentDescription = null,
-        )
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .requiredSize(StampContainerBaseSize)
+                .background(Color.Yellow)
+        ) {
+            Image(
+                imageVector = shape.fill,
+                contentDescription = null,
+            )
+        }
         Spacer(
             modifier = Modifier
                 .height(16.dp)
         )
         BasicText("Stroke")
-        Image(
-            imageVector = shape.stroke,
-            contentDescription = null,
-        )
+        Box(
+            contentAlignment = Alignment.Center,
+            modifier = Modifier
+                .requiredSize(StampContainerBaseSize)
+                .background(Color.Yellow)
+        ) {
+            Image(
+                imageVector = shape.stroke,
+                contentDescription = null,
+            )
+        }
     }
 }
