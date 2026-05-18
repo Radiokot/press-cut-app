@@ -28,7 +28,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.asIntState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavType
 import androidx.navigation.compose.composable
@@ -40,7 +39,10 @@ fun NavGraphBuilder.stampsDestination(
     sharedTransitionScope: SharedTransitionScope?,
     onProceedToStamp: (stampId: String) -> Unit,
     onProceedToNewStamp: (collectionId: String) -> Unit,
-    onProceedToMoveDestinationCollectionSelection: (currentCollectionId: String) -> Unit,
+    onProceedToMoveDestinationCollectionSelection: (
+        currentCollectionId: String,
+        isSingleStamp: Boolean,
+    ) -> Unit,
     onProceedToMoveStamps: (
         sourceCollectionId: String,
         destinationCollectionId: String,
@@ -98,8 +100,6 @@ fun NavGraphBuilder.stampsDestination(
             .fillMaxSize()
     )
 
-    val context = LocalContext.current
-
     LaunchedEffect(viewModel) {
         viewModel.events.collect { event ->
             when (event) {
@@ -118,6 +118,7 @@ fun NavGraphBuilder.stampsDestination(
                 is StampsScreenViewModel.Event.ProceedToMoveDestinationCollectionSelection -> {
                     onProceedToMoveDestinationCollectionSelection(
                         event.currentCollectionId,
+                        event.isSingleStamp,
                     )
                 }
 

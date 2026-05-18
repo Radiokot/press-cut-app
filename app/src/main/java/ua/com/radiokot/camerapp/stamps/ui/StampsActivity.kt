@@ -319,11 +319,11 @@ private fun SharedTransitionScope.StampsNavHost(
                     collectionId = collectionId,
                 )
             },
-            onProceedToMoveDestinationCollectionSelection = { currentCollectionId ->
+            onProceedToMoveDestinationCollectionSelection = { currentCollectionId, isSingleStamp ->
                 navController.navigate(
                     route = SelectMoveDestinationCollectionDestinationRoute(
                         sourceCollectionId = currentCollectionId,
-                        isSingleStamp = false,
+                        isSingleStamp = isSingleStamp,
                     )
                 ) {
                     launchSingleTop = true

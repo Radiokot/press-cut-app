@@ -179,6 +179,7 @@ class StampsScreenViewModel(
         events.tryEmit(
             Event.ProceedToMoveDestinationCollectionSelection(
                 currentCollectionId = collectionId,
+                isSingleStamp = selectedStampIds.value.size == 1,
             )
         )
     }
@@ -341,6 +342,7 @@ class StampsScreenViewModel(
 
         class ProceedToMoveDestinationCollectionSelection(
             val currentCollectionId: String,
+            val isSingleStamp: Boolean,
         ) : Event
 
         class ProceedToMoveStamps(
