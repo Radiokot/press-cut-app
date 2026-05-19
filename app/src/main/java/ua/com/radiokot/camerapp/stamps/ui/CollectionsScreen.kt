@@ -90,6 +90,8 @@ fun CollectionsScreen(
                 PaddingValues(
                     start = 12.dp,
                     end = 12.dp,
+                    // The More dots.
+                    top = 32.dp,
                     // Button height and spacing.
                     bottom = 120.dp,
                 )
