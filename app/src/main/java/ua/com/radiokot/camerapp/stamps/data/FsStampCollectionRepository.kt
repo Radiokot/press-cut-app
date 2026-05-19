@@ -221,7 +221,7 @@ class FsStampCollectionRepository(
         val webpChunks =
             if (detailsFile.canRead() && detailsFile.canWrite())
                 AndroidInputStreamByteReader(
-                    inputStream = detailsFile.inputStream().buffered(),
+                    inputStream = detailsFile.inputStream(),
                     contentLength = detailsFile.length(),
                 )
                     .use(WebPImageParser::readChunks)
@@ -276,7 +276,7 @@ class FsStampCollectionRepository(
         val webpChunks =
             if (detailsFile.canRead() && detailsFile.canWrite())
                 AndroidInputStreamByteReader(
-                    inputStream = detailsFile.inputStream().buffered(),
+                    inputStream = detailsFile.inputStream(),
                     contentLength = detailsFile.length(),
                 )
                     .use { reader ->

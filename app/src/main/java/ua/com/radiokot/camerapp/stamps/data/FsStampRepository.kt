@@ -39,6 +39,9 @@ import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.channelFlow
@@ -71,6 +74,9 @@ import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.io.path.absolutePathString
 import kotlin.jvm.optionals.getOrNull
+import kotlin.system.measureTimeMillis
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.measureTimedValue
 
 class FsStampRepository(
     private val stampDirectory: File,
@@ -100,20 +106,28 @@ class FsStampRepository(
 
     override suspend fun getStamps(): PersistentList<Stamp> = withContext(Dispatchers.IO) {
 
-        val files =
+        val fileSequence =
             stampDirectory
                 .listFiles(File::isDirectory)
-                ?.flatMapTo(mutableListOf()) { collectionDirectory ->
+                ?.asSequence()
+                ?.flatMap { collectionDirectory ->
                     collectionDirectory
                         .listFiles(::isStamp)
-                        ?.asList()
+                        ?.asSequence()
                         ?: error("Can't access the directory: $collectionDirectory")
                 }
                 ?: error("Can't access the directory: $stampDirectory")
 
-        return@withContext files
-            .map(File::toStamp)
-            .toPersistentList()
+        coroutineScope {
+            fileSequence
+                .chunked(40)
+                .mapTo(mutableListOf()) { chunk ->
+                    async { chunk.map(File::toStamp) }
+                }
+                .awaitAll()
+                .flatten()
+                .toPersistentList()
+        }
     }
 
     private val isCacheInitialized = AtomicBoolean(false)
@@ -127,10 +141,13 @@ class FsStampRepository(
     override fun getStampsFlow(): Flow<List<Stamp>> = flow {
 
         if (!isCacheInitialized.exchange(true)) {
-            cache += getStamps()
+            val tookMs = measureTimeMillis {
+                cache += getStamps()
+            }
             log.debug {
                 "getStampsFlow(): cache initialized:" +
-                        "\nsize=${cache.size}"
+                        "\nsize=${cache.size}" +
+                        "\ntook=${tookMs.milliseconds}"
             }
             sharedFlow.emit(cache)
         }
@@ -225,7 +242,7 @@ class FsStampRepository(
         val webpChunks =
             if (file.canRead() && file.canWrite())
                 AndroidInputStreamByteReader(
-                    inputStream = file.inputStream().buffered(),
+                    inputStream = file.inputStream(),
                     contentLength = file.length(),
                 )
                     .use(WebPImageParser::readChunks)
@@ -479,7 +496,7 @@ private fun File.toStamp(): Stamp {
     val path = toPath()
     val xmpMeta: XMPMeta? =
         AndroidInputStreamByteReader(
-            inputStream = inputStream().buffered(),
+            inputStream = inputStream(),
             contentLength = length(),
         )
             .use(WebPImageParser::parseMetadata)
