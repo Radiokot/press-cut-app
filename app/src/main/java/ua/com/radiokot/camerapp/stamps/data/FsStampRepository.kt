@@ -52,8 +52,8 @@ import ua.com.radiokot.camerapp.stamps.data.PressCutXmpNamespace.getStampShape
 import ua.com.radiokot.camerapp.stamps.data.PressCutXmpNamespace.setStampShape
 import ua.com.radiokot.camerapp.stamps.domain.Stamp
 import ua.com.radiokot.camerapp.stamps.domain.StampRepository
-import ua.com.radiokot.camerapp.stamps.domain.StampShape
-import ua.com.radiokot.camerapp.stamps.domain.StampShapeA
+import ua.com.radiokot.camerapp.stamps.domain.shape.StampShape
+import ua.com.radiokot.camerapp.stamps.domain.shape.StampShapeA
 import ua.com.radiokot.camerapp.util.lazyLogger
 import java.io.ByteArrayOutputStream
 import java.io.File

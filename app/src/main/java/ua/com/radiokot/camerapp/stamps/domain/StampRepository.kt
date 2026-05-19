@@ -21,6 +21,7 @@ package ua.com.radiokot.camerapp.stamps.domain
 
 import android.graphics.Bitmap
 import kotlinx.coroutines.flow.Flow
+import ua.com.radiokot.camerapp.stamps.domain.shape.StampShape
 import java.util.Optional
 
 interface StampRepository {

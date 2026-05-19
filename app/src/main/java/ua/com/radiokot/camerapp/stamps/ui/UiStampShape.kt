@@ -42,12 +42,10 @@ import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
-import com.skydoves.landscapist.ImageOptions
-import com.skydoves.landscapist.core.ImageRequest
-import ua.com.radiokot.camerapp.stamps.domain.StampShape
-import ua.com.radiokot.camerapp.stamps.domain.StampShapeA
-import ua.com.radiokot.camerapp.stamps.domain.StampShapeOneStampSquare
-import ua.com.radiokot.camerapp.util.noProgressive
+import ua.com.radiokot.camerapp.stamps.domain.shape.StampShape
+import ua.com.radiokot.camerapp.stamps.domain.shape.StampShapeA
+import ua.com.radiokot.camerapp.stamps.domain.shape.StampShapeOneStamp
+import ua.com.radiokot.camerapp.stamps.domain.shape.StampShapeOneStampSquare
 import java.util.Objects
 import java.util.concurrent.ConcurrentHashMap
 
@@ -113,56 +111,31 @@ interface UiStampShape {
             shape: StampShape,
         ): UiStampShape = when (shape) {
             StampShapeA -> UiStampShapeA
+            StampShapeOneStamp -> UiStampShapeOneStamp
             StampShapeOneStampSquare -> UiStampShapeOneStampSquare
         }
     }
 }
 
-@Immutable
-class StampImageLoadingOptions(
-    imageSize: IntSize,
-) {
-    val imageOptions: ImageOptions =
-        ImageOptions(
-            requestSize = imageSize,
+private class UiStampShapeImpl(
+    shape: StampShape,
+) : UiStampShape {
+    override val size =
+        DpSize(
+            width = shape.size.width.dp,
+            height = shape.size.height.dp,
         )
-
-    val requestBuilder: ImageRequest.Builder.() -> Unit =
-        noProgressive(
-            size = imageSize,
-        )
-
-    override fun equals(other: Any?): Boolean {
-        if (this === other) return true
-        if (other !is StampImageLoadingOptions) return false
-
-        if (imageOptions != other.imageOptions) return false
-
-        return true
-    }
-
-    override fun hashCode(): Int {
-        return imageOptions.hashCode()
-    }
-}
-
-object UiStampShapeA : UiStampShape {
-
-    override val size = DpSize(
-        width = StampShapeA.size.width.dp,
-        height = StampShapeA.size.height.dp,
-    )
 
     override val fill: ImageVector by lazy {
         ImageVector.Builder(
-            name = "StampA.Fill",
+            name = "${shape.name}.fill",
             defaultWidth = size.width,
             defaultHeight = size.height,
             viewportWidth = size.width.value,
             viewportHeight = size.height.value,
         )
             .addPath(
-                pathData = StampShapeA.path,
+                pathData = shape.path,
                 fill = SolidColor(Color.Black),
             )
             .build()
@@ -170,14 +143,14 @@ object UiStampShapeA : UiStampShape {
 
     override val stroke: ImageVector by lazy {
         ImageVector.Builder(
-            name = "StampA.Stroke",
+            name = "${shape.name}.stroke",
             defaultWidth = size.width,
             defaultHeight = size.height,
             viewportWidth = size.width.value,
             viewportHeight = size.height.value,
         )
             .addPath(
-                pathData = StampShapeA.path,
+                pathData = shape.path,
                 stroke = SolidColor(Color.Red),
                 strokeLineWidth = 0.4f,
             )
@@ -185,48 +158,14 @@ object UiStampShapeA : UiStampShape {
     }
 }
 
-object UiStampShapeOneStampSquare : UiStampShape {
-
-    override val size = DpSize(
-        width = StampShapeOneStampSquare.size.width.dp,
-        height = StampShapeOneStampSquare.size.height.dp,
-    )
-
-    override val fill: ImageVector by lazy {
-        ImageVector.Builder(
-            name = "OneStampSquare.Fill",
-            defaultWidth = size.width,
-            defaultHeight = size.height,
-            viewportWidth = size.width.value,
-            viewportHeight = size.height.value,
-        )
-            .addPath(
-                pathData = StampShapeOneStampSquare.path,
-                fill = SolidColor(Color.Black),
-            )
-            .build()
-    }
-
-    override val stroke: ImageVector by lazy {
-        ImageVector.Builder(
-            name = "OneStampSquare.Stroke",
-            defaultWidth = size.width,
-            defaultHeight = size.height,
-            viewportWidth = size.width.value,
-            viewportHeight = size.height.value,
-        )
-            .addPath(
-                pathData = StampShapeOneStampSquare.path,
-                stroke = SolidColor(Color.Red),
-                strokeLineWidth = 0.4f,
-            )
-            .build()
-    }
-}
+object UiStampShapeA : UiStampShape by UiStampShapeImpl(StampShapeA)
+object UiStampShapeOneStamp : UiStampShape by UiStampShapeImpl(StampShapeOneStamp)
+object UiStampShapeOneStampSquare : UiStampShape by UiStampShapeImpl(StampShapeOneStampSquare)
 
 private class ShapeParameterProvider : PreviewParameterProvider<UiStampShape> {
     private val shapes = listOf(
         UiStampShapeA,
+        UiStampShapeOneStamp,
         UiStampShapeOneStampSquare,
     )
 
