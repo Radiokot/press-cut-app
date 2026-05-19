@@ -260,7 +260,7 @@ fun StampsScreen(
                     imageOptions = stampImageLoadingOptions.imageOptions,
                     component = EmptyImageComponent,
                     modifier = Modifier
-                        .size(stamp.shape.size)
+                        .size(stamp.shape.size * stamp.shape.fitContainerSizeScale)
                         .run {
                             if (sharedTransitionScope == null || animatedVisibilityScope == null) {
                                 return@run this
@@ -295,6 +295,11 @@ fun StampsScreen(
                         }
                         .selectionEnvelope(
                             animationProgressState = selectionAnimationProgressState,
+                            heightFraction = when (stamp.shape) {
+                                UiStampShapeOneStampSquare -> 0.7f
+                                UiStampShapeOneStampLandscape -> 0.8f
+                                else -> 0.6f
+                            },
                         )
                         .combinedClickable(
                             indication = null,

@@ -36,6 +36,7 @@ sealed interface StampShape {
 
             StampShapeA.name -> StampShapeA
             StampShapeOneStamp.name -> StampShapeOneStamp
+            StampShapeOneStampLandscape.name -> StampShapeOneStampLandscape
             StampShapeOneStampSquare.name -> StampShapeOneStampSquare
 
             else -> throw IllegalArgumentException("Unknown shape name $name")

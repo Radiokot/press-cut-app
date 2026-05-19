@@ -45,6 +45,7 @@ import androidx.compose.ui.unit.dp
 import ua.com.radiokot.camerapp.stamps.domain.shape.StampShape
 import ua.com.radiokot.camerapp.stamps.domain.shape.StampShapeA
 import ua.com.radiokot.camerapp.stamps.domain.shape.StampShapeOneStamp
+import ua.com.radiokot.camerapp.stamps.domain.shape.StampShapeOneStampLandscape
 import ua.com.radiokot.camerapp.stamps.domain.shape.StampShapeOneStampSquare
 import java.util.Objects
 import java.util.concurrent.ConcurrentHashMap
@@ -55,6 +56,8 @@ interface UiStampShape {
     val size: DpSize
     val fill: ImageVector
     val stroke: ImageVector
+    val fitContainerSizeScale: Float
+        get() = 1f
 
     fun getListImageLoadingOptions(
         density: Density,
@@ -112,10 +115,29 @@ interface UiStampShape {
         ): UiStampShape = when (shape) {
             StampShapeA -> UiStampShapeA
             StampShapeOneStamp -> UiStampShapeOneStamp
+            StampShapeOneStampLandscape -> UiStampShapeOneStampLandscape
             StampShapeOneStampSquare -> UiStampShapeOneStampSquare
         }
     }
 }
+
+object UiStampShapeA :
+    UiStampShape by UiStampShapeImpl(StampShapeA)
+
+object UiStampShapeOneStamp :
+    UiStampShape by UiStampShapeImpl(StampShapeOneStamp) {
+
+    override val fitContainerSizeScale = 0.97f
+}
+
+object UiStampShapeOneStampLandscape :
+    UiStampShape by UiStampShapeImpl(StampShapeOneStampLandscape) {
+
+    override val fitContainerSizeScale = 0.78f
+}
+
+object UiStampShapeOneStampSquare :
+    UiStampShape by UiStampShapeImpl(StampShapeOneStampSquare)
 
 private class UiStampShapeImpl(
     shape: StampShape,
@@ -158,14 +180,11 @@ private class UiStampShapeImpl(
     }
 }
 
-object UiStampShapeA : UiStampShape by UiStampShapeImpl(StampShapeA)
-object UiStampShapeOneStamp : UiStampShape by UiStampShapeImpl(StampShapeOneStamp)
-object UiStampShapeOneStampSquare : UiStampShape by UiStampShapeImpl(StampShapeOneStampSquare)
-
 private class ShapeParameterProvider : PreviewParameterProvider<UiStampShape> {
     private val shapes = listOf(
         UiStampShapeA,
         UiStampShapeOneStamp,
+        UiStampShapeOneStampLandscape,
         UiStampShapeOneStampSquare,
     )
 
@@ -198,6 +217,8 @@ private fun UiStampShapePreview(
             Image(
                 imageVector = shape.fill,
                 contentDescription = null,
+                modifier = Modifier
+                    .requiredSize(shape.size * shape.fitContainerSizeScale)
             )
         }
         Spacer(
@@ -214,6 +235,8 @@ private fun UiStampShapePreview(
             Image(
                 imageVector = shape.stroke,
                 contentDescription = null,
+                modifier = Modifier
+                    .requiredSize(shape.size * shape.fitContainerSizeScale)
             )
         }
     }

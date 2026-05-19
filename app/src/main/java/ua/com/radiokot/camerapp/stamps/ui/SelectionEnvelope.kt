@@ -54,6 +54,7 @@ import kotlinx.coroutines.isActive
 
 fun Modifier.selectionEnvelope(
     animationProgressState: State<Float>,
+    heightFraction: Float = 0.6f,
 ) = drawWithCache {
     val (width, height) = size
     val overlap = 1.dp.toPx()
@@ -61,13 +62,13 @@ fun Modifier.selectionEnvelope(
 
     val leftPart = Path().apply {
         moveTo(-overlap, height)
-        lineTo(-overlap, height * 0.4f)
+        lineTo(-overlap, height * (1 - heightFraction))
         lineTo(overlap + width, height)
         close()
     }
     val rightPart = Path().apply {
         moveTo(overlap + width, height)
-        lineTo(overlap + width, height * 0.4f)
+        lineTo(overlap + width, height * (1 - heightFraction))
         lineTo(-overlap, height)
         close()
     }
