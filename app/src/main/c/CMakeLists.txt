@@ -4,15 +4,18 @@ project(camerapp)
 
 add_subdirectory(
         libwebp
-        ezXML
 )
+
+file(GLOB_RECURSE ezXML CONFIGURE_DEPENDS "ezXML/*.c")
+file(GLOB_RECURSE dynbuf CONFIGURE_DEPENDS "dynbuf/src/*.c")
 
 add_library(
         camerapp
         SHARED
         fsstamps.c
         struuu.c
-        ezXML/ezxml.c
+        ${ezXML}
+        ${dynbuf}
 )
 
 target_include_directories(
@@ -20,6 +23,7 @@ target_include_directories(
         PRIVATE
         libwebp/src
         ezXML
+        dynbuf/inc
 )
 
 target_link_libraries(

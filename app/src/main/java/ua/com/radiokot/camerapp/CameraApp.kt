@@ -60,24 +60,24 @@ class CameraApp : Application() {
         }
 
         NativeLibrary.ensureLoaded()
-        FsLikeImMrZozin.getStamps(
-            Environment.getExternalStoragePublicDirectory("Pictures").absolutePath + "/PressCutStamps"
-        )
-//        val buffer = struuu()
-//            .order(ByteOrder.nativeOrder())
-//        val x = buffer.getInt()
-//        val y = buffer.getInt()
-//        val nameBytes = mutableListOf<Byte>()
-//        while (buffer.hasRemaining()) {
-//            val byte = buffer.get()
-//            if (byte == 0.toByte()) {
-//                break
-//            } else {
-//                nameBytes += byte
-//            }
-//        }
-//        val name = String(nameBytes.toTypedArray().toByteArray())
-//        println("OOLEG x $x y $y name $name")
+//        FsLikeImMrZozin.getStamps(
+//            Environment.getExternalStoragePublicDirectory("Pictures").absolutePath + "/PressCutStamps"
+//        )
+        val buffer = struuu()
+            .order(ByteOrder.nativeOrder())
+        val x = buffer.getInt()
+        val y = buffer.getInt()
+        val nameBytes = mutableListOf<Byte>()
+        while (buffer.hasRemaining()) {
+            val byte = buffer.get()
+            if (byte == 0.toByte()) {
+                break
+            } else {
+                nameBytes += byte
+            }
+        }
+        val name = String(nameBytes.toTypedArray().toByteArray())
+        println("OOLEG x $x y $y name $name")
     }
 
     private external fun struuu(): ByteBuffer

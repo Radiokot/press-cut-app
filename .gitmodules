@@ -1,3 +1,6 @@
 [submodule "app/src/main/c/libwebp"]
 	path = app/src/main/c/libwebp
 	url = https://chromium.googlesource.com/webm/libwebp
+[submodule "app/src/main/c/dynbuf"]
+	path = app/src/main/c/dynbuf
+	url = https://github.com/nil0x42/dynbuf.git
