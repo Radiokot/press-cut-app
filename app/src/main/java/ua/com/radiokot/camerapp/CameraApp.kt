@@ -27,10 +27,14 @@ import org.koin.core.context.startKoin
 import ua.com.radiokot.camerapp.cut.cutModule
 import ua.com.radiokot.camerapp.intro.introModule
 import ua.com.radiokot.camerapp.io.ioModule
+import ua.com.radiokot.camerapp.stamps.data.FsLikeImMrZozin
 import ua.com.radiokot.camerapp.stamps.stampsModule
 import ua.com.radiokot.camerapp.util.KoinSlf4jLogger
+import ua.com.radiokot.camerapp.util.NativeLibrary
 import java.io.File
 import java.lang.Thread.UncaughtExceptionHandler
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 import kotlin.system.exitProcess
 
 class CameraApp : Application() {
@@ -54,7 +58,29 @@ class CameraApp : Application() {
                 introModule,
             )
         }
+
+        NativeLibrary.ensureLoaded()
+        FsLikeImMrZozin.getStamps(
+            Environment.getExternalStoragePublicDirectory("Pictures").absolutePath + "/PressCutStamps"
+        )
+//        val buffer = struuu()
+//            .order(ByteOrder.nativeOrder())
+//        val x = buffer.getInt()
+//        val y = buffer.getInt()
+//        val nameBytes = mutableListOf<Byte>()
+//        while (buffer.hasRemaining()) {
+//            val byte = buffer.get()
+//            if (byte == 0.toByte()) {
+//                break
+//            } else {
+//                nameBytes += byte
+//            }
+//        }
+//        val name = String(nameBytes.toTypedArray().toByteArray())
+//        println("OOLEG x $x y $y name $name")
     }
+
+    private external fun struuu(): ByteBuffer
 
     @Suppress(
         "KotlinConstantConditions",

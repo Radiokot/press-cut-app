@@ -27,6 +27,12 @@
 #include <ctype.h>
 #include "webp/demux.h"
 #include "webp/decode.h"
+#include "ezXML/ezxml.h"
+
+#include <android/log.h>
+
+#define LOG_TAG "CA:fsstamps.c"
+#define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
 
 static int is_digits_only(const char *str) {
     if (str == NULL || *str == '\0') {
@@ -108,11 +114,43 @@ static int find_stamps_in_collection(
 
             WebPChunkIterator chunk_iter;
             if (WebPDemuxGetChunk(demuxer, "XMP ", 1, &chunk_iter)) {
-                printf("XMP metadata found (%zu bytes):\n", chunk_iter.chunk.size);
+                ezxml_t xmp = ezxml_parse_str(
+                        (char *) chunk_iter.chunk.bytes,
+                        chunk_iter.chunk.size
+                );
 
-                // The XMP data is raw XML — print or process it
-                printf("%.*s\n", (int) chunk_iter.chunk.size, (const char *) chunk_iter.chunk.bytes);
+                ezxml_t description = ezxml_get(
+                        xmp,
+                        "rdf:RDF",
+                        0,
+                        "rdf:Description",
+                        -1
+                );
 
+                if (description != NULL) {
+                    const char *shape = ezxml_attr(description, "presscut:shape");
+                    if (shape != NULL) {
+                        LOGD("Shape: %s", shape);
+                    }
+                    const char *date_time_original = ezxml_attr(description, "exif:DateTimeOriginal");
+                    if (date_time_original != NULL) {
+                        LOGD("DateTimeOriginal: %s", date_time_original);
+                    }
+                    ezxml_t title = ezxml_get(
+                            description,
+                            "dc:title",
+                            0,
+                            "rdf:Alt",
+                            0,
+                            "rdf:li",
+                            -1
+                    );
+                    if (title != NULL) {
+                        LOGD("Title: %s", title->txt);
+                    }
+                }
+
+                ezxml_free(xmp);
                 WebPDemuxReleaseChunkIterator(&chunk_iter);
 
                 count++;

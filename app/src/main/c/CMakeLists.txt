@@ -4,6 +4,7 @@ project(camerapp)
 
 add_subdirectory(
         libwebp
+        ezXML
 )
 
 add_library(
@@ -11,17 +12,21 @@ add_library(
         SHARED
         fsstamps.c
         struuu.c
+        ezXML/ezxml.c
 )
 
 target_include_directories(
         camerapp
         PRIVATE
         libwebp/src
+        ezXML
 )
 
 target_link_libraries(
         camerapp
         webpdemux
+        android
+        log
 )
 
 target_link_options(

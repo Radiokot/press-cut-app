@@ -76,7 +76,6 @@ import kotlin.io.path.absolutePathString
 import kotlin.jvm.optionals.getOrNull
 import kotlin.system.measureTimeMillis
 import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.measureTimedValue
 
 class FsStampRepository(
     private val stampDirectory: File,
