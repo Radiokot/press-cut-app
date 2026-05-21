@@ -31,6 +31,13 @@ android {
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    externalNativeBuild {
+        cmake {
+            path "src/main/c/CMakeLists.txt"
+            version "3.22.1"
+        }
+    }
+
     buildFeatures {
         compose true
         buildConfig true
