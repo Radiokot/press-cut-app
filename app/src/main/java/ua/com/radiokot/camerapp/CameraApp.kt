@@ -34,7 +34,6 @@ import ua.com.radiokot.camerapp.util.NativeLibrary
 import java.io.File
 import java.lang.Thread.UncaughtExceptionHandler
 import java.nio.ByteBuffer
-import java.nio.ByteOrder
 import kotlin.system.exitProcess
 
 class CameraApp : Application() {
@@ -60,27 +59,30 @@ class CameraApp : Application() {
         }
 
         NativeLibrary.ensureLoaded()
-//        FsLikeImMrZozin.getStamps(
-//            Environment.getExternalStoragePublicDirectory("Pictures").absolutePath + "/PressCutStamps"
-//        )
-        val buffer = struuu()
-            .order(ByteOrder.nativeOrder())
-        val x = buffer.getInt()
-        val y = buffer.getInt()
-        val nameBytes = mutableListOf<Byte>()
-        while (buffer.hasRemaining()) {
-            val byte = buffer.get()
-            if (byte == 0.toByte()) {
-                break
-            } else {
-                nameBytes += byte
+        val buffer = FsLikeImMrZozin.getStamps(
+            Environment.getExternalStoragePublicDirectory("Pictures").absolutePath + "/PressCutStamps"
+        )!!
+        fun ByteBuffer.getNullTerminatedString(): String {
+            val bytes = mutableListOf<Byte>()
+            while (hasRemaining()) {
+                val b = get()
+                if (b == 0.toByte()) {
+                    break
+                }
+                bytes.add(b)
             }
+            return String(bytes.toByteArray(), Charsets.UTF_8)
         }
-        val name = String(nameBytes.toTypedArray().toByteArray())
-        println("OOLEG x $x y $y name $name")
-    }
 
-    private external fun struuu(): ByteBuffer
+        while (buffer.hasRemaining()) {
+            println("OOLEG --- Stamp ---")
+            println("OOLEG id: ${buffer.getNullTerminatedString()}")
+            println("OOLEG collection id ${buffer.getNullTerminatedString()}")
+            println("OOLEG caption ${buffer.getNullTerminatedString()}")
+            println("OOLEG taken at local ${buffer.getNullTerminatedString()}")
+            println("OOLEG shape ${buffer.getNullTerminatedString()}")
+        }
+    }
 
     @Suppress(
         "KotlinConstantConditions",

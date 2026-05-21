@@ -29,11 +29,27 @@
 #include "webp/demux.h"
 #include "webp/decode.h"
 #include "ezXML/ezxml.h"
+#include "dynbuf/inc/dynbuf.h"
 
 #include <android/log.h>
 
 #define LOG_TAG "CA:fsstamps.c"
 #define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
+
+static void dynbuf_write_stamp_details(
+        t_dynbuf *buffer,
+        const char *id,
+        const char *collection_id,
+        const char *caption,
+        const char *taken_at_local,
+        const char *shape
+) {
+    dynbuf_write(buffer, id, strlen(id) + 1);
+    dynbuf_write(buffer, collection_id, strlen(collection_id) + 1);
+    dynbuf_write(buffer, caption, strlen(caption) + 1);
+    dynbuf_write(buffer, taken_at_local, strlen(taken_at_local) + 1);
+    dynbuf_write(buffer, shape, strlen(shape) + 1);
+}
 
 static int is_digits_only(const char *str) {
     if (str == NULL || *str == '\0') {
@@ -49,12 +65,13 @@ static int is_digits_only(const char *str) {
     return 1;
 }
 
-static int find_stamps_in_collection(
-        const char *collection_dir_path
+static void find_stamps_in_collection(
+        const char *collection_dir_path,
+        t_dynbuf *stamp_buffer
 ) {
     DIR *dir = opendir(collection_dir_path);
     if (dir == NULL)
-        return -1;
+        return;
 
     int count = 0;
     struct dirent *entry;
@@ -90,7 +107,7 @@ static int find_stamps_in_collection(
         if (is_digits_only(name_without_extension)) {
             FILE *file = fopen(sub_path, "rb");
             if (!file) {
-                return -1;
+                continue;
             }
 
             fseek(file, 0, SEEK_END);
@@ -100,22 +117,33 @@ static int find_stamps_in_collection(
             uint8_t *file_data = (uint8_t *) malloc(file_size);
             if (!file_data) {
                 fclose(file);
-                return -1;
+                continue;
             }
 
             fread(file_data, 1, file_size, file);
             fclose(file);
 
+            char *stamp_id = name_without_extension;
+            char *stamp_collection_id = strrchr(collection_dir_path, '/');
+            if (stamp_collection_id == NULL) {
+                continue;
+            }
+            stamp_collection_id++;
+            char *stamp_caption = "";
+            char *stamp_taken_at_local = "";
+            char *stamp_shape = "";
+
             WebPData webp_data = {file_data, file_size};
             WebPDemuxer *demuxer = WebPDemux(&webp_data);
             if (!demuxer) {
                 free(file_data);
-                return -1;
+                continue;
             }
 
             WebPChunkIterator chunk_iter;
+            ezxml_t xmp = NULL;
             if (WebPDemuxGetChunk(demuxer, "XMP ", 1, &chunk_iter)) {
-                ezxml_t xmp = ezxml_parse_str(
+                xmp = ezxml_parse_str(
                         (char *) chunk_iter.chunk.bytes,
                         chunk_iter.chunk.size
                 );
@@ -131,13 +159,15 @@ static int find_stamps_in_collection(
                 if (description != NULL) {
                     const char *shape = ezxml_attr(description, "presscut:shape");
                     if (shape != NULL) {
-                        LOGD("Shape: %s", shape);
+                        stamp_shape = (char *) shape;
                     }
+
                     const char *date_time_original = ezxml_attr(description, "exif:DateTimeOriginal");
                     if (date_time_original != NULL) {
-                        LOGD("DateTimeOriginal: %s", date_time_original);
+                        stamp_taken_at_local = (char *) date_time_original;
                     }
-                    ezxml_t title = ezxml_get(
+
+                    ezxml_t caption_xml = ezxml_get(
                             description,
                             "dc:title",
                             0,
@@ -146,35 +176,44 @@ static int find_stamps_in_collection(
                             "rdf:li",
                             -1
                     );
-                    if (title != NULL) {
-                        LOGD("Title: %s", title->txt);
+                    if (caption_xml != NULL) {
+                        const char *caption = caption_xml->txt;
+                        if (caption != NULL) {
+                            stamp_caption = (char *) caption;
+                        }
                     }
                 }
 
-                ezxml_free(xmp);
                 WebPDemuxReleaseChunkIterator(&chunk_iter);
-
-                count++;
             } else {
                 struct tm modification_time;
                 localtime_r(&st.st_mtim.tv_sec, &modification_time);
-                char buf[20];
-                strftime(buf, sizeof(buf), "%Y-%m-%dT%H:%M:%S", &modification_time);
-                LOGD("DateTimeModification: %s", buf);
-                count++;
+                char buffer[20];
+                strftime(buffer, sizeof(buffer), "%Y-%m-%dT%H:%M:%S", &modification_time);
+                stamp_taken_at_local = buffer;
             }
 
+            dynbuf_write_stamp_details(
+                    stamp_buffer,
+                    stamp_id,
+                    stamp_collection_id,
+                    stamp_caption,
+                    stamp_taken_at_local,
+                    stamp_shape
+            );
+
             WebPDemuxDelete(demuxer);
+            if (xmp != NULL) {
+                ezxml_free(xmp);
+            }
             free(file_data);
         }
     }
 
     closedir(dir);
-
-    return count;
 }
 
-JNIEXPORT jint JNICALL
+JNIEXPORT jobject JNICALL
 Java_ua_com_radiokot_camerapp_stamps_data_FsLikeImMrZozin_getStamps(
         JNIEnv *env,
         jobject thiz,
@@ -182,16 +221,16 @@ Java_ua_com_radiokot_camerapp_stamps_data_FsLikeImMrZozin_getStamps(
 ) {
     const char *dir_path = (*env)->GetStringUTFChars(env, stamp_directory_path, NULL);
     if (dir_path == NULL) {
-        return -1;
+        return NULL;
     }
 
     DIR *root = opendir(dir_path);
     if (root == NULL) {
         (*env)->ReleaseStringUTFChars(env, stamp_directory_path, dir_path);
-        return -1;
+        return NULL;
     }
 
-    int total = 0;
+    t_dynbuf *stamp_buffer = dynbuf_new(DYNBUF_DEFAULT_RADIX);
     struct dirent *entry;
 
     while ((entry = readdir(root)) != NULL) {
@@ -207,11 +246,13 @@ Java_ua_com_radiokot_camerapp_stamps_data_FsLikeImMrZozin_getStamps(
             continue;
         }
 
-        total += find_stamps_in_collection(sub_path);
+        find_stamps_in_collection(sub_path, stamp_buffer);
     }
 
     closedir(root);
     (*env)->ReleaseStringUTFChars(env, stamp_directory_path, dir_path);
 
-    return (jint) total;
+    jobject buffer = (*env)->NewDirectByteBuffer(env, (void *) stamp_buffer->ptr, stamp_buffer->offset);
+
+    return buffer;
 }

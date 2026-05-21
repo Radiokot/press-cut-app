@@ -20,11 +20,12 @@
 package ua.com.radiokot.camerapp.stamps.data
 
 import ua.com.radiokot.camerapp.util.NativeLibrary
+import java.nio.ByteBuffer
 
 object FsLikeImMrZozin {
     init {
         NativeLibrary.ensureLoaded()
     }
 
-    external fun getStamps(stampDirectoryPath: String): Int
+    external fun getStamps(stampDirectoryPath: String): ByteBuffer?
 }

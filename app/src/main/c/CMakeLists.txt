@@ -13,7 +13,6 @@ add_library(
         camerapp
         SHARED
         fsstamps.c
-        struuu.c
         ${ezXML}
         ${dynbuf}
 )
