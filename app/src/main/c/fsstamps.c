@@ -25,6 +25,7 @@
 #include <dirent.h>
 #include <sys/stat.h>
 #include <ctype.h>
+#include <time.h>
 #include "webp/demux.h"
 #include "webp/decode.h"
 #include "ezXML/ezxml.h"
@@ -155,6 +156,11 @@ static int find_stamps_in_collection(
 
                 count++;
             } else {
+                struct tm modification_time;
+                localtime_r(&st.st_mtim.tv_sec, &modification_time);
+                char buf[20];
+                strftime(buf, sizeof(buf), "%Y-%m-%dT%H:%M:%S", &modification_time);
+                LOGD("DateTimeModification: %s", buf);
                 count++;
             }
 
