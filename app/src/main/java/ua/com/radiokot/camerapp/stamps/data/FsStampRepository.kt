@@ -33,15 +33,10 @@ import com.ashampoo.kim.input.use
 import com.ashampoo.kim.output.OutputStreamByteWriter
 import com.ashampoo.xmp.XMPMeta
 import com.ashampoo.xmp.XMPMetaFactory
-import kotlinx.collections.immutable.PersistentList
-import kotlinx.collections.immutable.toPersistentList
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.channelFlow
@@ -57,10 +52,12 @@ import ua.com.radiokot.camerapp.stamps.domain.Stamp
 import ua.com.radiokot.camerapp.stamps.domain.StampRepository
 import ua.com.radiokot.camerapp.stamps.domain.shape.StampShape
 import ua.com.radiokot.camerapp.stamps.domain.shape.StampShapeA
+import ua.com.radiokot.camerapp.util.getNullTerminatedString
 import ua.com.radiokot.camerapp.util.lazyLogger
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
+import java.nio.ByteBuffer
 import java.nio.file.FileSystems
 import java.nio.file.Files
 import java.nio.file.Path
@@ -76,7 +73,6 @@ import kotlin.io.path.absolutePathString
 import kotlin.jvm.optionals.getOrNull
 import kotlin.system.measureTimeMillis
 import kotlin.time.Duration.Companion.milliseconds
-import kotlin.time.measureTimedValue
 
 class FsStampRepository(
     private val stampDirectory: File,
@@ -104,32 +100,6 @@ class FsStampRepository(
         }
     }
 
-    override suspend fun getStamps(): PersistentList<Stamp> = withContext(Dispatchers.IO) {
-
-        val fileSequence =
-            stampDirectory
-                .listFiles(File::isDirectory)
-                ?.asSequence()
-                ?.flatMap { collectionDirectory ->
-                    collectionDirectory
-                        .listFiles(::isStamp)
-                        ?.asSequence()
-                        ?: error("Can't access the directory: $collectionDirectory")
-                }
-                ?: error("Can't access the directory: $stampDirectory")
-
-        coroutineScope {
-            fileSequence
-                .chunked(40)
-                .mapTo(mutableListOf()) { chunk ->
-                    async { chunk.map(File::toStamp) }
-                }
-                .awaitAll()
-                .flatten()
-                .toPersistentList()
-        }
-    }
-
     private val isCacheInitialized = AtomicBoolean(false)
     private val cache: MutableList<Stamp> = mutableListOf()
     private val sharedFlow: MutableSharedFlow<List<Stamp>> =
@@ -141,25 +111,21 @@ class FsStampRepository(
     override fun getStampsFlow(): Flow<List<Stamp>> = flow {
 
         if (!isCacheInitialized.exchange(true)) {
-            val tookMs = measureTimeMillis {
-                cache += getStamps()
-            }
-            log.debug {
-                "getStampsFlow(): cache initialized:" +
-                        "\nsize=${cache.size}" +
-                        "\ntook=${tookMs.milliseconds}"
-            }
-            sharedFlow.emit(cache)
+            initCache()
         }
 
         sharedFlow.collect(this)
     }
 
+
+    override suspend fun getStamps(): List<Stamp> =
+        getStampsFlow()
+            .first()
+
     override suspend fun getStamp(
         id: String,
     ): Stamp? =
-        getStampsFlow()
-            .first()
+        getStamps()
             .find { it.id == id }
 
     override suspend fun addStamp(
@@ -459,6 +425,60 @@ class FsStampRepository(
             sharedFlow.emit(cache)
         }
     }
+
+    private suspend fun initCache() {
+        val stampDirectoryAbsolutePath = stampDirectory.absolutePath
+
+        val tookMs = measureTimeMillis {
+            val buffer =
+                getStampDetailsBuffer(
+                    stampDirectoryPath = stampDirectoryAbsolutePath,
+                )
+                    ?: error("Failed reading the stamp details")
+
+            while (buffer.hasRemaining()) {
+                val stampId = buffer.getNullTerminatedString()
+                val stampCollectionId = buffer.getNullTerminatedString()
+
+                val stampCaption =
+                    buffer
+                        .getNullTerminatedString()
+                        .takeIf(String::isNotEmpty)
+
+                val stampTakenAtLocal =
+                    LocalDateTime
+                        .parse(buffer.getNullTerminatedString())
+
+                val stampShape =
+                    buffer
+                        .getNullTerminatedString()
+                        .takeIf(String::isNotEmpty)
+                        ?.let(StampShape::fromName)
+                        ?: StampShapeA
+
+                cache += Stamp(
+                    id = stampId,
+                    collectionId = stampCollectionId,
+                    imageUri = "file://$stampDirectoryAbsolutePath/$stampCollectionId/$stampId.$EXTENSION_WEBP",
+                    caption = stampCaption,
+                    takenAtLocal = stampTakenAtLocal,
+                    shape = stampShape,
+                )
+            }
+        }
+
+        log.debug {
+            "initCache(): cache initialized:" +
+                    "\nsize=${cache.size}" +
+                    "\ntook=${tookMs.milliseconds}"
+        }
+
+        sharedFlow.emit(cache)
+    }
+
+    private external fun getStampDetailsBuffer(
+        stampDirectoryPath: String,
+    ): ByteBuffer?
 
     private fun getStampFile(
         id: String,

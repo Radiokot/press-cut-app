@@ -36,6 +36,12 @@ The core concept of the app is that the stamp storage is the external file syste
 
 On old Androids, the app uses external storage permission. On modern Androids, it uses read images permission combined with SAF directory access. Since SAF is slow, it is only used to reclaim ownership of files either left from previous app instalation or copied to the stamp folder manually by the user (see `SafFileLocksmith`).
 
+### Setup
+
+```bash
+git submodule update --init --recursive
+```
+
 ### The stack
 
 - Kotlin

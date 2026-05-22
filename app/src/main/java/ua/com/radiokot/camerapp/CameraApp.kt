@@ -29,6 +29,7 @@ import ua.com.radiokot.camerapp.intro.introModule
 import ua.com.radiokot.camerapp.io.ioModule
 import ua.com.radiokot.camerapp.stamps.stampsModule
 import ua.com.radiokot.camerapp.util.KoinSlf4jLogger
+import ua.com.radiokot.camerapp.util.NativeLibrary
 import java.io.File
 import java.lang.Thread.UncaughtExceptionHandler
 import kotlin.system.exitProcess
@@ -42,6 +43,7 @@ class CameraApp : Application() {
     override fun onCreate() {
         super.onCreate()
 
+        NativeLibrary.ensureLoaded()
         initLogging()
 
         startKoin {
