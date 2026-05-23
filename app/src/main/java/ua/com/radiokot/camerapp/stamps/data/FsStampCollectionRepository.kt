@@ -88,7 +88,7 @@ class FsStampCollectionRepository(
             .toPersistentList()
     }
 
-    private var isCacheInitialized = AtomicBoolean(false)
+    private val isCacheInitialized = AtomicBoolean(false)
     private val cache: MutableList<StampCollection> = mutableListOf()
     private val sharedFlow: MutableSharedFlow<List<StampCollection>> =
         MutableSharedFlow(
@@ -122,10 +122,31 @@ class FsStampCollectionRepository(
         name: String,
     ): String = withContext(Dispatchers.IO) {
 
-        val directory = getStampCollectionDirectory(
-            id = id,
+        createCollectionDetailsFile(
+            collectionDirectory =
+                getStampCollectionDirectory(
+                    id = id,
+                ),
+            name = name,
         )
-        directory.mkdirs()
+
+        if (isCacheInitialized.load()) {
+            cache += StampCollection(
+                id = id,
+                name = name,
+            )
+            sharedFlow.tryEmit(cache)
+        }
+
+        return@withContext id
+    }
+
+    private suspend fun createCollectionDetailsFile(
+        collectionDirectory: File,
+        name: String,
+    ): Unit = withContext(Dispatchers.IO) {
+
+        collectionDirectory.mkdirs()
 
         val xmpMeta = XMPMetaFactory.create().setCollectionDetails(
             name = name,
@@ -144,22 +165,12 @@ class FsStampCollectionRepository(
                 ),
                 byteWriter = OutputStreamByteWriter(
                     outputStream =
-                        File(directory, DETAILS_FILE_NAME)
+                        File(collectionDirectory, DETAILS_FILE_NAME)
                             .outputStream(),
                 ),
                 xmp = XMPMetaFactory.serializeToString(xmpMeta),
                 exifBytes = null,
             )
-
-        if (isCacheInitialized.load()) {
-            cache += StampCollection(
-                id = id,
-                name = name,
-            )
-            sharedFlow.tryEmit(cache)
-        }
-
-        return@withContext id
     }
 
     override suspend fun deleteStampCollection(
@@ -177,9 +188,6 @@ class FsStampCollectionRepository(
             }
 
             coroutineScope.launch {
-                // Even if rm fails to delete all the files,
-                // consider the collection deleted.
-                // It won't re-appear because the details file gets deleted.
 
                 val rmCommand = "rm -rf -- ${directory.absolutePath}"
                 val exitCode =
@@ -270,9 +278,27 @@ class FsStampCollectionRepository(
 
     private suspend fun toStampCollection(
         directory: File,
-    ): StampCollection? = runCatching {
+    ): StampCollection {
 
         val detailsFile = File(directory, DETAILS_FILE_NAME)
+
+        if (!detailsFile.exists()) {
+            val id = directory.nameWithoutExtension
+
+            createCollectionDetailsFile(
+                collectionDirectory =
+                    getStampCollectionDirectory(
+                        id = id,
+                    ),
+                name = id,
+            )
+
+            return StampCollection(
+                id = directory.nameWithoutExtension,
+                name = id,
+            )
+        }
+
         val webpChunks =
             if (detailsFile.canRead() && detailsFile.canWrite())
                 AndroidInputStreamByteReader(
@@ -302,13 +328,6 @@ class FsStampCollectionRepository(
             name = xmpMeta?.getTitle() ?: "…",
         )
     }
-        .onFailure { error ->
-            log.warn(error) {
-                "toStampCollection(): failed creating a collection from a directory:" +
-                        "\ndirectory=$directory"
-            }
-        }
-        .getOrNull()
 
     private companion object {
         private const val DETAILS_FILE_NAME = ".collection.webp"
