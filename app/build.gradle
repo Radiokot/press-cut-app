@@ -9,6 +9,7 @@ plugins {
     id "com.android.application"
     id "org.jetbrains.kotlin.android"
     id "org.jetbrains.kotlin.plugin.compose"
+    id "org.jetbrains.kotlin.plugin.serialization"
     id "com.jaredsburrows.license"
 }
 
@@ -104,6 +105,7 @@ dependencies {
     implementation "androidx.core:core-ktx:1.18.0"
     implementation "androidx.appcompat:appcompat:1.7.1"
     implementation "org.jetbrains.kotlinx:kotlinx-collections-immutable:0.4.0"
+    implementation "org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0"
     implementation "com.ashampoo:kim:0.26.2"
     implementation "androidx.core:core-splashscreen:1.2.0"
 

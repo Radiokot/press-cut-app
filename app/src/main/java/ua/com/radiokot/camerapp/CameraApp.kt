@@ -25,6 +25,7 @@ import io.github.oshai.kotlinlogging.KotlinLogging
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.context.startKoin
 import ua.com.radiokot.camerapp.cut.cutModule
+import ua.com.radiokot.camerapp.envelopes.envelopesModule
 import ua.com.radiokot.camerapp.intro.introModule
 import ua.com.radiokot.camerapp.io.ioModule
 import ua.com.radiokot.camerapp.stamps.stampsModule
@@ -54,6 +55,7 @@ class CameraApp : Application() {
                 cutModule,
                 stampsModule,
                 introModule,
+                envelopesModule,
             )
         }
     }

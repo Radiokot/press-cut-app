@@ -1,6 +1,7 @@
 <resources>
     <string name="app_name">Press-Cut</string>
     <string name="new_stamp_shortcut">New stamp</string>
+    <string name="receive_stamps_shortcut">Receive stamps</string>
     <string name="about_text">
         <![CDATA[
         Hey, this is Oleg, the author.

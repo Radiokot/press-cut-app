@@ -52,5 +52,35 @@
         <activity
             android:name=".about.ui.HtmlActivity"
             android:exported="false" />
+
+        <activity
+            android:name=".envelopes.ui.OpenEnvelopeActivity"
+            android:exported="true">
+            <intent-filter android:label="@string/receive_stamps_shortcut">
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data android:scheme="content" />
+                <data android:host="*" />
+                <data android:mimeType="application/octet-stream" />
+
+                <!-- 🏔️ -->
+                <!-- K2 next -->
+                <!-- No sherpa, no oxygen 🧗-->
+                <!-- The peak of Android development -->
+                <data android:pathPattern=".*\\.onestamp" />
+                <data android:pathPattern=".*\\..*\\.onestamp" />
+                <data android:pathPattern=".*\\..*\\..*\\.onestamp" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\.onestamp" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\.onestamp" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\.onestamp" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\..*\\.onestamp" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\..*\\..*\\.onestamp" />
+                <data android:pathPattern=".*\\..*\\..*\\..*\\..*\\..*\\..*\\..*\\..*\\.onestamp" />
+                <!-- 🚩⛺⛺⛺ Welcome to the base camp 🚩🪨🪨 ⛺⛺🎒 🪨🚩 🎒🎒⛺⛺🚩 🪨 🚶 🚁 -->
+            </intent-filter>
+        </activity>
     </application>
 </manifest>
