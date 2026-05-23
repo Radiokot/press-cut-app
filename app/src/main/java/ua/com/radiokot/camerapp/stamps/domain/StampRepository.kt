@@ -22,6 +22,7 @@ package ua.com.radiokot.camerapp.stamps.domain
 import android.graphics.Bitmap
 import kotlinx.coroutines.flow.Flow
 import ua.com.radiokot.camerapp.stamps.domain.shape.StampShape
+import java.time.LocalDateTime
 import java.util.Optional
 
 interface StampRepository {
@@ -35,10 +36,12 @@ interface StampRepository {
     ): Stamp?
 
     suspend fun addStamp(
+        id: String = System.currentTimeMillis().toString(),
         collectionId: String,
         imageBitmap: Bitmap,
-        shape: StampShape,
         caption: String?,
+        takenAtLocal: LocalDateTime = LocalDateTime.now(),
+        shape: StampShape,
     )
 
     suspend fun updateStamp(

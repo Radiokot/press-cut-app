@@ -22,29 +22,32 @@
 package ua.com.radiokot.camerapp.envelopes.data
 
 import android.content.ContentResolver
+import android.graphics.BitmapFactory
 import android.net.Uri
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.decodeFromStream
-import ua.com.radiokot.camerapp.envelopes.domain.GetOneStampEnvelopePreviewUseCase
-import ua.com.radiokot.camerapp.envelopes.domain.StampEnvelopePreview
+import ua.com.radiokot.camerapp.envelopes.domain.AddStampsFromOneStampPackageUseCase
+import ua.com.radiokot.camerapp.stamps.data.FsStampRepository
+import ua.com.radiokot.camerapp.stamps.domain.Stamp
 import ua.com.radiokot.camerapp.util.entries
 import ua.com.radiokot.camerapp.util.lazyLogger
-import java.io.File
+import java.io.InputStream
 import java.util.zip.ZipInputStream
 
-class FsGetOneStampEnvelopePreviewUseCase(
+class FsAddStampsFromOneStampPackageUseCase(
+    private val stampRepository: FsStampRepository,
     private val contentResolver: ContentResolver,
-    private val tempStampImageDirectory: File,
-) : GetOneStampEnvelopePreviewUseCase {
+) : AddStampsFromOneStampPackageUseCase {
 
-    private val log by lazyLogger("FsGetOneStampEnvelopePreviewUC")
+    private val log by lazyLogger("FsAddStampsFromOneStampPackageUC")
 
     override suspend operator fun invoke(
+        collectionId: String,
         oneStampPackageContentUri: Uri,
-    ): StampEnvelopePreview = withContext(Dispatchers.IO) {
+    ): Unit = withContext(Dispatchers.IO) {
 
         val manifest: OneStampPackageManifest =
             contentResolver
@@ -65,23 +68,13 @@ class FsGetOneStampEnvelopePreviewUseCase(
                 .assets
                 .associate { it.id to it.fileName }
 
-        val imagePathsToExtract = mutableSetOf<String>()
-
-        val someStamps =
+        val stampByImagePath =
             manifest
                 .stamps
-                .take(3)
                 .mapNotNull { oneStampPackageManifestStamp ->
                     try {
-                        val stamp =
-                            oneStampPackageManifestStamp
-                                .toStamp(
-                                    assetFileNamesById = assetFileNamesById,
-                                )
-                        imagePathsToExtract += stamp.imageUri
-                        stamp.copy(
-                            newImageUri =
-                                "file://${tempStampImageDirectory.absolutePath}/${stamp.imageUri}",
+                        oneStampPackageManifestStamp.toStamp(
+                            assetFileNamesById = assetFileNamesById,
                         )
                     } catch (e: Exception) {
                         ensureActive()
@@ -91,14 +84,9 @@ class FsGetOneStampEnvelopePreviewUseCase(
                         null
                     }
                 }
+                .associateBy(Stamp::imageUri)
 
-        if (tempStampImageDirectory.exists()) {
-            log.debug {
-                "invoke(): clearing the temp directory"
-            }
-
-            tempStampImageDirectory.deleteRecursively()
-        }
+        var addedStamps = 0
 
         contentResolver
             .openInputStream(oneStampPackageContentUri)!!
@@ -107,21 +95,41 @@ class FsGetOneStampEnvelopePreviewUseCase(
             .use { zipInputStream ->
                 zipInputStream
                     .entries()
-                    .filter { it.name in imagePathsToExtract }
+                    .filter { it.name in stampByImagePath }
                     .forEach { imageEntry ->
+                        val stamp = stampByImagePath[imageEntry.name]!!
+
+                        val isImageWebp = imageEntry.name.endsWith(
+                            suffix = ".${FsStampRepository.WEBP_EXTENSION}",
+                            ignoreCase = true,
+                        )
+
                         try {
-                            File(
-                                tempStampImageDirectory,
-                                imageEntry.name,
-                            )
-                                .also { it.parentFile?.mkdirs() }
-                                .outputStream()
-                                .use(zipInputStream::copyTo)
+                            if (isImageWebp) {
+                                stampRepository.addStamp(
+                                    id = stamp.id,
+                                    collectionId = collectionId,
+                                    webpBytes = zipInputStream.use(InputStream::readBytes),
+                                    caption = stamp.caption,
+                                    takenAtLocal = stamp.takenAtLocal,
+                                    shape = stamp.shape,
+                                )
+                            } else {
+                                stampRepository.addStamp(
+                                    id = stamp.id,
+                                    collectionId = collectionId,
+                                    imageBitmap = zipInputStream.use(BitmapFactory::decodeStream),
+                                    caption = stamp.caption,
+                                    takenAtLocal = stamp.takenAtLocal,
+                                    shape = stamp.shape,
+                                )
+                            }
+                            addedStamps++
                         } catch (e: Exception) {
                             ensureActive()
                             log.error(e) {
-                                "invoke(): failed extracting an image:" +
-                                        "\nname=${imageEntry.name}"
+                                "invoke(): failed adding a stamp:" +
+                                        "\nstamp=$stamp"
                             }
                         } finally {
                             zipInputStream.closeEntry()
@@ -129,10 +137,8 @@ class FsGetOneStampEnvelopePreviewUseCase(
                     }
             }
 
-        StampEnvelopePreview(
-            message = manifest.message,
-            someStamps = someStamps,
-            stampCount = manifest.stamps.size,
-        )
+        log.info {
+            "Added $addedStamps stamps to the collection $collectionId"
+        }
     }
 }

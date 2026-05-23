@@ -23,7 +23,9 @@ import org.koin.android.ext.koin.androidApplication
 import org.koin.core.qualifier.named
 import org.koin.dsl.bind
 import org.koin.dsl.module
+import ua.com.radiokot.camerapp.envelopes.data.FsAddStampsFromOneStampPackageUseCase
 import ua.com.radiokot.camerapp.envelopes.data.FsGetOneStampEnvelopePreviewUseCase
+import ua.com.radiokot.camerapp.envelopes.domain.AddStampsFromOneStampPackageUseCase
 import ua.com.radiokot.camerapp.envelopes.domain.GetOneStampEnvelopePreviewUseCase
 import java.io.File
 
@@ -44,4 +46,11 @@ val envelopesModule = module {
             tempStampImageDirectory = get(named(DIRECTORY_TEMP_STAMP_IMAGES)),
         )
     } bind GetOneStampEnvelopePreviewUseCase::class
+
+    single {
+        FsAddStampsFromOneStampPackageUseCase(
+            stampRepository = get(),
+            contentResolver = androidApplication().contentResolver,
+        )
+    } bind AddStampsFromOneStampPackageUseCase::class
 }

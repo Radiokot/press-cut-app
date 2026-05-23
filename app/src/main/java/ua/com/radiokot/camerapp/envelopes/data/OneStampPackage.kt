@@ -21,35 +21,27 @@ package ua.com.radiokot.camerapp.envelopes.data
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
 import ua.com.radiokot.camerapp.stamps.domain.Stamp
 import ua.com.radiokot.camerapp.stamps.domain.shape.StampShapeOneStamp
 import ua.com.radiokot.camerapp.stamps.domain.shape.StampShapeOneStampLandscape
 import ua.com.radiokot.camerapp.stamps.domain.shape.StampShapeOneStampSquare
-import java.time.ZoneOffset
 import java.time.ZonedDateTime
 
 @Serializable
-data class OneStampPackageManifest(
+class OneStampPackageManifest(
     val assets: List<Asset>,
     val message: String?,
-    val packageID: String,
     val stamps: List<Stamp>,
 ) {
     @Serializable
-    data class Asset(
+    class Asset(
         val fileName: String,
         val id: String,
-        val role: Role? = null,
-    ) {
-        @Serializable
-        enum class Role {
-            @SerialName("previewImage")
-            PreviewImage,
-        }
-    }
+    )
 
     @Serializable
-    data class Stamp(
+    class Stamp(
         val id: String,
         val createdAt: String,
         val previewImageAssetID: String,
@@ -82,6 +74,17 @@ data class OneStampPackageManifest(
             }
         }
     }
+
+    companion object {
+        val JSON by lazy {
+            Json {
+                isLenient = true
+                coerceInputValues = true
+                ignoreUnknownKeys = true
+            }
+        }
+
+    }
 }
 
 fun OneStampPackageManifest.Stamp.toStamp(
@@ -91,23 +94,16 @@ fun OneStampPackageManifest.Stamp.toStamp(
     val fileName =
         assetFileNamesById[previewAssetId]
             ?: error("Stamp preview asset not found")
-    val takenAtLocal =
-        ZonedDateTime
-            .parse(createdAt)
-            .toLocalDateTime()
+    val takenAtZoned = ZonedDateTime
+        .parse(createdAt)
     val (shapeKind, shapeOrientation) = stampShape
 
     return Stamp(
-        id =
-            (takenAtLocal
-                .toEpochSecond(ZoneOffset.UTC) * 1000)
-                .toString(),
+        id = (takenAtZoned.toEpochSecond() * 1000).toString(),
         collectionId = "OneStampPackage",
         imageUri = "$OneStampPackageAssetsDirectory/$fileName",
-        caption =
-            title
-                .takeIf { it != "Untitled" },
-        takenAtLocal = takenAtLocal,
+        caption = title.takeIf { it != "Untitled" },
+        takenAtLocal = takenAtZoned.toLocalDateTime(),
         shape =
             when (shapeKind) {
                 OneStampPackageManifest.Stamp.Shape.Kind.Square ->

@@ -117,7 +117,6 @@ class FsStampRepository(
         sharedFlow.collect(this)
     }
 
-
     override suspend fun getStamps(): List<Stamp> =
         getStampsFlow()
             .first()
@@ -129,19 +128,13 @@ class FsStampRepository(
             .find { it.id == id }
 
     override suspend fun addStamp(
+        id: String,
         collectionId: String,
         imageBitmap: Bitmap,
-        shape: StampShape,
         caption: String?,
+        takenAtLocal: LocalDateTime,
+        shape: StampShape,
     ): Unit = withContext(Dispatchers.IO) {
-
-        val id = System.currentTimeMillis().toString()
-        val takenAtLocal = LocalDateTime.now()
-
-        val outputFile = getStampFile(
-            id = id,
-            collectionId = collectionId,
-        )
 
         val webpBytes = ByteArrayOutputStream().use { stream ->
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
@@ -161,6 +154,30 @@ class FsStampRepository(
             stream.flush()
             stream.toByteArray()
         }
+
+        addStamp(
+            id = id,
+            collectionId = collectionId,
+            webpBytes = webpBytes,
+            caption = caption,
+            takenAtLocal = takenAtLocal,
+            shape = shape,
+        )
+    }
+
+    suspend fun addStamp(
+        id: String,
+        collectionId: String,
+        webpBytes: ByteArray,
+        caption: String?,
+        takenAtLocal: LocalDateTime,
+        shape: StampShape,
+    ): Unit = withContext(Dispatchers.IO) {
+
+        val outputFile = getStampFile(
+            id = id,
+            collectionId = collectionId,
+        )
 
         val xmpMeta = XMPMetaFactory.create().setStampDetails(
             caption = caption,
@@ -459,7 +476,7 @@ class FsStampRepository(
                 cache += Stamp(
                     id = stampId,
                     collectionId = stampCollectionId,
-                    imageUri = "file://$stampDirectoryAbsolutePath/$stampCollectionId/$stampId.$EXTENSION_WEBP",
+                    imageUri = "file://$stampDirectoryAbsolutePath/$stampCollectionId/$stampId.$WEBP_EXTENSION",
                     caption = stampCaption,
                     takenAtLocal = stampTakenAtLocal,
                     shape = stampShape,
@@ -485,18 +502,15 @@ class FsStampRepository(
         collectionId: String,
     ) = File(
         stampDirectory,
-        "$collectionId/$id.$EXTENSION_WEBP"
+        "$collectionId/$id.$WEBP_EXTENSION"
     )
 
     private fun isStamp(file: File): Boolean =
-        file.extension in EXTENSIONS
+        file.extension == WEBP_EXTENSION
                 && file.nameWithoutExtension.isDigitsOnly()
 
-    private companion object {
-        private const val EXTENSION_WEBP = "webp"
-        private val EXTENSIONS = setOf(
-            EXTENSION_WEBP,
-        )
+    companion object {
+        const val WEBP_EXTENSION = "webp"
     }
 }
 
