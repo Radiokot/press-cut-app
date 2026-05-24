@@ -21,10 +21,8 @@
 
 package ua.com.radiokot.camerapp.stamps.data
 
-import android.content.res.AssetManager
 import android.graphics.Bitmap
 import android.os.Build
-import androidx.core.text.isDigitsOnly
 import com.ashampoo.kim.format.webp.WebPImageParser
 import com.ashampoo.kim.format.webp.WebPWriter
 import com.ashampoo.kim.input.AndroidInputStreamByteReader
@@ -33,6 +31,7 @@ import com.ashampoo.kim.input.use
 import com.ashampoo.kim.output.OutputStreamByteWriter
 import com.ashampoo.xmp.XMPMeta
 import com.ashampoo.xmp.XMPMetaFactory
+import dalvik.annotation.optimization.FastNative
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -46,7 +45,6 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import ua.com.radiokot.camerapp.stamps.data.PressCutXmpNamespace.getStampShape
 import ua.com.radiokot.camerapp.stamps.data.PressCutXmpNamespace.setStampShape
 import ua.com.radiokot.camerapp.stamps.domain.Stamp
 import ua.com.radiokot.camerapp.stamps.domain.StampRepository
@@ -57,27 +55,24 @@ import ua.com.radiokot.camerapp.util.lazyLogger
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.FileOutputStream
+import java.io.InputStream
 import java.nio.ByteBuffer
 import java.nio.file.FileSystems
 import java.nio.file.Files
-import java.nio.file.Path
 import java.nio.file.StandardCopyOption
-import java.nio.file.attribute.BasicFileAttributes
 import java.time.LocalDateTime
-import java.time.ZoneId
 import java.util.Optional
 import java.util.concurrent.ConcurrentHashMap
 import kotlin.concurrent.atomics.AtomicBoolean
+import kotlin.concurrent.atomics.AtomicLong
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
+import kotlin.concurrent.atomics.incrementAndFetch
 import kotlin.io.path.absolutePathString
 import kotlin.jvm.optionals.getOrNull
 import kotlin.system.measureTimeMillis
-import kotlin.time.Duration.Companion.milliseconds
 
 class FsStampRepository(
     private val stampDirectory: File,
-    private val assetManager: AssetManager,
-    private val giftStampsAssetsDirectoryName: String,
     private val safFileLocksmith: SafFileLocksmith,
 ) : StampRepository {
 
@@ -128,7 +123,20 @@ class FsStampRepository(
             .find { it.id == id }
 
     override suspend fun addStamp(
-        id: String,
+        collectionId: String,
+        imageBitmap: Bitmap,
+        caption: String?,
+        shape: StampShape,
+    ) =
+        addStamp(
+            collectionId = collectionId,
+            imageBitmap = imageBitmap,
+            caption = caption,
+            takenAtLocal = LocalDateTime.now(),
+            shape = shape,
+        )
+
+    suspend fun addStamp(
         collectionId: String,
         imageBitmap: Bitmap,
         caption: String?,
@@ -156,7 +164,6 @@ class FsStampRepository(
         }
 
         addStamp(
-            id = id,
             collectionId = collectionId,
             webpBytes = webpBytes,
             caption = caption,
@@ -166,13 +173,14 @@ class FsStampRepository(
     }
 
     suspend fun addStamp(
-        id: String,
         collectionId: String,
         webpBytes: ByteArray,
         caption: String?,
         takenAtLocal: LocalDateTime,
         shape: StampShape,
     ): Unit = withContext(Dispatchers.IO) {
+
+        val id = newStampId()
 
         val outputFile = getStampFile(
             id = id,
@@ -199,12 +207,30 @@ class FsStampRepository(
                 id = id,
                 collectionId = collectionId,
                 caption = caption,
-                imageUri = outputFile.toPath().toImageUri(),
+                imageUri = outputFile.absolutePath.toImageUri(),
                 takenAtLocal = takenAtLocal,
                 shape = shape,
             )
             sharedFlow.emit(cache)
         }
+    }
+
+    suspend fun addStamp(
+        collectionId: String,
+        stampWebpName: String,
+        stmpWebpContent: InputStream,
+    ): Unit = withContext(Dispatchers.IO) {
+
+        check(!isCacheInitialized.load()) {
+            "This method can't be called when the cache is already initialized"
+        }
+
+        getStampFileByName(
+            fileName = stampWebpName,
+            collectionId = collectionId,
+        )
+            .outputStream()
+            .use(stmpWebpContent::copyTo)
     }
 
     override suspend fun updateStamp(
@@ -330,7 +356,7 @@ class FsStampRepository(
     ): Flow<Pair<Int, Int>> {
 
         //                        Hi Revolut 👋
-        val movedStampPathsById = ConcurrentHashMap<String, Path>(mutableMapOf())
+        val movedStampPathsById = ConcurrentHashMap<String, String>(mutableMapOf())
 
         return channelFlow {
             val progressChannel = this.channel
@@ -371,7 +397,7 @@ class FsStampRepository(
                             destinationFile = stampDestinationFile,
                         )
                     }
-                    movedStampPathsById[stampId] = stampDestinationPath
+                    movedStampPathsById[stampId] = stampDestinationPath.absolutePathString()
                     progressChannel.send(movedStampPathsById.size to stampIds.size)
                 }
             }
@@ -396,54 +422,7 @@ class FsStampRepository(
             .flowOn(Dispatchers.IO)
     }
 
-    override suspend fun addGiftStamps(
-        collectionId: String,
-    ): Unit = withContext(Dispatchers.IO) {
-
-        val collectionDirectoryPath =
-            FileSystems
-                .getDefault()
-                .getPath(
-                    stampDirectory.absolutePath,
-                    collectionId,
-                )
-                .toString()
-
-        var id = System.currentTimeMillis()
-
-        val addedFiles: List<File> =
-            assetManager
-                .list(giftStampsAssetsDirectoryName)
-                ?.map { giftStampFileName ->
-
-                    // Avoid ID conflicts with existing stamps.
-                    val destinationStampFile = File(
-                        collectionDirectoryPath,
-                        "${id++}.${giftStampFileName.substringAfterLast('.', "")}"
-                    )
-
-                    assetManager
-                        .open("$giftStampsAssetsDirectoryName/$giftStampFileName")
-                        .use { giftStampFileInputStream ->
-                            destinationStampFile
-                                .outputStream()
-                                .use { destinationStampFileOutputStream ->
-                                    giftStampFileInputStream.copyTo(destinationStampFileOutputStream)
-                                }
-                        }
-
-                    destinationStampFile
-                }
-                ?: emptyList()
-
-        if (isCacheInitialized.load()) {
-            cache += addedFiles
-                .map(File::toStamp)
-            sharedFlow.emit(cache)
-        }
-    }
-
-    private suspend fun initCache() {
+    private suspend fun initCache() = withContext(Dispatchers.IO) {
         val stampDirectoryAbsolutePath = stampDirectory.absolutePath
 
         val tookMs = measureTimeMillis {
@@ -476,7 +455,13 @@ class FsStampRepository(
                 cache += Stamp(
                     id = stampId,
                     collectionId = stampCollectionId,
-                    imageUri = "file://$stampDirectoryAbsolutePath/$stampCollectionId/$stampId.$WEBP_EXTENSION",
+                    imageUri =
+                        getStampFile(
+                            id = stampId,
+                            collectionId = stampCollectionId
+                        )
+                            .absolutePath
+                            .toImageUri(),
                     caption = stampCaption,
                     takenAtLocal = stampTakenAtLocal,
                     shape = stampShape,
@@ -487,7 +472,7 @@ class FsStampRepository(
         log.debug {
             "initCache(): cache initialized:" +
                     "\nsize=${cache.size}" +
-                    "\ntook=${tookMs.milliseconds}"
+                    "\ntook=${tookMs}ms"
         }
 
         sharedFlow.emit(cache)
@@ -500,17 +485,37 @@ class FsStampRepository(
     private fun getStampFile(
         id: String,
         collectionId: String,
-    ) = File(
-        stampDirectory,
-        "$collectionId/$id.$WEBP_EXTENSION"
-    )
+    ) =
+        getStampFileByName(
+            fileName = "$id.$WEBP_EXTENSION",
+            collectionId = collectionId,
+        )
+
+    private fun getStampFileByName(
+        fileName: String,
+        collectionId: String,
+    ) =
+        File(
+            stampDirectory,
+            "$collectionId/$fileName"
+        )
 
     private fun isStamp(file: File): Boolean =
-        file.extension == WEBP_EXTENSION
-                && file.nameWithoutExtension.isDigitsOnly()
+        isStampFile(
+            path = file.absolutePath,
+        )
+
+    @FastNative
+    private external fun isStampFile(path: String): Boolean
 
     companion object {
         const val WEBP_EXTENSION = "webp"
+        private val stampIdCounter = AtomicLong(System.currentTimeMillis())
+
+        fun newStampId(): String =
+            stampIdCounter
+                    .incrementAndFetch()
+                    .toString()
     }
 }
 
@@ -526,40 +531,5 @@ private fun XMPMeta.setStampDetails(
     }
 }
 
-private fun File.toStamp(): Stamp {
-    val path = toPath()
-    val xmpMeta: XMPMeta? =
-        AndroidInputStreamByteReader(
-            inputStream = inputStream(),
-            contentLength = length(),
-        )
-            .use(WebPImageParser::parseMetadata)
-            .xmp
-            ?.let(XMPMetaFactory::parseFromString)
-    val parent = parentFile!!
-
-    return Stamp(
-        id = nameWithoutExtension,
-        collectionId = parent.name,
-        imageUri = path.toImageUri(),
-        caption = xmpMeta?.getTitle(),
-        takenAtLocal =
-            xmpMeta
-                ?.getDateTimeOriginal()
-                ?.let(LocalDateTime::parse)
-                ?: Files
-                    .readAttributes(path, BasicFileAttributes::class.java)
-                    .creationTime()
-                    .toInstant()
-                    .atZone(ZoneId.systemDefault())
-                    .toLocalDateTime(),
-        shape =
-            xmpMeta
-                ?.getStampShape()
-                ?.let(StampShape::fromName)
-                ?: StampShapeA,
-    )
-}
-
-private fun Path.toImageUri(): String =
-    "file://${absolutePathString()}"
+private fun String.toImageUri(): String =
+    "file://$this"

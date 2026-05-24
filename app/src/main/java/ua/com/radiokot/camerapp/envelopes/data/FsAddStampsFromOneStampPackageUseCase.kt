@@ -107,7 +107,6 @@ class FsAddStampsFromOneStampPackageUseCase(
                         try {
                             if (isImageWebp) {
                                 stampRepository.addStamp(
-                                    id = stamp.id,
                                     collectionId = collectionId,
                                     webpBytes = zipInputStream.use(InputStream::readBytes),
                                     caption = stamp.caption,
@@ -116,7 +115,6 @@ class FsAddStampsFromOneStampPackageUseCase(
                                 )
                             } else {
                                 stampRepository.addStamp(
-                                    id = stamp.id,
                                     collectionId = collectionId,
                                     imageBitmap = zipInputStream.use(BitmapFactory::decodeStream),
                                     caption = stamp.caption,

@@ -29,8 +29,6 @@ import com.ashampoo.kim.input.use
 import com.ashampoo.kim.output.OutputStreamByteWriter
 import com.ashampoo.xmp.XMPMeta
 import com.ashampoo.xmp.XMPMetaFactory
-import kotlinx.collections.immutable.PersistentList
-import kotlinx.collections.immutable.toPersistentList
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -49,6 +47,7 @@ import java.io.FileOutputStream
 import java.time.LocalDateTime
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
+import kotlin.system.measureTimeMillis
 
 class FsStampCollectionRepository(
     private val stampDirectory: File,
@@ -74,20 +73,6 @@ class FsStampCollectionRepository(
         }
     }
 
-    override suspend fun getStampCollections(
-
-    ): PersistentList<StampCollection> = withContext(Dispatchers.IO) {
-
-        val directories =
-            stampDirectory
-                .listFiles(File::isDirectory)
-                ?: error("Can't access the directory: $stampDirectory")
-
-        return@withContext directories
-            .mapNotNull { toStampCollection(it) }
-            .toPersistentList()
-    }
-
     private val isCacheInitialized = AtomicBoolean(false)
     private val cache: MutableList<StampCollection> = mutableListOf()
     private val sharedFlow: MutableSharedFlow<List<StampCollection>> =
@@ -99,22 +84,20 @@ class FsStampCollectionRepository(
     override fun getStampCollectionsFlow(): Flow<List<StampCollection>> = flow {
 
         if (!isCacheInitialized.exchange(true)) {
-            cache += getStampCollections()
-            log.debug {
-                "getStampCollectionsFlow(): cache initialized:" +
-                        "\nsize=${cache.size}"
-            }
-            sharedFlow.emit(cache)
+            initCache()
         }
 
         sharedFlow.collect(this)
     }
 
+    override suspend fun getStampCollections(): List<StampCollection> =
+        getStampCollectionsFlow()
+            .first()
+
     override suspend fun getStampCollection(
         collectionId: String,
     ): StampCollection? =
-        getStampCollectionsFlow()
-            .first()
+        getStampCollections()
             .find { it.id == collectionId }
 
     override suspend fun addStampCollection(
@@ -269,7 +252,25 @@ class FsStampCollectionRepository(
         }
     }
 
-    private fun getStampCollectionDirectory(
+    private suspend fun initCache(): Unit = withContext(Dispatchers.IO) {
+
+        val tookMs = measureTimeMillis {
+            stampDirectory
+                .listFiles(File::isDirectory)
+                ?.mapTo(cache) { toStampCollection(it) }
+                ?: error("Can't access the directory: $stampDirectory")
+        }
+
+        log.debug {
+            "getStampCollectionsFlow(): cache initialized:" +
+                    "\nsize=${cache.size}" +
+                    "\ntook=${tookMs}ms"
+        }
+
+        sharedFlow.emit(cache)
+    }
+
+    fun getStampCollectionDirectory(
         id: String,
     ) = File(
         stampDirectory,

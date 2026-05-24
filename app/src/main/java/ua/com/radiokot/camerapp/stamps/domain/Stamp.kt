@@ -35,12 +35,12 @@ class Stamp(
         newImageUri: String = this.imageUri,
         newCaption: String? = this.caption,
     ) = Stamp(
-        id = id,
+        id = this.id,
         collectionId = newCollectionId,
         imageUri = newImageUri,
         caption = newCaption,
-        takenAtLocal = takenAtLocal,
-        shape = shape,
+        takenAtLocal = this.takenAtLocal,
+        shape = this.shape,
     )
 
     override fun equals(other: Any?): Boolean {

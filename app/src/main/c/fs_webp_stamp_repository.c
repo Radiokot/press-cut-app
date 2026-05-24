@@ -28,6 +28,7 @@
 #include <time.h>
 #include <pthread.h>
 #include <libgen.h>
+#include <stdbool.h>
 #include "webp/demux.h"
 #include "webp/decode.h"
 #include "ezXML/ezxml.h"
@@ -53,18 +54,18 @@ static void dynbuf_write_stamp_details(
     dynbuf_write(buffer, shape, (int) strlen(shape) + 1);
 }
 
-static int is_digits_only(const char *str) {
-    if (str == NULL || *str == '\0') {
-        return 0;
+static bool is_stamp_file(const char *path) {
+    char *file_name = basename(path);
+    char *extension = strrchr(file_name, '.');
+    if (strcasecmp(extension, ".webp") != 0) {
+        return false;
     }
-
-    for (const char *p = str; *p != '\0'; ++p) {
+    for (const char *p = file_name; p != extension; ++p) {
         if (!isdigit((unsigned char) *p)) {
-            return 0;
+            return false;
         }
     }
-
-    return 1;
+    return true;
 }
 
 /**
@@ -127,33 +128,17 @@ static void get_stamp_paths(
             );
 
             if (stat(stamp_sub_path, &directory_entry_stat) != 0
-                    || !S_ISREG(directory_entry_stat.st_mode)) {
+                    || !S_ISREG(directory_entry_stat.st_mode)
+                    || !is_stamp_file(stamp_sub_path)) {
                 continue;
             }
 
-            const char *extension = strrchr(directory_entry->d_name, '.');
-            if (extension == NULL || strcasecmp(extension, ".webp") != 0) {
-                continue;
-            }
-
-            size_t name_without_extension_length = strlen(directory_entry->d_name) - strlen(extension);
-            char *name_without_extension = malloc(name_without_extension_length + 1);
-            memcpy(
-                    name_without_extension,
-                    directory_entry->d_name,
-                    name_without_extension_length
+            dynbuf_write(
+                    stamp_path_buffer,
+                    stamp_sub_path,
+                    (int) strlen(stamp_sub_path) + 1
             );
-            name_without_extension[name_without_extension_length] = 0;
-
-            if (is_digits_only(name_without_extension)) {
-                dynbuf_write(
-                        stamp_path_buffer,
-                        stamp_sub_path,
-                        (int) strlen(stamp_sub_path) + 1
-                );
-                (*count)++;
-            }
-            free(name_without_extension);
+            (*count)++;
         }
 
         closedir(collection_directory);
@@ -364,4 +349,19 @@ Java_ua_com_radiokot_camerapp_stamps_data_FsStampRepository_getStampDetailsBuffe
     }
 
     return (*env)->NewDirectByteBuffer(env, total_buffer, total_buffer_size);
+}
+
+JNIEXPORT jboolean JNICALL
+Java_ua_com_radiokot_camerapp_stamps_data_FsStampRepository_isStampFile(
+        JNIEnv *env,
+        jobject thiz,
+        jstring path
+) {
+    const char *file_path = (*env)->GetStringUTFChars(env, path, NULL);
+    bool is_it = false;
+    if (file_path != NULL) {
+        is_it = is_stamp_file(file_path);
+    }
+    (*env)->ReleaseStringUTFChars(env, path, file_path);
+    return is_it;
 }

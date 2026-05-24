@@ -94,16 +94,17 @@ fun OneStampPackageManifest.Stamp.toStamp(
     val fileName =
         assetFileNamesById[previewAssetId]
             ?: error("Stamp preview asset not found")
-    val takenAtZoned = ZonedDateTime
-        .parse(createdAt)
     val (shapeKind, shapeOrientation) = stampShape
 
     return Stamp(
-        id = (takenAtZoned.toEpochSecond() * 1000).toString(),
+        id = id,
         collectionId = "OneStampPackage",
         imageUri = "$OneStampPackageAssetsDirectory/$fileName",
         caption = title.takeIf { it != "Untitled" },
-        takenAtLocal = takenAtZoned.toLocalDateTime(),
+        takenAtLocal =
+            ZonedDateTime
+                .parse(createdAt)
+                .toLocalDateTime(),
         shape =
             when (shapeKind) {
                 OneStampPackageManifest.Stamp.Shape.Kind.Square ->

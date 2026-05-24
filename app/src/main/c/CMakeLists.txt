@@ -12,7 +12,7 @@ file(GLOB_RECURSE dynbuf CONFIGURE_DEPENDS "dynbuf/src/*.c")
 add_library(
         camerapp
         SHARED
-        fs_stamp_repository.c
+        fs_webp_stamp_repository.c
         ${ezXML}
         ${dynbuf}
 )
