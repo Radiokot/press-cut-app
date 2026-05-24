@@ -36,7 +36,10 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
 import com.skydoves.landscapist.image.LocalLandscapist
 import org.koin.compose.koinInject
+import ua.com.radiokot.camerapp.collectionselection.ui.SelectDestinationCollectionContract
+import ua.com.radiokot.camerapp.collectionselection.ui.selectDestinationCollectionDestination
 import ua.com.radiokot.camerapp.ui.paperBackground
+import ua.com.radiokot.camerapp.util.StableHolder
 
 class OpenEnvelopeActivity : ComponentActivity() {
 
@@ -53,12 +56,14 @@ class OpenEnvelopeActivity : ComponentActivity() {
             return
         }
 
+        val oneStampPackageContentUri = StableHolder(intentData)
+
         setContent {
             CompositionLocalProvider(
                 LocalLandscapist provides koinInject(),
             ) {
                 OpenEnvelopeNavHost(
-                    oneStampPackageContentUri = intentData,
+                    oneStampPackageContentUri = oneStampPackageContentUri,
                     modifier = Modifier
                         .fillMaxSize()
                         .paperBackground()
@@ -71,24 +76,33 @@ class OpenEnvelopeActivity : ComponentActivity() {
 @Composable
 private fun OpenEnvelopeNavHost(
     modifier: Modifier = Modifier,
-    oneStampPackageContentUri: Uri,
+    oneStampPackageContentUri: StableHolder<Uri>,
 ) {
     val navController = rememberNavController()
+    val selectDestinationCollectionContract =
+        SelectDestinationCollectionContract(
+            navController = navController,
+        )
 
     NavHost(
         navController = navController,
         startDestination =
             EnvelopePreviewRoute(
-                oneStampPackageContentUri = oneStampPackageContentUri,
+                oneStampPackageContentUri = oneStampPackageContentUri.value,
             ),
         enterTransition = { fadeIn() },
         exitTransition = { fadeOut() },
         modifier = modifier
     ) {
         envelopePreviewDestination(
-            onProceedToSaveDestinationCollectionSelection = {
+            selectDestinationCollectionContract = selectDestinationCollectionContract,
+            onProceedToSaveStamps = { collectionId ->
                 // TODO
-            },
+            }
+        )
+
+        selectDestinationCollectionDestination(
+            contract = selectDestinationCollectionContract,
         )
     }
 }

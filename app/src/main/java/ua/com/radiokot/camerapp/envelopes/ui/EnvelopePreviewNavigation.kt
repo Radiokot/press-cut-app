@@ -32,9 +32,12 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
+import ua.com.radiokot.camerapp.collectionselection.ui.SelectDestinationCollectionContract
+import ua.com.radiokot.camerapp.collectionselection.ui.SelectDestinationCollectionRequest
 
 fun NavGraphBuilder.envelopePreviewDestination(
-    onProceedToSaveDestinationCollectionSelection: () -> Unit,
+    selectDestinationCollectionContract: SelectDestinationCollectionContract,
+    onProceedToSaveStamps: (collectionId: String) -> Unit,
 ) = composable(
     route = EnvelopePreviewRoute,
     arguments = listOf(
@@ -69,10 +72,22 @@ fun NavGraphBuilder.envelopePreviewDestination(
         viewModel.events.collect { event ->
             when (event) {
                 EnvelopePreviewViewModel.Event.ProceedToSaveDestinationCollectionSelection -> {
-                    onProceedToSaveDestinationCollectionSelection()
+                    selectDestinationCollectionContract.proceedToCollectionSelection(
+                        request = SelectDestinationCollectionRequest.SaveStamps,
+                    )
+                }
+
+                is EnvelopePreviewViewModel.Event.ProceedToSaveStamps -> {
+                    onProceedToSaveStamps(event.collectionId)
                 }
             }
         }
+    }
+
+    LaunchedEffect(selectDestinationCollectionContract) {
+        selectDestinationCollectionContract
+            .getSelectedCollectionIdFlow()
+            .collect(viewModel::onSaveDestinationCollectionSelected)
     }
 }
 

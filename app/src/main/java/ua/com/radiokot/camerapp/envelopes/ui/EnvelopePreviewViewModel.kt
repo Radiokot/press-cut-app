@@ -47,7 +47,7 @@ class EnvelopePreviewViewModel(
 
         log.debug {
             "envelopePreview: getting the preview:" +
-                    "\noneStampPackageContentUri"
+                    "\noneStampPackageContentUri=$oneStampPackageContentUri"
         }
 
         getOneStampEnvelopePreviewUseCase(
@@ -75,8 +75,27 @@ class EnvelopePreviewViewModel(
         events.tryEmit(Event.ProceedToSaveDestinationCollectionSelection)
     }
 
+    fun onSaveDestinationCollectionSelected(
+        collectionId: String,
+    ) {
+        log.debug {
+            "onSaveDestinationCollectionSelected(): proceeding to save the stamps:" +
+                    "\ncollectionId=$collectionId"
+        }
+
+        events.tryEmit(
+            Event.ProceedToSaveStamps(
+                collectionId = collectionId,
+            )
+        )
+    }
+
     sealed interface Event {
         object ProceedToSaveDestinationCollectionSelection : Event
+
+        class ProceedToSaveStamps(
+            val collectionId: String,
+        ) : Event
     }
 
     class Parameters(
