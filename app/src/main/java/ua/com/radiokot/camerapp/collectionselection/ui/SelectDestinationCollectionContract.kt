@@ -36,7 +36,9 @@ class SelectDestinationCollectionContract(
                 route = SelectDestinationCollectionRoute(
                     request = request,
                 )
-            )
+            ) {
+                launchSingleTop = true
+            }
     }
 
     fun onCollectionSelected(

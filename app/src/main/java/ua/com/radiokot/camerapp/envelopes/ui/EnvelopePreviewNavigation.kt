@@ -84,7 +84,7 @@ fun NavGraphBuilder.envelopePreviewDestination(
         }
     }
 
-    LaunchedEffect(selectDestinationCollectionContract) {
+    LaunchedEffect(viewModel, selectDestinationCollectionContract) {
         selectDestinationCollectionContract
             .getSelectedCollectionIdFlow()
             .collect(viewModel::onSaveDestinationCollectionSelected)

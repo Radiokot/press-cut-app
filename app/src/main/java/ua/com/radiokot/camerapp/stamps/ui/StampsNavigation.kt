@@ -34,15 +34,14 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
+import ua.com.radiokot.camerapp.collectionselection.ui.SelectDestinationCollectionContract
+import ua.com.radiokot.camerapp.collectionselection.ui.SelectDestinationCollectionRequest
 
 fun NavGraphBuilder.stampsDestination(
     sharedTransitionScope: SharedTransitionScope?,
+    selectDestinationCollectionContract: SelectDestinationCollectionContract,
     onProceedToStamp: (stampId: String) -> Unit,
     onProceedToNewStamp: (collectionId: String) -> Unit,
-    onProceedToMoveDestinationCollectionSelection: (
-        currentCollectionId: String,
-        isSingleStamp: Boolean,
-    ) -> Unit,
     onProceedToMoveStamps: (
         sourceCollectionId: String,
         destinationCollectionId: String,
@@ -116,9 +115,11 @@ fun NavGraphBuilder.stampsDestination(
                 }
 
                 is StampsScreenViewModel.Event.ProceedToMoveDestinationCollectionSelection -> {
-                    onProceedToMoveDestinationCollectionSelection(
-                        event.currentCollectionId,
-                        event.isSingleStamp,
+                    selectDestinationCollectionContract.proceedToCollectionSelection(
+                        request = SelectDestinationCollectionRequest.MoveStamps(
+                            currentCollectionId = event.currentCollectionId,
+                            isSingleStamp = event.isSingleStamp,
+                        )
                     )
                 }
 
@@ -137,8 +138,8 @@ fun NavGraphBuilder.stampsDestination(
         }
     }
 
-    LaunchedEffect(viewModel, navEntry) {
-        SelectMoveDestinationCollectionContract(navEntry)
+    LaunchedEffect(viewModel, selectDestinationCollectionContract) {
+        selectDestinationCollectionContract
             .getSelectedCollectionIdFlow()
             .collect(viewModel::onMoveDestinationCollectionSelected)
     }

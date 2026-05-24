@@ -57,6 +57,8 @@ import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.compose.koinInject
 import ua.com.radiokot.camerapp.about.ui.AboutRoute
 import ua.com.radiokot.camerapp.about.ui.aboutDestination
+import ua.com.radiokot.camerapp.collectionselection.ui.SelectDestinationCollectionContract
+import ua.com.radiokot.camerapp.collectionselection.ui.selectDestinationCollectionDestination
 import ua.com.radiokot.camerapp.cut.ui.NewStampActivity
 import ua.com.radiokot.camerapp.intro.domain.OnboardingPreferences
 import ua.com.radiokot.camerapp.intro.ui.IntroRoute
@@ -162,6 +164,9 @@ private fun SharedTransitionScope.StampsNavHost(
             }
         }
     }
+    val selectDestinationCollectionContract = SelectDestinationCollectionContract(
+        navController = navController,
+    )
     val context = LocalContext.current
 
     fun proceedToNewStamp(
@@ -264,16 +269,7 @@ private fun SharedTransitionScope.StampsNavHost(
 
         collectionActionsDestination(
             sharedTransitionScope = this@StampsNavHost,
-            onProceedToMoveDestinationCollectionSelection = { currentCollectionId ->
-                navController.navigate(
-                    route = SelectMoveDestinationCollectionDestinationRoute(
-                        sourceCollectionId = currentCollectionId,
-                        isSingleStamp = false,
-                    )
-                ) {
-                    launchSingleTop = true
-                }
-            },
+            selectDestinationCollectionContract = selectDestinationCollectionContract,
             onProceedToMoveStamps = { sourceCollectionId, destinationCollectionId ->
                 navController.navigate(
                     route = MoveStampsRoute(
@@ -290,13 +286,8 @@ private fun SharedTransitionScope.StampsNavHost(
             onDone = navController::navigateUp,
         )
 
-        selectMoveDestinationCollectionDestination(
-            onSelected = { collectionId ->
-                SelectMoveDestinationCollectionContract(navController.previousBackStackEntry)
-                    .setSelectedCollectionId(collectionId)
-                navController.navigateUp()
-            },
-            onCancel = navController::navigateUp,
+        selectDestinationCollectionDestination(
+            contract = selectDestinationCollectionContract,
         )
 
         moveStampsDestination(
@@ -305,6 +296,7 @@ private fun SharedTransitionScope.StampsNavHost(
 
         stampsDestination(
             sharedTransitionScope = this@StampsNavHost,
+            selectDestinationCollectionContract = selectDestinationCollectionContract,
             onProceedToStamp = { stampId ->
                 navController.navigate(
                     route = StampRoute(
@@ -318,16 +310,6 @@ private fun SharedTransitionScope.StampsNavHost(
                 proceedToNewStamp(
                     collectionId = collectionId,
                 )
-            },
-            onProceedToMoveDestinationCollectionSelection = { currentCollectionId, isSingleStamp ->
-                navController.navigate(
-                    route = SelectMoveDestinationCollectionDestinationRoute(
-                        sourceCollectionId = currentCollectionId,
-                        isSingleStamp = isSingleStamp,
-                    )
-                ) {
-                    launchSingleTop = true
-                }
             },
             onProceedToMoveStamps = { sourceCollectionId, destinationCollectionId, stampSelectionIndex ->
                 navController.navigate(
@@ -345,16 +327,7 @@ private fun SharedTransitionScope.StampsNavHost(
 
         stampDestination(
             sharedTransitionScope = this@StampsNavHost,
-            onProceedToMoveDestinationCollectionSelection = { currentCollectionId ->
-                navController.navigate(
-                    route = SelectMoveDestinationCollectionDestinationRoute(
-                        sourceCollectionId = currentCollectionId,
-                        isSingleStamp = true,
-                    )
-                ) {
-                    launchSingleTop = true
-                }
-            },
+            selectDestinationCollectionContract = selectDestinationCollectionContract,
             onDone = navController::navigateUp,
         )
 
