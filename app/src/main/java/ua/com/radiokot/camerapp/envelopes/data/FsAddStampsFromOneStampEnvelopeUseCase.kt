@@ -29,7 +29,7 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.decodeFromStream
-import ua.com.radiokot.camerapp.envelopes.domain.AddStampsFromOneStampPackageUseCase
+import ua.com.radiokot.camerapp.envelopes.domain.AddStampsFromOneStampEnvelopeUseCase
 import ua.com.radiokot.camerapp.stamps.data.FsStampRepository
 import ua.com.radiokot.camerapp.stamps.domain.Stamp
 import ua.com.radiokot.camerapp.util.entries
@@ -37,21 +37,21 @@ import ua.com.radiokot.camerapp.util.lazyLogger
 import java.io.InputStream
 import java.util.zip.ZipInputStream
 
-class FsAddStampsFromOneStampPackageUseCase(
+class FsAddStampsFromOneStampEnvelopeUseCase(
     private val stampRepository: FsStampRepository,
     private val contentResolver: ContentResolver,
-) : AddStampsFromOneStampPackageUseCase {
+) : AddStampsFromOneStampEnvelopeUseCase {
 
     private val log by lazyLogger("FsAddStampsFromOneStampPackageUC")
 
     override suspend operator fun invoke(
         collectionId: String,
-        oneStampPackageContentUri: Uri,
+        oneStampEnvelopeContentUri: Uri,
     ): Unit = withContext(Dispatchers.IO) {
 
         val manifest: OneStampPackageManifest =
             contentResolver
-                .openInputStream(oneStampPackageContentUri)!!
+                .openInputStream(oneStampEnvelopeContentUri)!!
                 .buffered()
                 .let(::ZipInputStream)
                 .use { zipInputStream ->
@@ -89,7 +89,7 @@ class FsAddStampsFromOneStampPackageUseCase(
         var addedStamps = 0
 
         contentResolver
-            .openInputStream(oneStampPackageContentUri)!!
+            .openInputStream(oneStampEnvelopeContentUri)!!
             .buffered()
             .let(::ZipInputStream)
             .use { zipInputStream ->

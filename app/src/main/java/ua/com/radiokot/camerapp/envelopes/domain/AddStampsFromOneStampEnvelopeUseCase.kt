@@ -21,10 +21,10 @@ package ua.com.radiokot.camerapp.envelopes.domain
 
 import android.net.Uri
 
-interface AddStampsFromOneStampPackageUseCase {
+interface AddStampsFromOneStampEnvelopeUseCase {
 
     suspend operator fun invoke(
         collectionId: String,
-        oneStampPackageContentUri: Uri,
+        oneStampEnvelopeContentUri: Uri,
     )
 }

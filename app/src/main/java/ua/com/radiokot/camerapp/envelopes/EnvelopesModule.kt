@@ -24,9 +24,9 @@ import org.koin.core.module.dsl.viewModel
 import org.koin.core.qualifier.named
 import org.koin.dsl.bind
 import org.koin.dsl.module
-import ua.com.radiokot.camerapp.envelopes.data.FsAddStampsFromOneStampPackageUseCase
+import ua.com.radiokot.camerapp.envelopes.data.FsAddStampsFromOneStampEnvelopeUseCase
 import ua.com.radiokot.camerapp.envelopes.data.FsGetOneStampEnvelopePreviewUseCase
-import ua.com.radiokot.camerapp.envelopes.domain.AddStampsFromOneStampPackageUseCase
+import ua.com.radiokot.camerapp.envelopes.domain.AddStampsFromOneStampEnvelopeUseCase
 import ua.com.radiokot.camerapp.envelopes.domain.GetOneStampEnvelopePreviewUseCase
 import ua.com.radiokot.camerapp.envelopes.ui.EnvelopePreviewViewModel
 import java.io.File
@@ -50,11 +50,11 @@ val envelopesModule = module {
     } bind GetOneStampEnvelopePreviewUseCase::class
 
     single {
-        FsAddStampsFromOneStampPackageUseCase(
+        FsAddStampsFromOneStampEnvelopeUseCase(
             stampRepository = get(),
             contentResolver = androidApplication().contentResolver,
         )
-    } bind AddStampsFromOneStampPackageUseCase::class
+    } bind AddStampsFromOneStampEnvelopeUseCase::class
 
     viewModel {
         EnvelopePreviewViewModel(

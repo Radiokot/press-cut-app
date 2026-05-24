@@ -24,6 +24,6 @@ import android.net.Uri
 interface GetOneStampEnvelopePreviewUseCase {
 
     suspend operator fun invoke(
-        oneStampPackageContentUri: Uri,
+        oneStampEnvelopeContentUri: Uri,
     ): StampEnvelopePreview
 }

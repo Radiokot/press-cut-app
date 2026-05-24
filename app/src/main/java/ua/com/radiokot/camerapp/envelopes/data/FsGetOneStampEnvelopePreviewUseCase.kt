@@ -43,12 +43,12 @@ class FsGetOneStampEnvelopePreviewUseCase(
     private val log by lazyLogger("FsGetOneStampEnvelopePreviewUC")
 
     override suspend operator fun invoke(
-        oneStampPackageContentUri: Uri,
+        oneStampEnvelopeContentUri: Uri,
     ): StampEnvelopePreview = withContext(Dispatchers.IO) {
 
         val manifest: OneStampPackageManifest =
             contentResolver
-                .openInputStream(oneStampPackageContentUri)!!
+                .openInputStream(oneStampEnvelopeContentUri)!!
                 .buffered()
                 .let(::ZipInputStream)
                 .use { zipInputStream ->
@@ -101,7 +101,7 @@ class FsGetOneStampEnvelopePreviewUseCase(
         }
 
         contentResolver
-            .openInputStream(oneStampPackageContentUri)!!
+            .openInputStream(oneStampEnvelopeContentUri)!!
             .buffered()
             .let(::ZipInputStream)
             .use { zipInputStream ->
