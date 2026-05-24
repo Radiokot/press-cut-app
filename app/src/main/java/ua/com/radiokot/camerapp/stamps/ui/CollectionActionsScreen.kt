@@ -85,10 +85,10 @@ fun CollectionActionsScreen(
         )
     }
 
-    CollectionView(
-        item = collection,
-        onClicked = {},
-        onLongClicked = {},
+    StampBoxView(
+        name = collection.name,
+        someStamps = collection.someStamps,
+        key = collection.key,
         sharedTransitionScope = sharedTransitionScope,
         animatedVisibilityScope = animatedVisibilityScope,
     )

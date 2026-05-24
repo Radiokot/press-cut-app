@@ -20,6 +20,7 @@
 package ua.com.radiokot.camerapp.envelopes
 
 import org.koin.android.ext.koin.androidApplication
+import org.koin.core.module.dsl.viewModel
 import org.koin.core.qualifier.named
 import org.koin.dsl.bind
 import org.koin.dsl.module
@@ -27,6 +28,7 @@ import ua.com.radiokot.camerapp.envelopes.data.FsAddStampsFromOneStampPackageUse
 import ua.com.radiokot.camerapp.envelopes.data.FsGetOneStampEnvelopePreviewUseCase
 import ua.com.radiokot.camerapp.envelopes.domain.AddStampsFromOneStampPackageUseCase
 import ua.com.radiokot.camerapp.envelopes.domain.GetOneStampEnvelopePreviewUseCase
+import ua.com.radiokot.camerapp.envelopes.ui.EnvelopePreviewViewModel
 import java.io.File
 
 const val DIRECTORY_TEMP_STAMP_IMAGES = "temp-stamp-images-dir"
@@ -53,4 +55,13 @@ val envelopesModule = module {
             contentResolver = androidApplication().contentResolver,
         )
     } bind AddStampsFromOneStampPackageUseCase::class
+
+    viewModel {
+        EnvelopePreviewViewModel(
+            getOneStampEnvelopePreviewUseCase = get(),
+            parameters =
+                getOrNull()
+                    ?: error("No EnvelopePreviewViewModel.Parameters provided"),
+        )
+    }
 }

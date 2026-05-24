@@ -26,7 +26,6 @@ import androidx.compose.animation.core.snap
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -52,31 +51,22 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.skydoves.landscapist.image.LandscapistImage
+import kotlinx.collections.immutable.ImmutableList
 import ua.com.radiokot.camerapp.ui.PodkovaFamily
 import ua.com.radiokot.camerapp.util.EmptyImageComponent
 import kotlin.math.absoluteValue
 
 @Composable
-fun CollectionView(
+fun StampBoxView(
     modifier: Modifier = Modifier,
-    item: CollectionListItem,
-    onClicked: (CollectionListItem) -> Unit,
-    onLongClicked: (CollectionListItem) -> Unit,
+    name: String,
+    someStamps: ImmutableList<StampSampleItem>,
+    key: String,
     sharedTransitionScope: SharedTransitionScope?,
     animatedVisibilityScope: AnimatedVisibilityScope?,
 ) = Box(
     modifier = modifier
         .requiredSize(CollectionViewSize)
-        .combinedClickable(
-            indication = null,
-            interactionSource = null,
-            onClick = {
-                onClicked(item)
-            },
-            onLongClick = {
-                onLongClicked(item)
-            },
-        )
 ) {
     Spacer(
         modifier = Modifier
@@ -89,7 +79,7 @@ fun CollectionView(
 
                 with(sharedTransitionScope) {
                     sharedElement(
-                        sharedContentState = rememberSharedContentState("${item.key}-box-back"),
+                        sharedContentState = rememberSharedContentState("${key}-box-back"),
                         animatedVisibilityScope = animatedVisibilityScope,
                     )
                 }
@@ -106,10 +96,10 @@ fun CollectionView(
             .align(Alignment.BottomCenter)
     )
 
-    when (item.someStamps.size) {
+    when (someStamps.size) {
         1 -> {
             StampSampleView(
-                sample = item.someStamps[0],
+                sample = someStamps[0],
                 order = 0,
                 possibleRotationAngles = CenterSampleRotationAngles,
                 fallbackColor = Color.Yellow,
@@ -125,7 +115,7 @@ fun CollectionView(
 
         2 -> {
             StampSampleView(
-                sample = item.someStamps[1],
+                sample = someStamps[1],
                 order = 0,
                 possibleRotationAngles = RightSampleRotationAngles,
                 fallbackColor = Color.Red,
@@ -139,7 +129,7 @@ fun CollectionView(
                     )
             )
             StampSampleView(
-                sample = item.someStamps[0],
+                sample = someStamps[0],
                 order = 1,
                 possibleRotationAngles = LeftSampleRotationAngles,
                 fallbackColor = Color.Yellow,
@@ -156,7 +146,7 @@ fun CollectionView(
 
         3 -> {
             StampSampleView(
-                sample = item.someStamps[2],
+                sample = someStamps[2],
                 order = 0,
                 possibleRotationAngles = RightSampleRotationAngles,
                 fallbackColor = Color.Yellow,
@@ -170,7 +160,7 @@ fun CollectionView(
                     )
             )
             StampSampleView(
-                sample = item.someStamps[1],
+                sample = someStamps[1],
                 order = 1,
                 possibleRotationAngles = CenterSampleRotationAngles,
                 fallbackColor = Color.Red,
@@ -183,7 +173,7 @@ fun CollectionView(
                     )
             )
             StampSampleView(
-                sample = item.someStamps[0],
+                sample = someStamps[0],
                 order = 2,
                 possibleRotationAngles = LeftSampleRotationAngles,
                 fallbackColor = Color.Magenta,
@@ -212,7 +202,7 @@ fun CollectionView(
 
                 with(sharedTransitionScope) {
                     sharedBounds(
-                        sharedContentState = rememberSharedContentState("${item.key}-box-front"),
+                        sharedContentState = rememberSharedContentState("${key}-box-front"),
                         animatedVisibilityScope = animatedVisibilityScope,
                         exit = fadeOut(
                             animationSpec = snap(),
@@ -233,7 +223,7 @@ fun CollectionView(
             .padding(8.dp)
     ) {
         BasicText(
-            text = item.name,
+            text = name,
             style = CollectionViewNameStyle,
             modifier = Modifier
                 .fillMaxWidth()
@@ -244,7 +234,7 @@ fun CollectionView(
 
                     with(sharedTransitionScope) {
                         sharedElement(
-                            sharedContentState = rememberSharedContentState("${item.key}-name"),
+                            sharedContentState = rememberSharedContentState("${key}-name"),
                             animatedVisibilityScope = animatedVisibilityScope,
                             zIndexInOverlay = 20f,
                         )
@@ -273,7 +263,7 @@ val CollectionViewShape = RoundedCornerShape(10.dp)
 private fun StampSampleView(
     modifier: Modifier = Modifier,
     fallbackColor: Color,
-    sample: CollectionListItem.StampSampleItem,
+    sample: StampSampleItem,
     possibleRotationAngles: FloatArray,
     order: Int,
     sharedTransitionScope: SharedTransitionScope?,

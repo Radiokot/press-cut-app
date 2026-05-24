@@ -20,4 +20,8 @@
         and <a href="/android_asset/icons.html">icons from Noun Project</a>.
         ]]>
     </string>
+    <plurals name="stamp_count">
+        <item quantity="one">%1$d stamp</item>
+        <item quantity="other">%1$d stamps</item>
+    </plurals>
 </resources>

@@ -19,28 +19,24 @@
 
 package ua.com.radiokot.camerapp.envelopes.ui
 
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.safeContentPadding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.text.BasicText
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalDensity
-import androidx.core.net.toUri
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import com.skydoves.landscapist.image.LandscapistImage
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.rememberNavController
 import com.skydoves.landscapist.image.LocalLandscapist
-import kotlinx.coroutines.runBlocking
-import org.koin.android.ext.android.get
 import org.koin.compose.koinInject
-import ua.com.radiokot.camerapp.envelopes.domain.GetOneStampEnvelopePreviewUseCase
-import ua.com.radiokot.camerapp.stamps.ui.UiStampShape
-import ua.com.radiokot.camerapp.util.EmptyImageComponent
+import ua.com.radiokot.camerapp.ui.paperBackground
 
 class OpenEnvelopeActivity : ComponentActivity() {
 
@@ -51,42 +47,48 @@ class OpenEnvelopeActivity : ComponentActivity() {
         )
         super.onCreate(savedInstanceState)
 
-        val envelopePreview = runBlocking {
-            get<GetOneStampEnvelopePreviewUseCase>()
-                .invoke(intent.data!!)
+        val intentData = intent.data
+        if (intentData == null) {
+            finish()
+            return
         }
 
         setContent {
             CompositionLocalProvider(
                 LocalLandscapist provides koinInject(),
             ) {
-                Column(
+                OpenEnvelopeNavHost(
+                    oneStampPackageContentUri = intentData,
                     modifier = Modifier
-                        .safeContentPadding()
-                ) {
-                    BasicText(
-                        text = "Message: ${envelopePreview.message}",
-                    )
-                    BasicText(
-                        text = "Stamps: ${envelopePreview.stampCount}"
-                    )
-                    envelopePreview.someStamps.forEach { stamp ->
-                        BasicText(
-                            text = "Stamp '${stamp.caption}' taken at ${stamp.takenAtLocal}"
-                        )
-                        val uiShape = UiStampShape.fromShape(stamp.shape)
-                        val imageOptions = uiShape.getListImageLoadingOptions(LocalDensity.current)
-                        LandscapistImage(
-                            imageModel = stamp.imageUri::toUri,
-                            component = EmptyImageComponent,
-                            imageOptions = imageOptions.imageOptions,
-                            requestBuilder = imageOptions.requestBuilder,
-                            modifier = Modifier
-                                .size(uiShape.size)
-                        )
-                    }
-                }
+                        .fillMaxSize()
+                        .paperBackground()
+                )
             }
         }
+    }
+}
+
+@Composable
+private fun OpenEnvelopeNavHost(
+    modifier: Modifier = Modifier,
+    oneStampPackageContentUri: Uri,
+) {
+    val navController = rememberNavController()
+
+    NavHost(
+        navController = navController,
+        startDestination =
+            EnvelopePreviewRoute(
+                oneStampPackageContentUri = oneStampPackageContentUri,
+            ),
+        enterTransition = { fadeIn() },
+        exitTransition = { fadeOut() },
+        modifier = modifier
+    ) {
+        envelopePreviewDestination(
+            onProceedToSaveDestinationCollectionSelection = {
+                // TODO
+            },
+        )
     }
 }

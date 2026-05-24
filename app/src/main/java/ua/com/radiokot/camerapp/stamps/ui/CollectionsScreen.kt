@@ -24,6 +24,7 @@ import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -113,12 +114,23 @@ fun CollectionsScreen(
             items = itemsState.value,
             key = CollectionListItem::key,
         ) { item ->
-            CollectionView(
-                item = item,
-                onClicked = onItemClicked,
-                onLongClicked = onItemLongClicked,
+            StampBoxView(
+                name = item.name,
+                someStamps = item.someStamps,
+                key = item.key,
                 sharedTransitionScope = sharedTransitionScope,
                 animatedVisibilityScope = animatedVisibilityScope,
+                modifier = Modifier
+                    .combinedClickable(
+                        interactionSource = null,
+                        indication = null,
+                        onClick = {
+                            onItemClicked(item)
+                        },
+                        onLongClick = {
+                            onItemLongClicked(item)
+                        },
+                    )
             )
         }
 
@@ -274,7 +286,7 @@ private fun CollectionsScreenPreview() {
             key = "1",
             name = "My stamps",
             someStamps = persistentListOf(
-                CollectionListItem.StampSampleItem(
+                StampSampleItem(
                     imageUri = StableHolder(Uri.EMPTY),
                     shape = UiStampShapeA,
                     key = "",
@@ -285,12 +297,12 @@ private fun CollectionsScreenPreview() {
             key = "2",
             name = "RED",
             someStamps = persistentListOf(
-                CollectionListItem.StampSampleItem(
+                StampSampleItem(
                     imageUri = StableHolder(Uri.EMPTY),
                     shape = UiStampShapeA,
                     key = "1",
                 ),
-                CollectionListItem.StampSampleItem(
+                StampSampleItem(
                     imageUri = StableHolder(Uri.EMPTY),
                     shape = UiStampShapeA,
                     key = "2",
@@ -301,17 +313,17 @@ private fun CollectionsScreenPreview() {
             key = "3",
             name = "Food",
             someStamps = persistentListOf(
-                CollectionListItem.StampSampleItem(
+                StampSampleItem(
                     imageUri = StableHolder(Uri.EMPTY),
                     shape = UiStampShapeA,
                     key = "1",
                 ),
-                CollectionListItem.StampSampleItem(
+                StampSampleItem(
                     imageUri = StableHolder(Uri.EMPTY),
                     shape = UiStampShapeA,
                     key = "2",
                 ),
-                CollectionListItem.StampSampleItem(
+                StampSampleItem(
                     imageUri = StableHolder(Uri.EMPTY),
                     shape = UiStampShapeA,
                     key = "3",

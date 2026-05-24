@@ -19,25 +19,21 @@
 
 package ua.com.radiokot.camerapp.stamps.ui
 
+import android.net.Uri
 import androidx.compose.runtime.Immutable
-import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.toPersistentList
-import ua.com.radiokot.camerapp.stamps.domain.StampCollectionWithSamples
+import androidx.core.net.toUri
+import ua.com.radiokot.camerapp.stamps.domain.Stamp
+import ua.com.radiokot.camerapp.util.StableHolder
 
 @Immutable
-data class CollectionListItem(
-    val name: String,
-    val someStamps: ImmutableList<StampSampleItem>,
+data class StampSampleItem(
+    val imageUri: StableHolder<Uri>,
+    val shape: UiStampShape,
     val key: String,
 ) {
-    constructor(
-        collectionWithSamples: StampCollectionWithSamples,
-    ) : this(
-        name = collectionWithSamples.collection.name,
-        someStamps =
-            collectionWithSamples.samples
-                .map(::StampSampleItem)
-                .toPersistentList(),
-        key = collectionWithSamples.collection.id,
+    constructor(stamp: Stamp) : this(
+        imageUri = StableHolder(stamp.imageUri.toUri()),
+        shape = UiStampShape.fromShape(stamp.shape),
+        key = stamp.id,
     )
 }
