@@ -17,7 +17,7 @@
    along with Press-Cut. If not, see <http://www.gnu.org/licenses/>.
 */
 
-package ua.com.radiokot.camerapp.stamps.ui
+package ua.com.radiokot.camerapp.envelopes.ui
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -46,7 +46,7 @@ import ua.com.radiokot.camerapp.ui.paperBackground
  * @param progressState value in [0..1] range
  */
 @Composable
-fun MoveStampsScreen(
+fun SaveEnvelopeStampsScreen(
     modifier: Modifier = Modifier,
     progressState: FloatState,
 ) = Column(
@@ -57,7 +57,7 @@ fun MoveStampsScreen(
         .padding(24.dp),
 ) {
     BasicText(
-        text = "Moving the stamps…",
+        text = "Saving the stamps…",
         style = TextStyle(
             fontFamily = PodkovaFamily,
             fontSize = 24.sp,
@@ -84,8 +84,8 @@ fun MoveStampsScreen(
 
 @Composable
 @Preview
-private fun MoveStampsScreenPreview() {
-    MoveStampsScreen(
+private fun SaveEnvelopeStampsScreenPreview() {
+    SaveEnvelopeStampsScreen(
         progressState = 0.5f.let(::mutableFloatStateOf),
         modifier = Modifier
             .fillMaxSize()

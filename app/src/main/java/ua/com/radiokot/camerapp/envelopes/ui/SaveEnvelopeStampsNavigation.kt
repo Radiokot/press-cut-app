@@ -24,6 +24,8 @@ package ua.com.radiokot.camerapp.envelopes.ui
 import android.net.Uri
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.asFloatState
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
 import androidx.core.net.toUri
 import androidx.navigation.NavGraphBuilder
@@ -32,39 +34,41 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
-import ua.com.radiokot.camerapp.collectionselection.ui.SelectDestinationCollectionContract
-import ua.com.radiokot.camerapp.collectionselection.ui.SelectDestinationCollectionRequest
 
-fun NavGraphBuilder.envelopePreviewDestination(
-    selectDestinationCollectionContract: SelectDestinationCollectionContract,
-    onProceedToSaveStamps: (collectionId: String) -> Unit,
+fun NavGraphBuilder.saveEnvelopeStampsDestination(
+    onDone: () -> Unit,
 ) = composable(
-    route = EnvelopePreviewRoute,
+    route = SaveEnvelopeStampsRoute,
     arguments = listOf(
         navArgument(EnvelopeContentUri) {
+            type = NavType.StringType
+        },
+        navArgument(DestinationCollectionId) {
             type = NavType.StringType
         },
     )
 ) { navEntry ->
 
-    val viewModel: EnvelopePreviewScreenViewModel = koinViewModel {
+    val viewModel: SaveEnvelopeStampsScreenViewModel = koinViewModel {
         parametersOf(
-            EnvelopePreviewScreenViewModel.Parameters(
+            SaveEnvelopeStampsScreenViewModel.Parameters(
                 oneStampEnvelopeContentUri =
                     navEntry
                         .arguments
                         ?.getString(EnvelopeContentUri)
                         ?.toUri()
                         ?: error("No $EnvelopeContentUri argument passed"),
+                destinationCollectionId =
+                    navEntry
+                        .arguments
+                        ?.getString(DestinationCollectionId)
+                        ?: error("No $DestinationCollectionId argument passed"),
             )
         )
     }
 
-    EnvelopePreviewScreen(
-        someStamps = viewModel.someStamps,
-        message = viewModel.message,
-        stampCount = viewModel.stampCount,
-        onSaveAction = viewModel::onSaveAction,
+    SaveEnvelopeStampsScreen(
+        progressState = viewModel.progress.collectAsState().asFloatState(),
         modifier = Modifier
             .fillMaxSize()
     )
@@ -72,31 +76,26 @@ fun NavGraphBuilder.envelopePreviewDestination(
     LaunchedEffect(viewModel) {
         viewModel.events.collect { event ->
             when (event) {
-                EnvelopePreviewScreenViewModel.Event.ProceedToSaveDestinationCollectionSelection -> {
-                    selectDestinationCollectionContract.proceedToCollectionSelection(
-                        request = SelectDestinationCollectionRequest.SaveStamps,
-                    )
-                }
-
-                is EnvelopePreviewScreenViewModel.Event.ProceedToSaveStamps -> {
-                    onProceedToSaveStamps(event.collectionId)
+                SaveEnvelopeStampsScreenViewModel.Event.Done -> {
+                    onDone()
                 }
             }
         }
     }
-
-    LaunchedEffect(viewModel, selectDestinationCollectionContract) {
-        selectDestinationCollectionContract
-            .getSelectedCollectionIdFlow()
-            .collect(viewModel::onSaveDestinationCollectionSelected)
-    }
 }
 
-private const val EnvelopeContentUri = "envelopeContentUri"
+private const val DestinationCollectionId = "DestinationCollectionId"
+private const val EnvelopeContentUri = "EnvelopeContentUri"
 
-const val EnvelopePreviewRoute = "envelopePreview?envelopeContentUri={$EnvelopeContentUri}"
+const val SaveEnvelopeStampsRoute =
+    "saveEnvelopeStamps" +
+            "?envelopeContentUri={$EnvelopeContentUri}" +
+            "&destinationCollectionId={$DestinationCollectionId}"
 
-fun EnvelopePreviewRoute(
-    oneStampEnvelopeContentUri: Uri,
-) =
-    "envelopePreview?envelopeContentUri=${Uri.encode(oneStampEnvelopeContentUri.toString())}"
+fun SaveEnvelopeStampsRoute(
+    envelopeContentUri: Uri,
+    destinationCollectionId: String,
+): String =
+    "saveEnvelopeStamps" +
+            "?envelopeContentUri=${Uri.encode(envelopeContentUri.toString())}" +
+            "&destinationCollectionId=$destinationCollectionId"

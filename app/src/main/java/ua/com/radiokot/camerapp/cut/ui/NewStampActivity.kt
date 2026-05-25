@@ -34,6 +34,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.asIntState
 import androidx.compose.runtime.collectAsState
@@ -42,7 +43,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -57,6 +57,7 @@ import ua.com.radiokot.camerapp.intro.ui.permissionsDestination
 import ua.com.radiokot.camerapp.ui.paperBackground
 import ua.com.radiokot.camerapp.util.lazyLogger
 
+@Immutable
 class NewStampActivity : ComponentActivity() {
 
     private val log by lazyLogger("NewStampActivity")
@@ -91,15 +92,13 @@ class NewStampActivity : ComponentActivity() {
                 modifier = Modifier
                     .fillMaxSize()
             ) {
-                val context = LocalContext.current
-
                 StampCutNavHost(
                     startWithPermissions = isPermissionActionRequired,
                     collectionId = collectionId,
                     onDidSave = {
                         if (showToastOnSave) {
                             Toast.makeText(
-                                context,
+                                this@NewStampActivity,
                                 "Stamp saved",
                                 Toast.LENGTH_SHORT
                             ).show()

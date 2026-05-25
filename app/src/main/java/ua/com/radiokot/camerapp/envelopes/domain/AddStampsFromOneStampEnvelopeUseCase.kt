@@ -20,11 +20,16 @@
 package ua.com.radiokot.camerapp.envelopes.domain
 
 import android.net.Uri
+import kotlinx.coroutines.flow.Flow
 
 interface AddStampsFromOneStampEnvelopeUseCase {
 
-    suspend operator fun invoke(
+    /**
+     * @return progress flow, where each value is
+     * the saved stamp count and the total stamp count.
+     */
+    operator fun invoke(
         collectionId: String,
         oneStampEnvelopeContentUri: Uri,
-    )
+    ): Flow<Pair<Int, Int>>
 }

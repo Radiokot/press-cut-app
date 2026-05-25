@@ -29,7 +29,7 @@ import ua.com.radiokot.camerapp.stamps.domain.shape.StampShapeOneStampSquare
 import java.time.ZonedDateTime
 
 @Serializable
-class OneStampPackageManifest(
+class OneStampEnvelopeManifest(
     val assets: List<Asset>,
     val message: String?,
     val stamps: List<Stamp>,
@@ -87,7 +87,7 @@ class OneStampPackageManifest(
     }
 }
 
-fun OneStampPackageManifest.Stamp.toStamp(
+fun OneStampEnvelopeManifest.Stamp.toStamp(
     assetFileNamesById: Map<String, String>,
 ): Stamp {
     val previewAssetId = previewImageAssetID
@@ -99,7 +99,7 @@ fun OneStampPackageManifest.Stamp.toStamp(
     return Stamp(
         id = id,
         collectionId = "OneStampPackage",
-        imageUri = "$OneStampPackageAssetsDirectory/$fileName",
+        imageUri = "$OneStampEnvelopeAssetsDirectory/$fileName",
         caption = title.takeIf { it != "Untitled" },
         takenAtLocal =
             ZonedDateTime
@@ -107,15 +107,15 @@ fun OneStampPackageManifest.Stamp.toStamp(
                 .toLocalDateTime(),
         shape =
             when (shapeKind) {
-                OneStampPackageManifest.Stamp.Shape.Kind.Square ->
+                OneStampEnvelopeManifest.Stamp.Shape.Kind.Square ->
                     StampShapeOneStampSquare
 
-                OneStampPackageManifest.Stamp.Shape.Kind.RectangleWithCorner -> {
+                OneStampEnvelopeManifest.Stamp.Shape.Kind.RectangleWithCorner -> {
                     when (shapeOrientation) {
-                        OneStampPackageManifest.Stamp.Shape.Orientation.Portrait ->
+                        OneStampEnvelopeManifest.Stamp.Shape.Orientation.Portrait ->
                             StampShapeOneStamp
 
-                        OneStampPackageManifest.Stamp.Shape.Orientation.Landscape ->
+                        OneStampEnvelopeManifest.Stamp.Shape.Orientation.Landscape ->
                             StampShapeOneStampLandscape
                     }
                 }
@@ -125,6 +125,6 @@ fun OneStampPackageManifest.Stamp.toStamp(
     )
 }
 
-const val OneStampPackageRootDirectory = "OneStamp-PackageStaging"
-const val OneStampPackageAssetsDirectory = "$OneStampPackageRootDirectory/assets"
-const val OneStampPackageManifestFile = "$OneStampPackageRootDirectory/manifest.json"
+const val OneStampEnvelopeRootDirectory = "OneStamp-PackageStaging"
+const val OneStampEnvelopeAssetsDirectory = "$OneStampEnvelopeRootDirectory/assets"
+const val OneStampEnvelopeManifestFile = "$OneStampEnvelopeRootDirectory/manifest.json"

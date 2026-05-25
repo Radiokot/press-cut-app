@@ -24,9 +24,11 @@ package ua.com.radiokot.camerapp.envelopes.data
 import android.content.ContentResolver
 import android.graphics.BitmapFactory
 import android.net.Uri
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ensureActive
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.decodeFromStream
 import ua.com.radiokot.camerapp.envelopes.domain.AddStampsFromOneStampEnvelopeUseCase
@@ -34,7 +36,6 @@ import ua.com.radiokot.camerapp.stamps.data.FsStampRepository
 import ua.com.radiokot.camerapp.stamps.domain.Stamp
 import ua.com.radiokot.camerapp.util.entries
 import ua.com.radiokot.camerapp.util.lazyLogger
-import java.io.InputStream
 import java.util.zip.ZipInputStream
 
 class FsAddStampsFromOneStampEnvelopeUseCase(
@@ -42,14 +43,14 @@ class FsAddStampsFromOneStampEnvelopeUseCase(
     private val contentResolver: ContentResolver,
 ) : AddStampsFromOneStampEnvelopeUseCase {
 
-    private val log by lazyLogger("FsAddStampsFromOneStampPackageUC")
+    private val log by lazyLogger("FsAddStampsFromOneStampEnvelopeUC")
 
-    override suspend operator fun invoke(
+    override operator fun invoke(
         collectionId: String,
         oneStampEnvelopeContentUri: Uri,
-    ): Unit = withContext(Dispatchers.IO) {
+    ): Flow<Pair<Int, Int>> = flow {
 
-        val manifest: OneStampPackageManifest =
+        val manifest: OneStampEnvelopeManifest =
             contentResolver
                 .openInputStream(oneStampEnvelopeContentUri)!!
                 .buffered()
@@ -57,10 +58,10 @@ class FsAddStampsFromOneStampEnvelopeUseCase(
                 .use { zipInputStream ->
                     zipInputStream
                         .entries()
-                        .find { it.name == OneStampPackageManifestFile }
+                        .find { it.name == OneStampEnvelopeManifestFile }
                         ?: error("Manifest not found")
 
-                    OneStampPackageManifest.JSON.decodeFromStream(zipInputStream)
+                    OneStampEnvelopeManifest.JSON.decodeFromStream(zipInputStream)
                 }
 
         val assetFileNamesById =
@@ -71,13 +72,15 @@ class FsAddStampsFromOneStampEnvelopeUseCase(
         val stampByImagePath =
             manifest
                 .stamps
-                .mapNotNull { oneStampPackageManifestStamp ->
+                .mapNotNull { oneStampStamp ->
                     try {
-                        oneStampPackageManifestStamp.toStamp(
+                        oneStampStamp.toStamp(
                             assetFileNamesById = assetFileNamesById,
                         )
                     } catch (e: Exception) {
-                        ensureActive()
+                        if (e is CancellationException) {
+                            throw e
+                        }
                         log.error(e) {
                             "invoke(): failed mapping a stamp"
                         }
@@ -86,7 +89,14 @@ class FsAddStampsFromOneStampEnvelopeUseCase(
                 }
                 .associateBy(Stamp::imageUri)
 
-        var addedStamps = 0
+        val totalStampCount = stampByImagePath.size
+        var addedStampCount = 0
+
+        log.debug {
+            "progress: starting:" +
+                    "\ncollectionId=$collectionId" +
+                    "\ntotalStampCount=$totalStampCount"
+        }
 
         contentResolver
             .openInputStream(oneStampEnvelopeContentUri)!!
@@ -108,7 +118,7 @@ class FsAddStampsFromOneStampEnvelopeUseCase(
                             if (isImageWebp) {
                                 stampRepository.addStamp(
                                     collectionId = collectionId,
-                                    webpBytes = zipInputStream.use(InputStream::readBytes),
+                                    webpBytes = zipInputStream.readBytes(),
                                     caption = stamp.caption,
                                     takenAtLocal = stamp.takenAtLocal,
                                     shape = stamp.shape,
@@ -116,15 +126,17 @@ class FsAddStampsFromOneStampEnvelopeUseCase(
                             } else {
                                 stampRepository.addStamp(
                                     collectionId = collectionId,
-                                    imageBitmap = zipInputStream.use(BitmapFactory::decodeStream),
+                                    imageBitmap = BitmapFactory.decodeStream(zipInputStream),
                                     caption = stamp.caption,
                                     takenAtLocal = stamp.takenAtLocal,
                                     shape = stamp.shape,
                                 )
                             }
-                            addedStamps++
+                            addedStampCount++
                         } catch (e: Exception) {
-                            ensureActive()
+                            if (e is CancellationException) {
+                                throw e
+                            }
                             log.error(e) {
                                 "invoke(): failed adding a stamp:" +
                                         "\nstamp=$stamp"
@@ -132,11 +144,13 @@ class FsAddStampsFromOneStampEnvelopeUseCase(
                         } finally {
                             zipInputStream.closeEntry()
                         }
+
+                        emit(addedStampCount to totalStampCount)
                     }
             }
 
         log.info {
-            "Added $addedStamps stamps to the collection $collectionId"
+            "Added $addedStampCount stamps to the collection $collectionId"
         }
-    }
+    }.flowOn(Dispatchers.IO)
 }

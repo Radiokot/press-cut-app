@@ -46,7 +46,7 @@ class FsGetOneStampEnvelopePreviewUseCase(
         oneStampEnvelopeContentUri: Uri,
     ): StampEnvelopePreview = withContext(Dispatchers.IO) {
 
-        val manifest: OneStampPackageManifest =
+        val manifest: OneStampEnvelopeManifest =
             contentResolver
                 .openInputStream(oneStampEnvelopeContentUri)!!
                 .buffered()
@@ -54,10 +54,10 @@ class FsGetOneStampEnvelopePreviewUseCase(
                 .use { zipInputStream ->
                     zipInputStream
                         .entries()
-                        .find { it.name == OneStampPackageManifestFile }
+                        .find { it.name == OneStampEnvelopeManifestFile }
                         ?: error("Manifest not found")
 
-                    OneStampPackageManifest.JSON.decodeFromStream(zipInputStream)
+                    OneStampEnvelopeManifest.JSON.decodeFromStream(zipInputStream)
                 }
 
         val assetFileNamesById =
@@ -71,10 +71,10 @@ class FsGetOneStampEnvelopePreviewUseCase(
             manifest
                 .stamps
                 .take(3)
-                .mapNotNull { oneStampPackageManifestStamp ->
+                .mapNotNull { oneStampStamp ->
                     try {
                         val stamp =
-                            oneStampPackageManifestStamp
+                            oneStampStamp
                                 .toStamp(
                                     assetFileNamesById = assetFileNamesById,
                                 )

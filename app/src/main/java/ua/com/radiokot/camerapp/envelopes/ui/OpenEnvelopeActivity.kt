@@ -21,6 +21,7 @@ package ua.com.radiokot.camerapp.envelopes.ui
 
 import android.net.Uri
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
 import androidx.activity.compose.setContent
@@ -30,6 +31,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.Immutable
 import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.navigation.compose.NavHost
@@ -41,6 +43,7 @@ import ua.com.radiokot.camerapp.collectionselection.ui.selectDestinationCollecti
 import ua.com.radiokot.camerapp.ui.paperBackground
 import ua.com.radiokot.camerapp.util.StableHolder
 
+@Immutable
 class OpenEnvelopeActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -56,14 +59,22 @@ class OpenEnvelopeActivity : ComponentActivity() {
             return
         }
 
-        val oneStampPackageContentUri = StableHolder(intentData)
+        val oneStampEnvelopeContentUri = StableHolder(intentData)
 
         setContent {
             CompositionLocalProvider(
                 LocalLandscapist provides koinInject(),
             ) {
                 OpenEnvelopeNavHost(
-                    oneStampPackageContentUri = oneStampPackageContentUri,
+                    oneStampEnvelopeContentUri = oneStampEnvelopeContentUri,
+                    onDone = {
+                        Toast.makeText(
+                            this@OpenEnvelopeActivity,
+                            "Stamps saved",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        finish()
+                    },
                     modifier = Modifier
                         .fillMaxSize()
                         .paperBackground()
@@ -76,7 +87,8 @@ class OpenEnvelopeActivity : ComponentActivity() {
 @Composable
 private fun OpenEnvelopeNavHost(
     modifier: Modifier = Modifier,
-    oneStampPackageContentUri: StableHolder<Uri>,
+    oneStampEnvelopeContentUri: StableHolder<Uri>,
+    onDone: () -> Unit,
 ) {
     val navController = rememberNavController()
     val selectDestinationCollectionContract =
@@ -88,7 +100,7 @@ private fun OpenEnvelopeNavHost(
         navController = navController,
         startDestination =
             EnvelopePreviewRoute(
-                oneStampPackageContentUri = oneStampPackageContentUri.value,
+                oneStampEnvelopeContentUri = oneStampEnvelopeContentUri.value,
             ),
         enterTransition = { fadeIn() },
         exitTransition = { fadeOut() },
@@ -97,12 +109,24 @@ private fun OpenEnvelopeNavHost(
         envelopePreviewDestination(
             selectDestinationCollectionContract = selectDestinationCollectionContract,
             onProceedToSaveStamps = { collectionId ->
-                // TODO
+                navController
+                    .navigate(
+                        route = SaveEnvelopeStampsRoute(
+                            envelopeContentUri = oneStampEnvelopeContentUri.value,
+                            destinationCollectionId = collectionId,
+                        )
+                    ) {
+                        launchSingleTop = true
+                    }
             }
         )
 
         selectDestinationCollectionDestination(
             contract = selectDestinationCollectionContract,
+        )
+
+        saveEnvelopeStampsDestination(
+            onDone = onDone,
         )
     }
 }

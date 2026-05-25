@@ -32,26 +32,26 @@ import ua.com.radiokot.camerapp.util.eventSharedFlow
 import ua.com.radiokot.camerapp.util.lazyLogger
 
 @Immutable
-class EnvelopePreviewViewModel(
+class EnvelopePreviewScreenViewModel(
     getOneStampEnvelopePreviewUseCase: GetOneStampEnvelopePreviewUseCase,
     private val parameters: Parameters,
 ) : ViewModel() {
 
-    private val log by lazyLogger("EnvelopePreviewVM")
+    private val log by lazyLogger("EnvelopePreviewScreenVM")
 
     val events: SharedFlow<Event>
         field = eventSharedFlow<Event>()
 
     private val envelopePreview = runBlocking {
-        val oneStampPackageContentUri = parameters.oneStampPackageContentUri
+        val oneStampEnvelopeContentUri = parameters.oneStampEnvelopeContentUri
 
         log.debug {
             "envelopePreview: getting the preview:" +
-                    "\noneStampPackageContentUri=$oneStampPackageContentUri"
+                    "\noneStampEnvelopeContentUri=$oneStampEnvelopeContentUri"
         }
 
         getOneStampEnvelopePreviewUseCase(
-            oneStampPackageContentUri = oneStampPackageContentUri,
+            oneStampEnvelopeContentUri = oneStampEnvelopeContentUri,
         )
     }
 
@@ -99,6 +99,6 @@ class EnvelopePreviewViewModel(
     }
 
     class Parameters(
-        val oneStampPackageContentUri: Uri,
+        val oneStampEnvelopeContentUri: Uri,
     )
 }
