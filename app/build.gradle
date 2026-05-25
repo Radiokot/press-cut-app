@@ -133,7 +133,7 @@ dependencies {
     implementation "io.insert-koin:koin-core-viewmodel"
     implementation "io.insert-koin:koin-compose-viewmodel-navigation"
 
-    def landscapistVersion = "2.9.6"
+    def landscapistVersion = "2.9.8"
     implementation "com.github.skydoves:landscapist-core:$landscapistVersion"
     implementation "com.github.skydoves:landscapist-image:$landscapistVersion"
 

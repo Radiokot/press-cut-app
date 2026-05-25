@@ -10,8 +10,6 @@ fun noProgressive(
     size: IntSize,
 ) =
     fun ImageRequest.Builder.() {
-        // progressiveEnabled is ignored if no size set:
-        // https://github.com/skydoves/landscapist/issues/905
         size(
             width = size.width,
             height = size.height,
