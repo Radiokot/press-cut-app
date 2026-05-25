@@ -14,9 +14,9 @@ They remain there even if you uninstall the app.
 
 If you ever need to back up your collection or transfer it to a new phone, just copy the "PressCutStamps" contents from the "Pictures" folder.
 
-Press-Cut is inspired by [OneStamp for iOS](https://apps.apple.com/us/app/onestamp/id6760986254), made by Weiqing Chu. The app uses many [open-source libraries](app/src/main/assets/open_source_licenses.html) and [icons from Noun Project](app/src/main/assets/icons.html).
+<img src="app/src/main/res/drawable/onestamp_presscut.webp" width=200 alt="Receive stamps from OneStamp" />
 
-
+Have friends using  [OneStamp on iOS](https://apps.apple.com/us/app/onestamp/id6760986254)? You can receive stamps from them – PressCut opens envelope files.
 
 ## Download
 
@@ -64,3 +64,7 @@ In a world where copyright monopolies are violently enforced, I choose GPLv3 for
 - Allows **others** to freely use, modify and distribute this software, without the risk of being sued;
 - Enables **me** to pull all the valuable changes from public forks back to the trunk, also without the risk of being sued;
 - **Knocks down a peg** individuals or companies willing to monopolize their use case or modifications of this software.
+
+---
+
+Press-Cut is inspired by [OneStamp for iOS](https://apps.apple.com/us/app/onestamp/id6760986254), made by Weiqing Chu. The app uses many [open-source libraries](app/src/main/assets/open_source_licenses.html) and [icons from Noun Project](app/src/main/assets/icons.html).
