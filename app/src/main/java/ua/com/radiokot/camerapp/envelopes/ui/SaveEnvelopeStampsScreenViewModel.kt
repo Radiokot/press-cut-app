@@ -21,7 +21,6 @@
 
 package ua.com.radiokot.camerapp.envelopes.ui
 
-import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.FlowPreview
@@ -34,6 +33,7 @@ import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.sample
 import kotlinx.coroutines.flow.stateIn
 import ua.com.radiokot.camerapp.envelopes.domain.AddStampsFromOneStampEnvelopeUseCase
+import ua.com.radiokot.camerapp.envelopes.domain.OneStampEnvelopePreviewResult
 import ua.com.radiokot.camerapp.util.eventSharedFlow
 import ua.com.radiokot.camerapp.util.lazyLogger
 import kotlin.coroutines.cancellation.CancellationException
@@ -52,7 +52,7 @@ class SaveEnvelopeStampsScreenViewModel(
     private val addProgressFlow =
         addStampsFromOneStampEnvelopeUseCase(
             collectionId = parameters.destinationCollectionId,
-            oneStampEnvelopeContentUri = parameters.oneStampEnvelopeContentUri,
+            envelopePreview = parameters.envelopePreview,
         )
 
     val progress: StateFlow<Float> =
@@ -66,8 +66,7 @@ class SaveEnvelopeStampsScreenViewModel(
                     if (error !is CancellationException) {
                         log.error(error) {
                             "process: failed adding:" +
-                                    "\ndestinationCollectionId=${parameters.destinationCollectionId}" +
-                                    "\noneStampEnvelopeContentUri=${parameters.oneStampEnvelopeContentUri}"
+                                    "\ndestinationCollectionId=${parameters.destinationCollectionId}"
                         }
                     }
                     return@onCompletion
@@ -84,7 +83,7 @@ class SaveEnvelopeStampsScreenViewModel(
     }
 
     class Parameters(
-        val oneStampEnvelopeContentUri: Uri,
         val destinationCollectionId: String,
+        val envelopePreview: OneStampEnvelopePreviewResult.Preview,
     )
 }

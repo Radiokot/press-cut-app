@@ -25,5 +25,6 @@ interface GetOneStampEnvelopePreviewUseCase {
 
     suspend operator fun invoke(
         oneStampEnvelopeContentUri: Uri,
-    ): StampEnvelopePreview
+        maxPreviewStampCount: Int,
+    ): OneStampEnvelopePreviewResult
 }

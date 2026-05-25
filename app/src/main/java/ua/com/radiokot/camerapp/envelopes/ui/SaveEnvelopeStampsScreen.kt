@@ -57,7 +57,7 @@ fun SaveEnvelopeStampsScreen(
         .padding(24.dp),
 ) {
     BasicText(
-        text = "Saving the stamps…",
+        text = "Extracting the stamps…",
         style = TextStyle(
             fontFamily = PodkovaFamily,
             fontSize = 24.sp,

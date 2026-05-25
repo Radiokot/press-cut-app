@@ -19,7 +19,6 @@
 
 package ua.com.radiokot.camerapp.envelopes.domain
 
-import android.net.Uri
 import kotlinx.coroutines.flow.Flow
 
 interface AddStampsFromOneStampEnvelopeUseCase {
@@ -30,6 +29,6 @@ interface AddStampsFromOneStampEnvelopeUseCase {
      */
     operator fun invoke(
         collectionId: String,
-        oneStampEnvelopeContentUri: Uri,
+        envelopePreview: OneStampEnvelopePreviewResult.Preview,
     ): Flow<Pair<Int, Int>>
 }

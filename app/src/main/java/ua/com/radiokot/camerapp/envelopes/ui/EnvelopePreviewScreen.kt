@@ -55,10 +55,12 @@ import ua.com.radiokot.camerapp.util.StableHolder
 @Composable
 fun EnvelopePreviewScreen(
     modifier: Modifier = Modifier,
+    errorMessage: String?,
     someStamps: ImmutableList<StampSampleItem>,
     stampCount: Int,
     message: String?,
     onSaveAction: () -> Unit,
+    onErrorAcknowledged: () -> Unit,
 ) = Column(
     horizontalAlignment = Alignment.CenterHorizontally,
     modifier = modifier
@@ -94,6 +96,22 @@ fun EnvelopePreviewScreen(
                 overscrollEffect = null,
             )
     ) {
+        if (errorMessage != null) {
+            BasicText(
+                text = errorMessage,
+                style = TextStyle(
+                    fontFamily = PodkovaFamily,
+                    fontSize = 20.sp,
+                    textAlign = TextAlign.Center,
+                ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        bottom = 72.dp,
+                    )
+            )
+            return@Column
+        }
         StampBoxView(
             name = pluralStringResource(
                 R.plurals.stamp_count,
@@ -128,10 +146,17 @@ fun EnvelopePreviewScreen(
         )
     }
 
-    LeTextButton(
-        text = "Save the stamps",
-        onClick = onSaveAction,
-    )
+    if (errorMessage == null) {
+        LeTextButton(
+            text = "Save the stamps",
+            onClick = onSaveAction,
+        )
+    } else {
+        LeTextButton(
+            text = "Too bad",
+            onClick = onErrorAcknowledged,
+        )
+    }
 }
 
 @Preview
@@ -157,7 +182,9 @@ private fun EnvelopePreviewScreenPreview() {
             ),
         ),
         message = "From Oleg",
+        errorMessage = null,
         onSaveAction = {},
+        onErrorAcknowledged = {},
         modifier = Modifier
             .fillMaxSize()
             .paperBackground(

@@ -32,6 +32,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.navigation.compose.NavHost
@@ -40,6 +42,7 @@ import com.skydoves.landscapist.image.LocalLandscapist
 import org.koin.compose.koinInject
 import ua.com.radiokot.camerapp.collectionselection.ui.SelectDestinationCollectionContract
 import ua.com.radiokot.camerapp.collectionselection.ui.selectDestinationCollectionDestination
+import ua.com.radiokot.camerapp.envelopes.domain.OneStampEnvelopePreviewResult
 import ua.com.radiokot.camerapp.ui.paperBackground
 import ua.com.radiokot.camerapp.util.StableHolder
 
@@ -75,6 +78,14 @@ class OpenEnvelopeActivity : ComponentActivity() {
                         ).show()
                         finish()
                     },
+                    onErrorAcknowledged = {
+                        Toast.makeText(
+                            this@OpenEnvelopeActivity,
+                            "Sorry",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                        finish()
+                    },
                     modifier = Modifier
                         .fillMaxSize()
                         .paperBackground()
@@ -89,12 +100,16 @@ private fun OpenEnvelopeNavHost(
     modifier: Modifier = Modifier,
     oneStampEnvelopeContentUri: StableHolder<Uri>,
     onDone: () -> Unit,
+    onErrorAcknowledged: () -> Unit,
 ) {
     val navController = rememberNavController()
     val selectDestinationCollectionContract =
         SelectDestinationCollectionContract(
             navController = navController,
         )
+    val envelopePreviewToSaveState = remember {
+        mutableStateOf<OneStampEnvelopePreviewResult.Preview?>(null)
+    }
 
     NavHost(
         navController = navController,
@@ -108,17 +123,21 @@ private fun OpenEnvelopeNavHost(
     ) {
         envelopePreviewDestination(
             selectDestinationCollectionContract = selectDestinationCollectionContract,
-            onProceedToSaveStamps = { collectionId ->
+            onProceedToSaveStamps = {
+                    collectionId,
+                    envelopePreview,
+                ->
+                envelopePreviewToSaveState.value = envelopePreview
                 navController
                     .navigate(
                         route = SaveEnvelopeStampsRoute(
-                            envelopeContentUri = oneStampEnvelopeContentUri.value,
                             destinationCollectionId = collectionId,
                         )
                     ) {
                         launchSingleTop = true
                     }
-            }
+            },
+            onErrorAcknowledged = onErrorAcknowledged,
         )
 
         selectDestinationCollectionDestination(
@@ -126,6 +145,7 @@ private fun OpenEnvelopeNavHost(
         )
 
         saveEnvelopeStampsDestination(
+            envelopePreviewState = envelopePreviewToSaveState,
             onDone = onDone,
         )
     }

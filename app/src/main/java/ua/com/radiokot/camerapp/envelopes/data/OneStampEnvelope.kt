@@ -31,7 +31,7 @@ import java.time.ZonedDateTime
 @Serializable
 class OneStampEnvelopeManifest(
     val assets: List<Asset>,
-    val message: String?,
+    val message: String? = null,
     val stamps: List<Stamp>,
 ) {
     @Serializable
@@ -46,7 +46,7 @@ class OneStampEnvelopeManifest(
         val createdAt: String,
         val previewImageAssetID: String,
         val stampShape: Shape,
-        val title: String?,
+        val title: String? = null,
     ) {
 
         @Serializable

@@ -34,10 +34,15 @@ import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 import ua.com.radiokot.camerapp.collectionselection.ui.SelectDestinationCollectionContract
 import ua.com.radiokot.camerapp.collectionselection.ui.SelectDestinationCollectionRequest
+import ua.com.radiokot.camerapp.envelopes.domain.OneStampEnvelopePreviewResult
 
 fun NavGraphBuilder.envelopePreviewDestination(
     selectDestinationCollectionContract: SelectDestinationCollectionContract,
-    onProceedToSaveStamps: (collectionId: String) -> Unit,
+    onProceedToSaveStamps: (
+        destinationCollectionId: String,
+        envelopePreview: OneStampEnvelopePreviewResult.Preview,
+    ) -> Unit,
+    onErrorAcknowledged: () -> Unit,
 ) = composable(
     route = EnvelopePreviewRoute,
     arguments = listOf(
@@ -61,10 +66,12 @@ fun NavGraphBuilder.envelopePreviewDestination(
     }
 
     EnvelopePreviewScreen(
+        errorMessage = viewModel.errorMessage,
         someStamps = viewModel.someStamps,
         message = viewModel.message,
         stampCount = viewModel.stampCount,
         onSaveAction = viewModel::onSaveAction,
+        onErrorAcknowledged = onErrorAcknowledged,
         modifier = Modifier
             .fillMaxSize()
     )
@@ -79,7 +86,10 @@ fun NavGraphBuilder.envelopePreviewDestination(
                 }
 
                 is EnvelopePreviewScreenViewModel.Event.ProceedToSaveStamps -> {
-                    onProceedToSaveStamps(event.collectionId)
+                    onProceedToSaveStamps(
+                        event.destinationCollectionId,
+                        event.envelopePreview,
+                    )
                 }
             }
         }

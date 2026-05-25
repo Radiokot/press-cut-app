@@ -23,15 +23,14 @@ package ua.com.radiokot.camerapp.envelopes.data
 
 import android.content.ContentResolver
 import android.graphics.BitmapFactory
-import android.net.Uri
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.json.decodeFromStream
 import ua.com.radiokot.camerapp.envelopes.domain.AddStampsFromOneStampEnvelopeUseCase
+import ua.com.radiokot.camerapp.envelopes.domain.OneStampEnvelopePreviewResult
 import ua.com.radiokot.camerapp.stamps.data.FsStampRepository
 import ua.com.radiokot.camerapp.stamps.domain.Stamp
 import ua.com.radiokot.camerapp.util.entries
@@ -47,59 +46,30 @@ class FsAddStampsFromOneStampEnvelopeUseCase(
 
     override operator fun invoke(
         collectionId: String,
-        oneStampEnvelopeContentUri: Uri,
+        envelopePreview: OneStampEnvelopePreviewResult.Preview,
     ): Flow<Pair<Int, Int>> = flow {
 
-        val manifest: OneStampEnvelopeManifest =
-            contentResolver
-                .openInputStream(oneStampEnvelopeContentUri)!!
-                .buffered()
-                .let(::ZipInputStream)
-                .use { zipInputStream ->
-                    zipInputStream
-                        .entries()
-                        .find { it.name == OneStampEnvelopeManifestFile }
-                        ?: error("Manifest not found")
-
-                    OneStampEnvelopeManifest.JSON.decodeFromStream(zipInputStream)
-                }
-
-        val assetFileNamesById =
-            manifest
-                .assets
-                .associate { it.id to it.fileName }
+        log.debug {
+            "invoke(): starting:" +
+                    "\ncollectionId=$collectionId"
+        }
 
         val stampByImagePath =
-            manifest
-                .stamps
-                .mapNotNull { oneStampStamp ->
-                    try {
-                        oneStampStamp.toStamp(
-                            assetFileNamesById = assetFileNamesById,
-                        )
-                    } catch (e: Exception) {
-                        if (e is CancellationException) {
-                            throw e
-                        }
-                        log.error(e) {
-                            "invoke(): failed mapping a stamp"
-                        }
-                        null
-                    }
-                }
+            envelopePreview
+                .allStamps
                 .associateBy(Stamp::imageUri)
 
         val totalStampCount = stampByImagePath.size
         var addedStampCount = 0
 
         log.debug {
-            "progress: starting:" +
+            "invoke(): adding stamps:" +
                     "\ncollectionId=$collectionId" +
                     "\ntotalStampCount=$totalStampCount"
         }
 
         contentResolver
-            .openInputStream(oneStampEnvelopeContentUri)!!
+            .openInputStream(envelopePreview.envelopeContentUri)!!
             .buffered()
             .let(::ZipInputStream)
             .use { zipInputStream ->
@@ -134,13 +104,13 @@ class FsAddStampsFromOneStampEnvelopeUseCase(
                             }
                             addedStampCount++
                         } catch (e: Exception) {
-                            if (e is CancellationException) {
-                                throw e
+                            if (e !is CancellationException) {
+                                log.error(e) {
+                                    "invoke(): failed adding a stamp:" +
+                                            "\nstamp=$stamp"
+                                }
                             }
-                            log.error(e) {
-                                "invoke(): failed adding a stamp:" +
-                                        "\nstamp=$stamp"
-                            }
+                            throw e
                         } finally {
                             zipInputStream.closeEntry()
                         }

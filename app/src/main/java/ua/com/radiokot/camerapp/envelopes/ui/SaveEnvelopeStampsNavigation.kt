@@ -21,28 +21,26 @@
 
 package ua.com.radiokot.camerapp.envelopes.ui
 
-import android.net.Uri
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.asFloatState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Modifier
-import androidx.core.net.toUri
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
+import ua.com.radiokot.camerapp.envelopes.domain.OneStampEnvelopePreviewResult
 
 fun NavGraphBuilder.saveEnvelopeStampsDestination(
+    envelopePreviewState: State<OneStampEnvelopePreviewResult.Preview?>,
     onDone: () -> Unit,
 ) = composable(
     route = SaveEnvelopeStampsRoute,
     arguments = listOf(
-        navArgument(EnvelopeContentUri) {
-            type = NavType.StringType
-        },
         navArgument(DestinationCollectionId) {
             type = NavType.StringType
         },
@@ -52,17 +50,15 @@ fun NavGraphBuilder.saveEnvelopeStampsDestination(
     val viewModel: SaveEnvelopeStampsScreenViewModel = koinViewModel {
         parametersOf(
             SaveEnvelopeStampsScreenViewModel.Parameters(
-                oneStampEnvelopeContentUri =
-                    navEntry
-                        .arguments
-                        ?.getString(EnvelopeContentUri)
-                        ?.toUri()
-                        ?: error("No $EnvelopeContentUri argument passed"),
                 destinationCollectionId =
                     navEntry
                         .arguments
                         ?.getString(DestinationCollectionId)
                         ?: error("No $DestinationCollectionId argument passed"),
+                envelopePreview =
+                    envelopePreviewState
+                        .value
+                        ?: error("Preview must be available at this moment")
             )
         )
     }
@@ -88,14 +84,9 @@ private const val DestinationCollectionId = "DestinationCollectionId"
 private const val EnvelopeContentUri = "EnvelopeContentUri"
 
 const val SaveEnvelopeStampsRoute =
-    "saveEnvelopeStamps" +
-            "?envelopeContentUri={$EnvelopeContentUri}" +
-            "&destinationCollectionId={$DestinationCollectionId}"
+    "saveEnvelopeStamps?destinationCollectionId={$DestinationCollectionId}"
 
 fun SaveEnvelopeStampsRoute(
-    envelopeContentUri: Uri,
     destinationCollectionId: String,
 ): String =
-    "saveEnvelopeStamps" +
-            "?envelopeContentUri=${Uri.encode(envelopeContentUri.toString())}" +
-            "&destinationCollectionId=$destinationCollectionId"
+    "saveEnvelopeStamps?destinationCollectionId=$destinationCollectionId"

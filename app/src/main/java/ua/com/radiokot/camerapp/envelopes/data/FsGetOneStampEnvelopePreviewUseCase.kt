@@ -29,7 +29,8 @@ import kotlinx.coroutines.withContext
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.decodeFromStream
 import ua.com.radiokot.camerapp.envelopes.domain.GetOneStampEnvelopePreviewUseCase
-import ua.com.radiokot.camerapp.envelopes.domain.StampEnvelopePreview
+import ua.com.radiokot.camerapp.envelopes.domain.OneStampEnvelopePreviewResult
+import ua.com.radiokot.camerapp.stamps.domain.Stamp
 import ua.com.radiokot.camerapp.util.entries
 import ua.com.radiokot.camerapp.util.lazyLogger
 import java.io.File
@@ -44,52 +45,78 @@ class FsGetOneStampEnvelopePreviewUseCase(
 
     override suspend operator fun invoke(
         oneStampEnvelopeContentUri: Uri,
-    ): StampEnvelopePreview = withContext(Dispatchers.IO) {
+        maxPreviewStampCount: Int,
+    ): OneStampEnvelopePreviewResult = withContext(Dispatchers.IO) {
+
+        log.debug {
+            "invoke(): starting:" +
+                    "\noneStampEnvelopeContentUri=$oneStampEnvelopeContentUri"
+        }
 
         val manifest: OneStampEnvelopeManifest =
-            contentResolver
-                .openInputStream(oneStampEnvelopeContentUri)!!
-                .buffered()
-                .let(::ZipInputStream)
-                .use { zipInputStream ->
-                    zipInputStream
-                        .entries()
-                        .find { it.name == OneStampEnvelopeManifestFile }
-                        ?: error("Manifest not found")
+            try {
+                contentResolver
+                    .openInputStream(oneStampEnvelopeContentUri)!!
+                    .buffered()
+                    .let(::ZipInputStream)
+                    .use { zipInputStream ->
+                        zipInputStream
+                            .entries()
+                            .find { it.name == OneStampEnvelopeManifestFile }
+                            ?: error("Manifest not found")
 
-                    OneStampEnvelopeManifest.JSON.decodeFromStream(zipInputStream)
+                        OneStampEnvelopeManifest.JSON.decodeFromStream(zipInputStream)
+                    }
+            } catch (e: Exception) {
+                ensureActive()
+                log.error(e) {
+                    "invoke(): failed reading the manifest"
                 }
+                return@withContext OneStampEnvelopePreviewResult.Error.Malformed(
+                    reason = e.message ?: e.toString(),
+                )
+            }
 
         val assetFileNamesById =
             manifest
                 .assets
                 .associate { it.id to it.fileName }
 
-        val imagePathsToExtract = mutableSetOf<String>()
-
-        val someStamps =
+        val supportedStamps =
             manifest
                 .stamps
-                .take(3)
                 .mapNotNull { oneStampStamp ->
                     try {
-                        val stamp =
-                            oneStampStamp
-                                .toStamp(
-                                    assetFileNamesById = assetFileNamesById,
-                                )
-                        imagePathsToExtract += stamp.imageUri
-                        stamp.copy(
-                            newImageUri =
-                                "file://${tempStampImageDirectory.absolutePath}/${stamp.imageUri}",
+                        oneStampStamp.toStamp(
+                            assetFileNamesById = assetFileNamesById,
                         )
                     } catch (e: Exception) {
                         ensureActive()
-                        log.error(e) {
+                        log.warn(e) {
                             "invoke(): failed mapping a stamp"
                         }
                         null
                     }
+                }
+
+        if (supportedStamps.isEmpty()) {
+            return@withContext OneStampEnvelopePreviewResult.Error.NoSupportedStamps
+        }
+
+        val stampImagePaths =
+            supportedStamps
+                .mapTo(mutableSetOf(), Stamp::imageUri)
+        val previewStampImagePaths = mutableSetOf<String>()
+
+        val previewStamps =
+            supportedStamps
+                .take(maxPreviewStampCount)
+                .map { stamp ->
+                    previewStampImagePaths += stamp.imageUri
+                    stamp.copy(
+                        newImageUri =
+                            "file://${tempStampImageDirectory.absolutePath}/${stamp.imageUri}",
+                    )
                 }
 
         if (tempStampImageDirectory.exists()) {
@@ -100,39 +127,72 @@ class FsGetOneStampEnvelopePreviewUseCase(
             tempStampImageDirectory.deleteRecursively()
         }
 
-        contentResolver
-            .openInputStream(oneStampEnvelopeContentUri)!!
-            .buffered()
-            .let(::ZipInputStream)
-            .use { zipInputStream ->
-                zipInputStream
-                    .entries()
-                    .filter { it.name in imagePathsToExtract }
-                    .forEach { imageEntry ->
-                        try {
-                            File(
-                                tempStampImageDirectory,
-                                imageEntry.name,
-                            )
-                                .also { it.parentFile?.mkdirs() }
-                                .outputStream()
-                                .use(zipInputStream::copyTo)
-                        } catch (e: Exception) {
-                            ensureActive()
-                            log.error(e) {
-                                "invoke(): failed extracting an image:" +
-                                        "\nname=${imageEntry.name}"
-                            }
-                        } finally {
-                            zipInputStream.closeEntry()
-                        }
-                    }
-            }
+        try {
+            var extractedImageCount = 0
+            var encounteredImageCount = 0
 
-        StampEnvelopePreview(
+            contentResolver
+                .openInputStream(oneStampEnvelopeContentUri)!!
+                .buffered()
+                .let(::ZipInputStream)
+                .use { zipInputStream ->
+                    zipInputStream
+                        .entries()
+                        .forEach { imageEntry ->
+                            val imagePath = imageEntry.name
+
+                            if (imagePath in stampImagePaths) {
+                                encounteredImageCount++
+                            }
+
+                            if (imagePath !in previewStampImagePaths) {
+                                return@forEach
+                            }
+
+                            try {
+                                File(
+                                    tempStampImageDirectory,
+                                    imagePath,
+                                )
+                                    .also { it.parentFile?.mkdirs() }
+                                    .outputStream()
+                                    .use(zipInputStream::copyTo)
+
+                                extractedImageCount++
+                            } finally {
+                                zipInputStream.closeEntry()
+                            }
+                        }
+                }
+
+            check(
+                extractedImageCount == previewStampImagePaths.size
+                        && encounteredImageCount == stampImagePaths.size
+            ) {
+                "Some images are missing"
+            }
+        } catch (e: Exception) {
+            ensureActive()
+            log.warn(e) {
+                "invoke(): failed extracting preview stamp images"
+            }
+            return@withContext OneStampEnvelopePreviewResult.Error.Malformed(
+                reason = e.message ?: e.toString(),
+            )
+        }
+
+        return@withContext OneStampEnvelopePreviewResult.Preview(
             message = manifest.message,
-            someStamps = someStamps,
-            stampCount = manifest.stamps.size,
-        )
+            previewStamps = previewStamps,
+            assetFileNamesById = assetFileNamesById,
+            allStamps = supportedStamps,
+            envelopeContentUri = oneStampEnvelopeContentUri,
+        ).also {
+            log.debug {
+                "invoke(): got the preview:" +
+                        "\nmessage=${manifest.message}" +
+                        "\nstampCount=${supportedStamps.size}"
+            }
+        }
     }
 }
