@@ -172,6 +172,26 @@ fun IntroScreen(
                     top = 24.dp,
                 )
         )
+
+        Image(
+            painter = painterResource(R.drawable.onestamp_presscut),
+            contentDescription = "Receive stamps from OneStamp",
+            modifier = Modifier
+                .padding(
+                    top = 24.dp,
+                )
+        )
+
+        BasicText(
+            text = "Have friends using OneStamp on iOS? You can receive stamps from them – " +
+                    "PressCut opens envelope files.",
+            style = textStyle,
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(
+                    top = 24.dp,
+                )
+        )
     }
 
     Spacer(
