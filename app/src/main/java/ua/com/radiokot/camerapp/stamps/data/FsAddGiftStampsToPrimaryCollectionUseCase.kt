@@ -52,7 +52,7 @@ class FsAddGiftStampsToPrimaryCollectionUseCase(
                         stampRepository.addStamp(
                             collectionId = StampCollection.PRIMARY_ID,
                             stampWebpName = giftStampFileName,
-                            stmpWebpContent = giftStampFileInputStream,
+                            stampWebpContent = giftStampFileInputStream,
                         )
                     }
             }

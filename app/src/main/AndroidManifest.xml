@@ -82,5 +82,11 @@
                 <!-- 🚩⛺⛺⛺ Welcome to the base camp 🚩🪨🪨 ⛺⛺🎒 🪨🚩 🎒🎒⛺⛺🚩 🪨 🚶 🚁 -->
             </intent-filter>
         </activity>
+
+        <provider
+            android:name=".envelopes.data.SharedEnvelopeContentProvider"
+            android:authorities="${sharedEnvelopeContentProviderAuthority}"
+            android:exported="false"
+            android:grantUriPermissions="true" />
     </application>
 </manifest>

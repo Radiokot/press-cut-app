@@ -28,6 +28,8 @@ import com.ashampoo.kim.format.webp.WebPWriter
 import com.ashampoo.kim.input.AndroidInputStreamByteReader
 import com.ashampoo.kim.input.ByteArrayByteReader
 import com.ashampoo.kim.input.use
+import com.ashampoo.kim.model.ImageSize
+import com.ashampoo.kim.output.ByteArrayByteWriter
 import com.ashampoo.kim.output.OutputStreamByteWriter
 import com.ashampoo.xmp.XMPMeta
 import com.ashampoo.xmp.XMPMetaFactory
@@ -121,6 +123,40 @@ class FsStampRepository(
     ): Stamp? =
         getStamps()
             .find { it.id == id }
+
+    suspend fun getStampImageBytesAndSize(
+        stamp: Stamp,
+    ): Pair<ByteArray, ImageSize> = withContext(Dispatchers.IO) {
+
+        val file = getStampFile(stamp)
+
+        val webpChunks =
+            AndroidInputStreamByteReader(
+                inputStream = file.inputStream(),
+                contentLength = file.length(),
+            )
+                .use(WebPImageParser::readChunks)
+
+        val size =
+            WebPImageParser
+                .parseMetadataFromChunks(webpChunks)
+                .imageSize!!
+
+        val bytes =
+            ByteArrayByteWriter().use { writer ->
+                WebPWriter.writeImage(
+                    chunks = webpChunks,
+                    byteWriter = writer,
+                    exifBytes = null,
+                    xmp = null,
+                )
+
+                writer.flush()
+                writer.toByteArray()
+            }
+
+        return@withContext Pair(bytes, size)
+    }
 
     override suspend fun addStamp(
         collectionId: String,
@@ -218,7 +254,7 @@ class FsStampRepository(
     suspend fun addStamp(
         collectionId: String,
         stampWebpName: String,
-        stmpWebpContent: InputStream,
+        stampWebpContent: InputStream,
     ): Unit = withContext(Dispatchers.IO) {
 
         check(!isCacheInitialized.load()) {
@@ -230,7 +266,7 @@ class FsStampRepository(
             collectionId = collectionId,
         )
             .outputStream()
-            .use(stmpWebpContent::copyTo)
+            .use(stampWebpContent::copyTo)
     }
 
     override suspend fun updateStamp(
@@ -238,10 +274,7 @@ class FsStampRepository(
         newCaption: Optional<String>?,
     ) = withContext(Dispatchers.IO) {
 
-        val file = getStampFile(
-            id = stamp.id,
-            collectionId = stamp.collectionId,
-        )
+        val file = getStampFile(stamp)
         val captionToSet =
             if (newCaption != null)
                 newCaption.getOrNull()
@@ -482,6 +515,14 @@ class FsStampRepository(
         stampDirectoryPath: String,
     ): ByteBuffer?
 
+    fun getStampFile(
+        stamp: Stamp,
+    ) =
+        getStampFile(
+            id = stamp.id,
+            collectionId = stamp.collectionId,
+        )
+
     private fun getStampFile(
         id: String,
         collectionId: String,
@@ -514,8 +555,8 @@ class FsStampRepository(
 
         fun newStampId(): String =
             stampIdCounter
-                    .incrementAndFetch()
-                    .toString()
+                .incrementAndFetch()
+                .toString()
     }
 }
 
