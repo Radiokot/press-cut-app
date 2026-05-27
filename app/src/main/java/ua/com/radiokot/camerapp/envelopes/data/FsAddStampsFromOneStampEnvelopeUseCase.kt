@@ -29,8 +29,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.serialization.ExperimentalSerializationApi
-import ua.com.radiokot.camerapp.envelopes.domain.AddStampsFromOneStampEnvelopeUseCase
-import ua.com.radiokot.camerapp.envelopes.domain.OneStampEnvelopePreviewResult
+import ua.com.radiokot.camerapp.envelopes.domain.AddStampsFromEnvelopeUseCase
+import ua.com.radiokot.camerapp.envelopes.domain.EnvelopePreviewResult
 import ua.com.radiokot.camerapp.stamps.data.FsStampRepository
 import ua.com.radiokot.camerapp.stamps.domain.Stamp
 import ua.com.radiokot.camerapp.util.entries
@@ -40,13 +40,13 @@ import java.util.zip.ZipInputStream
 class FsAddStampsFromOneStampEnvelopeUseCase(
     private val stampRepository: FsStampRepository,
     private val contentResolver: ContentResolver,
-) : AddStampsFromOneStampEnvelopeUseCase {
+) : AddStampsFromEnvelopeUseCase {
 
     private val log by lazyLogger("FsAddStampsFromOneStampEnvelopeUC")
 
     override operator fun invoke(
         collectionId: String,
-        envelopePreview: OneStampEnvelopePreviewResult.Preview,
+        envelopePreview: EnvelopePreviewResult.Preview,
     ): Flow<Pair<Int, Int>> = flow {
 
         log.debug {

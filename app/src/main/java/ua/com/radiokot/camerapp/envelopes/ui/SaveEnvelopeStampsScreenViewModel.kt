@@ -32,15 +32,15 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.sample
 import kotlinx.coroutines.flow.stateIn
-import ua.com.radiokot.camerapp.envelopes.domain.AddStampsFromOneStampEnvelopeUseCase
-import ua.com.radiokot.camerapp.envelopes.domain.OneStampEnvelopePreviewResult
+import ua.com.radiokot.camerapp.envelopes.domain.AddStampsFromEnvelopeUseCase
+import ua.com.radiokot.camerapp.envelopes.domain.EnvelopePreviewResult
 import ua.com.radiokot.camerapp.util.eventSharedFlow
 import ua.com.radiokot.camerapp.util.lazyLogger
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.time.Duration.Companion.milliseconds
 
 class SaveEnvelopeStampsScreenViewModel(
-    addStampsFromOneStampEnvelopeUseCase: AddStampsFromOneStampEnvelopeUseCase,
+    addStampsFromEnvelopeUseCase: AddStampsFromEnvelopeUseCase,
     private val parameters: Parameters,
 ) : ViewModel() {
 
@@ -50,7 +50,7 @@ class SaveEnvelopeStampsScreenViewModel(
         field = eventSharedFlow()
 
     private val addProgressFlow =
-        addStampsFromOneStampEnvelopeUseCase(
+        addStampsFromEnvelopeUseCase(
             collectionId = parameters.destinationCollectionId,
             envelopePreview = parameters.envelopePreview,
         )
@@ -84,6 +84,6 @@ class SaveEnvelopeStampsScreenViewModel(
 
     class Parameters(
         val destinationCollectionId: String,
-        val envelopePreview: OneStampEnvelopePreviewResult.Preview,
+        val envelopePreview: EnvelopePreviewResult.Preview,
     )
 }

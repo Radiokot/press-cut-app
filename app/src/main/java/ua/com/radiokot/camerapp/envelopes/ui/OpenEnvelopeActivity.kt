@@ -42,7 +42,7 @@ import com.skydoves.landscapist.image.LocalLandscapist
 import org.koin.compose.koinInject
 import ua.com.radiokot.camerapp.collectionselection.ui.SelectDestinationCollectionContract
 import ua.com.radiokot.camerapp.collectionselection.ui.selectDestinationCollectionDestination
-import ua.com.radiokot.camerapp.envelopes.domain.OneStampEnvelopePreviewResult
+import ua.com.radiokot.camerapp.envelopes.domain.EnvelopePreviewResult
 import ua.com.radiokot.camerapp.ui.paperBackground
 import ua.com.radiokot.camerapp.util.StableHolder
 
@@ -108,7 +108,7 @@ private fun OpenEnvelopeNavHost(
             navController = navController,
         )
     val envelopePreviewToSaveState = remember {
-        mutableStateOf<OneStampEnvelopePreviewResult.Preview?>(null)
+        mutableStateOf<EnvelopePreviewResult.Preview?>(null)
     }
 
     NavHost(

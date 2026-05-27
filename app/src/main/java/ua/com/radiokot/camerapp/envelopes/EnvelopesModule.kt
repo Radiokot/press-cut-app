@@ -24,10 +24,14 @@ import org.koin.core.module.dsl.viewModel
 import org.koin.core.qualifier.named
 import org.koin.dsl.bind
 import org.koin.dsl.module
+import ua.com.radiokot.camerapp.envelopes.data.CpCreateEnvelopeShareIntentUseCase
 import ua.com.radiokot.camerapp.envelopes.data.FsAddStampsFromOneStampEnvelopeUseCase
+import ua.com.radiokot.camerapp.envelopes.data.FsCreateOneStampEnvelopeUseCase
 import ua.com.radiokot.camerapp.envelopes.data.FsGetOneStampEnvelopePreviewUseCase
-import ua.com.radiokot.camerapp.envelopes.domain.AddStampsFromOneStampEnvelopeUseCase
-import ua.com.radiokot.camerapp.envelopes.domain.GetOneStampEnvelopePreviewUseCase
+import ua.com.radiokot.camerapp.envelopes.domain.AddStampsFromEnvelopeUseCase
+import ua.com.radiokot.camerapp.envelopes.domain.CreateEnvelopeShareIntentUseCase
+import ua.com.radiokot.camerapp.envelopes.domain.CreateEnvelopeUseCase
+import ua.com.radiokot.camerapp.envelopes.domain.GetEnvelopePreviewUseCase
 import ua.com.radiokot.camerapp.envelopes.ui.EnvelopePreviewScreenViewModel
 import ua.com.radiokot.camerapp.envelopes.ui.SaveEnvelopeStampsScreenViewModel
 import java.io.File
@@ -48,18 +52,30 @@ val envelopesModule = module {
             contentResolver = androidApplication().contentResolver,
             tempStampImageDirectory = get(named(DIRECTORY_TEMP_STAMP_IMAGES)),
         )
-    } bind GetOneStampEnvelopePreviewUseCase::class
+    } bind GetEnvelopePreviewUseCase::class
 
     single {
         FsAddStampsFromOneStampEnvelopeUseCase(
             stampRepository = get(),
             contentResolver = androidApplication().contentResolver,
         )
-    } bind AddStampsFromOneStampEnvelopeUseCase::class
+    } bind AddStampsFromEnvelopeUseCase::class
+
+    single {
+        FsCreateOneStampEnvelopeUseCase(
+            stampRepository = get(),
+        )
+    } bind CreateEnvelopeUseCase::class
+
+    single {
+        CpCreateEnvelopeShareIntentUseCase(
+
+        )
+    } bind CreateEnvelopeShareIntentUseCase::class
 
     viewModel {
         EnvelopePreviewScreenViewModel(
-            getOneStampEnvelopePreviewUseCase = get(),
+            getEnvelopePreviewUseCase = get(),
             parameters =
                 getOrNull()
                     ?: error("No EnvelopePreviewViewModel.Parameters provided"),
@@ -68,7 +84,7 @@ val envelopesModule = module {
 
     viewModel {
         SaveEnvelopeStampsScreenViewModel(
-            addStampsFromOneStampEnvelopeUseCase = get(),
+            addStampsFromEnvelopeUseCase = get(),
             parameters =
                 getOrNull()
                     ?: error("No SaveEnvelopeStampsScreenViewModel.Parameters provided"),

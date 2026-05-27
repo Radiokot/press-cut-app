@@ -28,15 +28,15 @@ import kotlinx.collections.immutable.toPersistentList
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.runBlocking
-import ua.com.radiokot.camerapp.envelopes.domain.GetOneStampEnvelopePreviewUseCase
-import ua.com.radiokot.camerapp.envelopes.domain.OneStampEnvelopePreviewResult
+import ua.com.radiokot.camerapp.envelopes.domain.GetEnvelopePreviewUseCase
+import ua.com.radiokot.camerapp.envelopes.domain.EnvelopePreviewResult
 import ua.com.radiokot.camerapp.stamps.ui.StampSampleItem
 import ua.com.radiokot.camerapp.util.eventSharedFlow
 import ua.com.radiokot.camerapp.util.lazyLogger
 
 @Immutable
 class EnvelopePreviewScreenViewModel(
-    getOneStampEnvelopePreviewUseCase: GetOneStampEnvelopePreviewUseCase,
+    getEnvelopePreviewUseCase: GetEnvelopePreviewUseCase,
     private val parameters: Parameters,
 ) : ViewModel() {
 
@@ -45,33 +45,33 @@ class EnvelopePreviewScreenViewModel(
     val events: SharedFlow<Event>
         field = eventSharedFlow<Event>()
 
-    private var preview: OneStampEnvelopePreviewResult.Preview?
+    private var preview: EnvelopePreviewResult.Preview?
     var errorMessage: String?
         private set
 
     init {
         runBlocking {
-            val oneStampEnvelopeContentUri = parameters.oneStampEnvelopeContentUri
+            val envelopeContentUri = parameters.envelopeContentUri
 
             log.debug {
                 "init: getting the preview:" +
-                        "\noneStampEnvelopeContentUri=$oneStampEnvelopeContentUri"
+                        "\noneStampEnvelopeContentUri=$envelopeContentUri"
             }
 
             try {
                 val result =
-                    getOneStampEnvelopePreviewUseCase(
-                        oneStampEnvelopeContentUri = oneStampEnvelopeContentUri,
+                    getEnvelopePreviewUseCase(
+                        envelopeContentUri = envelopeContentUri,
                         maxPreviewStampCount = 3,
                     )
 
-                preview = result as? OneStampEnvelopePreviewResult.Preview
-                errorMessage = when (val error = result as? OneStampEnvelopePreviewResult.Error) {
+                preview = result as? EnvelopePreviewResult.Preview
+                errorMessage = when (val error = result as? EnvelopePreviewResult.Error) {
                     null -> null
-                    is OneStampEnvelopePreviewResult.Error.Malformed ->
+                    is EnvelopePreviewResult.Error.Malformed ->
                         "…yet, the envelope is malformed (${error.reason})"
 
-                    OneStampEnvelopePreviewResult.Error.NoSupportedStamps ->
+                    EnvelopePreviewResult.Error.NoSupportedStamps ->
                         "…yet, none of the stamps are supported"
                 }
             } catch (e: Exception) {
@@ -81,7 +81,7 @@ class EnvelopePreviewScreenViewModel(
 
                 log.error(e) {
                     "init: failed getting the preview:" +
-                            "\noneStampEnvelopeContentUri=$oneStampEnvelopeContentUri"
+                            "\noneStampEnvelopeContentUri=$envelopeContentUri"
                 }
 
                 preview = null
@@ -140,11 +140,11 @@ class EnvelopePreviewScreenViewModel(
 
         class ProceedToSaveStamps(
             val destinationCollectionId: String,
-            val envelopePreview: OneStampEnvelopePreviewResult.Preview,
+            val envelopePreview: EnvelopePreviewResult.Preview,
         ) : Event
     }
 
     class Parameters(
-        val oneStampEnvelopeContentUri: Uri,
+        val envelopeContentUri: Uri,
     )
 }

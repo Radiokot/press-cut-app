@@ -34,13 +34,13 @@ import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 import ua.com.radiokot.camerapp.collectionselection.ui.SelectDestinationCollectionContract
 import ua.com.radiokot.camerapp.collectionselection.ui.SelectDestinationCollectionRequest
-import ua.com.radiokot.camerapp.envelopes.domain.OneStampEnvelopePreviewResult
+import ua.com.radiokot.camerapp.envelopes.domain.EnvelopePreviewResult
 
 fun NavGraphBuilder.envelopePreviewDestination(
     selectDestinationCollectionContract: SelectDestinationCollectionContract,
     onProceedToSaveStamps: (
         destinationCollectionId: String,
-        envelopePreview: OneStampEnvelopePreviewResult.Preview,
+        envelopePreview: EnvelopePreviewResult.Preview,
     ) -> Unit,
     onErrorAcknowledged: () -> Unit,
 ) = composable(
@@ -55,7 +55,7 @@ fun NavGraphBuilder.envelopePreviewDestination(
     val viewModel: EnvelopePreviewScreenViewModel = koinViewModel {
         parametersOf(
             EnvelopePreviewScreenViewModel.Parameters(
-                oneStampEnvelopeContentUri =
+                envelopeContentUri =
                     navEntry
                         .arguments
                         ?.getString(EnvelopeContentUri)

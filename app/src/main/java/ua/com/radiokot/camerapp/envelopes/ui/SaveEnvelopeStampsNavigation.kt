@@ -33,10 +33,10 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
-import ua.com.radiokot.camerapp.envelopes.domain.OneStampEnvelopePreviewResult
+import ua.com.radiokot.camerapp.envelopes.domain.EnvelopePreviewResult
 
 fun NavGraphBuilder.saveEnvelopeStampsDestination(
-    envelopePreviewState: State<OneStampEnvelopePreviewResult.Preview?>,
+    envelopePreviewState: State<EnvelopePreviewResult.Preview?>,
     onDone: () -> Unit,
 ) = composable(
     route = SaveEnvelopeStampsRoute,

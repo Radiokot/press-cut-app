@@ -20,11 +20,30 @@
 package ua.com.radiokot.camerapp.envelopes.domain
 
 import android.net.Uri
+import ua.com.radiokot.camerapp.stamps.domain.Stamp
 
-interface GetOneStampEnvelopePreviewUseCase {
+sealed interface EnvelopePreviewResult {
 
-    suspend operator fun invoke(
-        oneStampEnvelopeContentUri: Uri,
-        maxPreviewStampCount: Int,
-    ): OneStampEnvelopePreviewResult
+    class Preview(
+        val message: String?,
+        /**
+         * Some stamps with extracted image URIs, can be shown.
+         */
+        val previewStamps: List<Stamp>,
+        val assetFileNamesById: Map<String, String>,
+        /**
+         * All the stamps in the envelope,
+         * need image extraction before can be shown
+         */
+        val allStamps: List<Stamp>,
+        val envelopeContentUri: Uri,
+    ) : EnvelopePreviewResult
+
+    sealed interface Error : EnvelopePreviewResult {
+        class Malformed(
+            val reason: String,
+        ) : Error
+
+        object NoSupportedStamps : Error
+    }
 }

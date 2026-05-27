@@ -28,8 +28,8 @@ import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.decodeFromStream
-import ua.com.radiokot.camerapp.envelopes.domain.GetOneStampEnvelopePreviewUseCase
-import ua.com.radiokot.camerapp.envelopes.domain.OneStampEnvelopePreviewResult
+import ua.com.radiokot.camerapp.envelopes.domain.GetEnvelopePreviewUseCase
+import ua.com.radiokot.camerapp.envelopes.domain.EnvelopePreviewResult
 import ua.com.radiokot.camerapp.stamps.domain.Stamp
 import ua.com.radiokot.camerapp.util.entries
 import ua.com.radiokot.camerapp.util.lazyLogger
@@ -39,24 +39,24 @@ import java.util.zip.ZipInputStream
 class FsGetOneStampEnvelopePreviewUseCase(
     private val contentResolver: ContentResolver,
     private val tempStampImageDirectory: File,
-) : GetOneStampEnvelopePreviewUseCase {
+) : GetEnvelopePreviewUseCase {
 
     private val log by lazyLogger("FsGetOneStampEnvelopePreviewUC")
 
     override suspend operator fun invoke(
-        oneStampEnvelopeContentUri: Uri,
+        envelopeContentUri: Uri,
         maxPreviewStampCount: Int,
-    ): OneStampEnvelopePreviewResult = withContext(Dispatchers.IO) {
+    ): EnvelopePreviewResult = withContext(Dispatchers.IO) {
 
         log.debug {
             "invoke(): starting:" +
-                    "\noneStampEnvelopeContentUri=$oneStampEnvelopeContentUri"
+                    "\noneStampEnvelopeContentUri=$envelopeContentUri"
         }
 
         val manifest: OneStampEnvelopeManifest =
             try {
                 contentResolver
-                    .openInputStream(oneStampEnvelopeContentUri)!!
+                    .openInputStream(envelopeContentUri)!!
                     .buffered()
                     .let(::ZipInputStream)
                     .use { zipInputStream ->
@@ -72,7 +72,7 @@ class FsGetOneStampEnvelopePreviewUseCase(
                 log.error(e) {
                     "invoke(): failed reading the manifest"
                 }
-                return@withContext OneStampEnvelopePreviewResult.Error.Malformed(
+                return@withContext EnvelopePreviewResult.Error.Malformed(
                     reason = e.message ?: e.toString(),
                 )
             }
@@ -100,7 +100,7 @@ class FsGetOneStampEnvelopePreviewUseCase(
                 }
 
         if (supportedStamps.isEmpty()) {
-            return@withContext OneStampEnvelopePreviewResult.Error.NoSupportedStamps
+            return@withContext EnvelopePreviewResult.Error.NoSupportedStamps
         }
 
         val stampImagePaths =
@@ -132,7 +132,7 @@ class FsGetOneStampEnvelopePreviewUseCase(
             var encounteredImageCount = 0
 
             contentResolver
-                .openInputStream(oneStampEnvelopeContentUri)!!
+                .openInputStream(envelopeContentUri)!!
                 .buffered()
                 .let(::ZipInputStream)
                 .use { zipInputStream ->
@@ -176,17 +176,17 @@ class FsGetOneStampEnvelopePreviewUseCase(
             log.warn(e) {
                 "invoke(): failed extracting preview stamp images"
             }
-            return@withContext OneStampEnvelopePreviewResult.Error.Malformed(
+            return@withContext EnvelopePreviewResult.Error.Malformed(
                 reason = e.message ?: e.toString(),
             )
         }
 
-        return@withContext OneStampEnvelopePreviewResult.Preview(
+        return@withContext EnvelopePreviewResult.Preview(
             message = manifest.message,
             previewStamps = previewStamps,
             assetFileNamesById = assetFileNamesById,
             allStamps = supportedStamps,
-            envelopeContentUri = oneStampEnvelopeContentUri,
+            envelopeContentUri = envelopeContentUri,
         ).also {
             log.debug {
                 "invoke(): got the preview:" +

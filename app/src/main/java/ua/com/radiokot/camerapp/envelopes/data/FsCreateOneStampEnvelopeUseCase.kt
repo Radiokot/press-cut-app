@@ -30,6 +30,7 @@ import ua.com.radiokot.camerapp.BuildConfig
 import ua.com.radiokot.camerapp.envelopes.data.OneStampEnvelopeManifest.Asset.Role
 import ua.com.radiokot.camerapp.envelopes.data.OneStampEnvelopeManifest.Stamp.CropInfo
 import ua.com.radiokot.camerapp.envelopes.data.OneStampEnvelopeManifest.Stamp.Shape
+import ua.com.radiokot.camerapp.envelopes.domain.CreateEnvelopeUseCase
 import ua.com.radiokot.camerapp.stamps.data.FsStampRepository
 import ua.com.radiokot.camerapp.stamps.domain.Stamp
 import ua.com.radiokot.camerapp.stamps.domain.shape.StampShapeA
@@ -48,13 +49,14 @@ import java.time.ZonedDateTime
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
-class CreateOneStampEnvelopeUseCase(
+class FsCreateOneStampEnvelopeUseCase(
     private val stampRepository: FsStampRepository,
-) {
+) : CreateEnvelopeUseCase {
 
-    private val log by lazyLogger("CreateOneStampEnvelopeUC")
+    private val log by lazyLogger("FsCreateOneStampEnvelopeUC")
 
-    suspend operator fun invoke(
+    override suspend operator fun invoke(
+        id: String,
         message: String?,
         stampIds: Set<String>,
         outputStream: OutputStream,
@@ -83,7 +85,7 @@ class CreateOneStampEnvelopeUseCase(
             )
 
             writeManifest(
-                packageId = System.currentTimeMillis().toString(),
+                packageId = id,
                 message = message,
                 stamps = stamps,
                 imageSizesByStamp = imageSizesByStamp,
@@ -195,7 +197,7 @@ class CreateOneStampEnvelopeUseCase(
 
                         StampShapeOneStampSquare ->
                             Shape(
-                                kind = Shape.Kind.RectangleWithCorner,
+                                kind = Shape.Kind.Square,
                                 orientation = Shape.Orientation.Landscape,
                             )
 

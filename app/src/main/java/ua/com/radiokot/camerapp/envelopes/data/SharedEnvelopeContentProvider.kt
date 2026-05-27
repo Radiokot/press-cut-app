@@ -24,38 +24,42 @@ import android.content.ContentValues
 import android.database.Cursor
 import android.net.Uri
 import android.os.ParcelFileDescriptor
+import androidx.core.net.toUri
 import kotlinx.coroutines.runBlocking
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
-import ua.com.radiokot.camerapp.stamps.data.FsStampRepository
+import ua.com.radiokot.camerapp.BuildConfig
+import ua.com.radiokot.camerapp.envelopes.domain.CreateEnvelopeUseCase
 
 class SharedEnvelopeContentProvider :
     ContentProvider(),
     KoinComponent {
 
-    private val fsStampRepository: FsStampRepository by inject()
+    private val createEnvelopeUseCase: CreateEnvelopeUseCase by inject()
 
     override fun onCreate(): Boolean {
         return true
     }
 
-    override fun openFile(uri: Uri, mode: String): ParcelFileDescriptor {
+    override fun openFile(
+        uri: Uri,
+        mode: String,
+    ): ParcelFileDescriptor {
+
+        val envelopeData = envelopeDataByUri[uri]
+        checkNotNull(envelopeData) {
+            "Requested URI is not provided"
+        }
 
         val writer = PipeDataWriter<Nothing> { output, _, _, _, _ ->
             runBlocking {
                 ParcelFileDescriptor.AutoCloseOutputStream(output).use { outputStream ->
-
-                    CreateOneStampEnvelopeUseCase(fsStampRepository)
-                        .invoke(
-                            message = "From Oleg!",
-                            stampIds = setOf(
-                                "1779703713622",
-                                "1779722012660",
-                                "1779722012663",
-//                                "1779827805776",
-                            ),
-                            outputStream = outputStream,
-                        )
+                    createEnvelopeUseCase(
+                        id = envelopeData.id,
+                        message = envelopeData.message,
+                        stampIds = envelopeData.stampIds,
+                        outputStream = outputStream,
+                    )
                 }
             }
         }
@@ -69,8 +73,10 @@ class SharedEnvelopeContentProvider :
         )
     }
 
-    override fun getType(uri: Uri): String =
-        "application/octet-stream"
+    override fun getType(
+        uri: Uri,
+    ): String =
+        ENVELOPE_CONTENT_TYPE
 
     override fun query(
         uri: Uri,
@@ -79,7 +85,6 @@ class SharedEnvelopeContentProvider :
         selectionArgs: Array<out String?>?,
         sortOrder: String?,
     ): Cursor? {
-        // TODO return display name.
         return null
     }
 
@@ -91,4 +96,33 @@ class SharedEnvelopeContentProvider :
 
     override fun update(p0: Uri, p1: ContentValues?, p2: String?, p3: Array<out String?>?): Int =
         error("Updates are not allowed")
+
+    private class EnvelopeData(
+        val id: String,
+        val message: String?,
+        val stampIds: Set<String>,
+    )
+
+    companion object {
+        const val ENVELOPE_CONTENT_TYPE = "application/octet-stream"
+        const val AUTHORITY = BuildConfig.sharedEnvelopeContentProviderAuthority
+
+        private val envelopeDataByUri = mutableMapOf<Uri, EnvelopeData>()
+
+        fun provideNewEnvelope(
+            message: String?,
+            stampIds: Set<String>,
+        ): Uri {
+            val id = System.currentTimeMillis().toString()
+            val uri = "content://$AUTHORITY/PressCutStamps$id.onestamp".toUri()
+
+            envelopeDataByUri[uri] = EnvelopeData(
+                id = id,
+                message = message,
+                stampIds = stampIds,
+            )
+
+            return uri
+        }
+    }
 }

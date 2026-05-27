@@ -19,31 +19,16 @@
 
 package ua.com.radiokot.camerapp.envelopes.domain
 
-import android.net.Uri
-import ua.com.radiokot.camerapp.stamps.domain.Stamp
+import kotlinx.coroutines.flow.Flow
 
-sealed interface OneStampEnvelopePreviewResult {
+interface AddStampsFromEnvelopeUseCase {
 
-    class Preview(
-        val message: String?,
-        /**
-         * Some stamps with extracted image URIs, can be shown.
-         */
-        val previewStamps: List<Stamp>,
-        val assetFileNamesById: Map<String, String>,
-        /**
-         * All the stamps in the envelope,
-         * need image extraction before can be shown
-         */
-        val allStamps: List<Stamp>,
-        val envelopeContentUri: Uri,
-    ) : OneStampEnvelopePreviewResult
-
-    sealed interface Error : OneStampEnvelopePreviewResult {
-        class Malformed(
-            val reason: String,
-        ) : Error
-
-        object NoSupportedStamps : Error
-    }
+    /**
+     * @return progress flow, where each value is
+     * the saved stamp count and the total stamp count.
+     */
+    operator fun invoke(
+        collectionId: String,
+        envelopePreview: EnvelopePreviewResult.Preview,
+    ): Flow<Pair<Int, Int>>
 }

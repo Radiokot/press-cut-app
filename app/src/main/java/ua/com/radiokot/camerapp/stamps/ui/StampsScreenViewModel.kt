@@ -19,6 +19,7 @@
 
 package ua.com.radiokot.camerapp.stamps.ui
 
+import android.content.Intent
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
@@ -41,6 +42,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import ua.com.radiokot.camerapp.envelopes.domain.CreateEnvelopeShareIntentUseCase
 import ua.com.radiokot.camerapp.intro.domain.OnboardingPreferences
 import ua.com.radiokot.camerapp.stamps.domain.Stamp
 import ua.com.radiokot.camerapp.stamps.domain.StampCollectionRepository
@@ -56,6 +58,7 @@ class StampsScreenViewModel(
     private val stampRepository: StampRepository,
     private val collectionRepository: StampCollectionRepository,
     private val onboardingPreferences: OnboardingPreferences,
+    private val createEnvelopeShareIntentUseCase: CreateEnvelopeShareIntentUseCase,
     parameters: Parameters,
 ) : ViewModel() {
 
@@ -231,6 +234,35 @@ class StampsScreenViewModel(
         }
     }
 
+    fun onShareSelectedAction() {
+        if (selectedStampIds.value.isEmpty()) {
+            return
+        }
+
+        val stampToShareIds = selectedStampIds.value
+
+        clearSelection()
+
+        val shareIntent =
+            createEnvelopeShareIntentUseCase(
+                // TODO enter the message on the sharing screen.
+                message = "My message",
+                stampIds = stampToShareIds,
+            )
+
+        log.debug {
+            "onShareSelectedAction(): proceeding to share:" +
+                    "\nstampToShareIds=${stampToShareIds.size}" +
+                    "\nshareIntent=$shareIntent"
+        }
+
+        events.tryEmit(
+            Event.ProceedToEnvelopeShare(
+                intent = shareIntent,
+            )
+        )
+    }
+
     private var deleteJob: Job? = null
 
     fun onDeleteSelectedAction() {
@@ -349,6 +381,10 @@ class StampsScreenViewModel(
             val sourceCollectionId: String,
             val destinationCollectionId: String,
             val stampSelectionIndex: Int,
+        ) : Event
+
+        class ProceedToEnvelopeShare(
+            val intent: Intent,
         ) : Event
 
         object Done : Event
