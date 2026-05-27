@@ -28,12 +28,18 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.encodeToStream
 import ua.com.radiokot.camerapp.BuildConfig
 import ua.com.radiokot.camerapp.envelopes.data.OneStampEnvelopeManifest.Asset.Role
+import ua.com.radiokot.camerapp.envelopes.data.OneStampEnvelopeManifest.Stamp.CropInfo
+import ua.com.radiokot.camerapp.envelopes.data.OneStampEnvelopeManifest.Stamp.Shape
 import ua.com.radiokot.camerapp.stamps.data.FsStampRepository
 import ua.com.radiokot.camerapp.stamps.domain.Stamp
 import ua.com.radiokot.camerapp.stamps.domain.shape.StampShapeA
 import ua.com.radiokot.camerapp.stamps.domain.shape.StampShapeOneStamp
 import ua.com.radiokot.camerapp.stamps.domain.shape.StampShapeOneStampLandscape
+import ua.com.radiokot.camerapp.stamps.domain.shape.StampShapeOneStampSmall
+import ua.com.radiokot.camerapp.stamps.domain.shape.StampShapeOneStampSmallLandscape
 import ua.com.radiokot.camerapp.stamps.domain.shape.StampShapeOneStampSquare
+import ua.com.radiokot.camerapp.stamps.domain.shape.StampShapeOneStampWithoutCorners
+import ua.com.radiokot.camerapp.stamps.domain.shape.StampShapeOneStampWithoutCornersLandscape
 import ua.com.radiokot.camerapp.util.lazyLogger
 import java.io.File
 import java.io.OutputStream
@@ -170,30 +176,54 @@ class CreateOneStampEnvelopeUseCase(
                     title = stamp.caption ?: OneStampEnvelopeManifest.Stamp.UNTITLED_TITLE,
                     stampShape = when (stamp.shape) {
                         StampShapeA ->
-                            OneStampEnvelopeManifest.Stamp.Shape(
-                                kind = OneStampEnvelopeManifest.Stamp.Shape.Kind.PressCutA,
-                                orientation = OneStampEnvelopeManifest.Stamp.Shape.Orientation.Portrait,
+                            Shape(
+                                kind = Shape.Kind.PressCutA,
+                                orientation = Shape.Orientation.Portrait,
                             )
 
                         StampShapeOneStamp ->
-                            OneStampEnvelopeManifest.Stamp.Shape(
-                                kind = OneStampEnvelopeManifest.Stamp.Shape.Kind.RectangleWithCorner,
-                                orientation = OneStampEnvelopeManifest.Stamp.Shape.Orientation.Portrait,
+                            Shape(
+                                kind = Shape.Kind.RectangleWithCorner,
+                                orientation = Shape.Orientation.Portrait,
                             )
 
                         StampShapeOneStampLandscape ->
-                            OneStampEnvelopeManifest.Stamp.Shape(
-                                kind = OneStampEnvelopeManifest.Stamp.Shape.Kind.RectangleWithCorner,
-                                orientation = OneStampEnvelopeManifest.Stamp.Shape.Orientation.Landscape,
+                            Shape(
+                                kind = Shape.Kind.RectangleWithCorner,
+                                orientation = Shape.Orientation.Landscape,
                             )
 
                         StampShapeOneStampSquare ->
-                            OneStampEnvelopeManifest.Stamp.Shape(
-                                kind = OneStampEnvelopeManifest.Stamp.Shape.Kind.RectangleWithCorner,
-                                orientation = OneStampEnvelopeManifest.Stamp.Shape.Orientation.Landscape,
+                            Shape(
+                                kind = Shape.Kind.RectangleWithCorner,
+                                orientation = Shape.Orientation.Landscape,
+                            )
+
+                        StampShapeOneStampSmall ->
+                            Shape(
+                                kind = Shape.Kind.RectangleSmall,
+                                orientation = Shape.Orientation.Portrait,
+                            )
+
+                        StampShapeOneStampSmallLandscape ->
+                            Shape(
+                                kind = Shape.Kind.RectangleSmall,
+                                orientation = Shape.Orientation.Landscape,
+                            )
+
+                        StampShapeOneStampWithoutCorners ->
+                            Shape(
+                                kind = Shape.Kind.Rectangle,
+                                orientation = Shape.Orientation.Portrait,
+                            )
+
+                        StampShapeOneStampWithoutCornersLandscape ->
+                            Shape(
+                                kind = Shape.Kind.Rectangle,
+                                orientation = Shape.Orientation.Landscape,
                             )
                     },
-                    cropInfo = OneStampEnvelopeManifest.Stamp.CropInfo(
+                    cropInfo = CropInfo(
                         cropRectInImage = listOf(
                             listOf(
                                 0.0,

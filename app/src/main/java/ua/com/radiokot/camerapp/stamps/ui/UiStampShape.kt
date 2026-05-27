@@ -46,7 +46,11 @@ import ua.com.radiokot.camerapp.stamps.domain.shape.StampShape
 import ua.com.radiokot.camerapp.stamps.domain.shape.StampShapeA
 import ua.com.radiokot.camerapp.stamps.domain.shape.StampShapeOneStamp
 import ua.com.radiokot.camerapp.stamps.domain.shape.StampShapeOneStampLandscape
+import ua.com.radiokot.camerapp.stamps.domain.shape.StampShapeOneStampSmall
+import ua.com.radiokot.camerapp.stamps.domain.shape.StampShapeOneStampSmallLandscape
 import ua.com.radiokot.camerapp.stamps.domain.shape.StampShapeOneStampSquare
+import ua.com.radiokot.camerapp.stamps.domain.shape.StampShapeOneStampWithoutCorners
+import ua.com.radiokot.camerapp.stamps.domain.shape.StampShapeOneStampWithoutCornersLandscape
 import java.util.Objects
 import java.util.concurrent.ConcurrentHashMap
 
@@ -114,8 +118,16 @@ interface UiStampShape {
             shape: StampShape,
         ): UiStampShape = when (shape) {
             StampShapeA -> UiStampShapeA
-            StampShapeOneStamp -> UiStampShapeOneStamp
-            StampShapeOneStampLandscape -> UiStampShapeOneStampLandscape
+            StampShapeOneStamp,
+            StampShapeOneStampWithoutCorners,
+            StampShapeOneStampSmall,
+                -> UiStampShapeOneStamp
+
+            StampShapeOneStampLandscape,
+            StampShapeOneStampWithoutCornersLandscape,
+            StampShapeOneStampSmallLandscape,
+                -> UiStampShapeOneStampLandscape
+
             StampShapeOneStampSquare -> UiStampShapeOneStampSquare
         }
     }

@@ -28,14 +28,18 @@ import ua.com.radiokot.camerapp.stamps.domain.Stamp
 import ua.com.radiokot.camerapp.stamps.domain.shape.StampShapeA
 import ua.com.radiokot.camerapp.stamps.domain.shape.StampShapeOneStamp
 import ua.com.radiokot.camerapp.stamps.domain.shape.StampShapeOneStampLandscape
+import ua.com.radiokot.camerapp.stamps.domain.shape.StampShapeOneStampSmall
+import ua.com.radiokot.camerapp.stamps.domain.shape.StampShapeOneStampSmallLandscape
 import ua.com.radiokot.camerapp.stamps.domain.shape.StampShapeOneStampSquare
+import ua.com.radiokot.camerapp.stamps.domain.shape.StampShapeOneStampWithoutCorners
+import ua.com.radiokot.camerapp.stamps.domain.shape.StampShapeOneStampWithoutCornersLandscape
 import java.time.ZonedDateTime
 
 @Serializable
 class OneStampEnvelopeManifest(
     val assets: List<Asset>,
     val createdAt: String,
-    val envelopeColor: EnvelopeColor,
+    val envelopeColor: EnvelopeColor? = null,
     val message: String? = null,
     val packageID: String,
     val schemaVersion: Int,
@@ -90,11 +94,11 @@ class OneStampEnvelopeManifest(
         @Serializable
         class CropInfo(
             /**
-             * Top left & bottom right corner X, Y coordinates.
+             * Top left XY coordinates, then width and height.
              */
             val cropRectInImage: List<List<Double>>,
             /**
-             * Width, height.
+             * Width and height.
              */
             val imageSize: List<Int>,
         )
@@ -112,6 +116,12 @@ class OneStampEnvelopeManifest(
 
                 @SerialName("rectangleWithCorner")
                 RectangleWithCorner,
+
+                @SerialName("rectangleSmall")
+                RectangleSmall,
+
+                @SerialName("rectangle")
+                Rectangle,
 
                 @SerialName("square")
                 Square,
@@ -169,15 +179,26 @@ fun OneStampEnvelopeManifest.Stamp.toStamp(
                 OneStampEnvelopeManifest.Stamp.Shape.Kind.Square ->
                     StampShapeOneStampSquare
 
-                OneStampEnvelopeManifest.Stamp.Shape.Kind.RectangleWithCorner -> {
-                    when (shapeOrientation) {
-                        OneStampEnvelopeManifest.Stamp.Shape.Orientation.Portrait ->
-                            StampShapeOneStamp
+                OneStampEnvelopeManifest.Stamp.Shape.Kind.RectangleWithCorner
+                    if shapeOrientation == OneStampEnvelopeManifest.Stamp.Shape.Orientation.Portrait ->
+                    StampShapeOneStamp
 
-                        OneStampEnvelopeManifest.Stamp.Shape.Orientation.Landscape ->
-                            StampShapeOneStampLandscape
-                    }
-                }
+                OneStampEnvelopeManifest.Stamp.Shape.Kind.RectangleWithCorner ->
+                    StampShapeOneStampLandscape
+
+                OneStampEnvelopeManifest.Stamp.Shape.Kind.Rectangle
+                    if shapeOrientation == OneStampEnvelopeManifest.Stamp.Shape.Orientation.Portrait ->
+                    StampShapeOneStampWithoutCorners
+
+                OneStampEnvelopeManifest.Stamp.Shape.Kind.Rectangle ->
+                    StampShapeOneStampWithoutCornersLandscape
+
+                OneStampEnvelopeManifest.Stamp.Shape.Kind.RectangleSmall
+                    if shapeOrientation == OneStampEnvelopeManifest.Stamp.Shape.Orientation.Portrait ->
+                    StampShapeOneStampSmall
+
+                OneStampEnvelopeManifest.Stamp.Shape.Kind.RectangleSmall ->
+                    StampShapeOneStampSmallLandscape
 
                 null -> error("Unsupported stamp shape $shapeKind $shapeOrientation")
             }

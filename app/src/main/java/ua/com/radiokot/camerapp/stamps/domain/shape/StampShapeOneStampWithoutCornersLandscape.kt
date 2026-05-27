@@ -19,26 +19,7 @@
 
 package ua.com.radiokot.camerapp.stamps.domain.shape
 
-import androidx.compose.ui.graphics.vector.PathBuilder
-import androidx.compose.ui.graphics.vector.PathNode
-import androidx.compose.ui.unit.IntSize
+object StampShapeOneStampWithoutCornersLandscape : StampShape by StampShapeOneStampLandscape {
 
-object StampShapeOneStampLandscape : StampShape {
-
-    override val name = "onestamp_landscape"
-
-    override val path: List<PathNode> by lazy {
-        PathBuilder().apply {
-            verticalLineTo(100f)
-            horizontalLineTo(128f)
-            verticalLineTo(0f)
-            close()
-        }.nodes
-    }
-
-    override val size =
-        IntSize(
-            width = 128,
-            height = 100,
-        )
+    override val name = "onestamp_without_corners_landscape"
 }
