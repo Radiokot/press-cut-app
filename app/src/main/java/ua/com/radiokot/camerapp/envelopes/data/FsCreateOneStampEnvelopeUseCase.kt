@@ -44,8 +44,8 @@ import ua.com.radiokot.camerapp.stamps.domain.shape.StampShapeOneStampWithoutCor
 import ua.com.radiokot.camerapp.util.lazyLogger
 import java.io.File
 import java.io.OutputStream
-import java.time.ZoneId
-import java.time.ZonedDateTime
+import java.time.Instant
+import java.time.ZoneOffset
 import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
@@ -117,7 +117,9 @@ class FsCreateOneStampEnvelopeUseCase(
         val manifest = OneStampEnvelopeManifest(
             packageID = packageId,
             schemaVersion = 1,
-            createdAt = ZonedDateTime.now().toString(),
+            createdAt = Instant
+                .now()
+                .atOffset(ZoneOffset.UTC),
             envelopeColor = OneStampEnvelopeManifest.EnvelopeColor(
                 alpha = 1.0,
                 red = 1.0,
@@ -163,8 +165,7 @@ class FsCreateOneStampEnvelopeUseCase(
                     id = stamp.id,
                     createdAt = stamp
                         .takenAtLocal
-                        .atZone(ZoneId.systemDefault())
-                        .toString(),
+                        .atOffset(ZoneOffset.UTC),
                     previewImageAssetID =
                         getAssetId(
                             stampId = stamp.id,

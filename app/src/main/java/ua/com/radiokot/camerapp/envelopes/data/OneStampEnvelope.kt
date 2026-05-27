@@ -36,12 +36,14 @@ import ua.com.radiokot.camerapp.stamps.domain.shape.StampShapeOneStampSmallLands
 import ua.com.radiokot.camerapp.stamps.domain.shape.StampShapeOneStampSquare
 import ua.com.radiokot.camerapp.stamps.domain.shape.StampShapeOneStampWithoutCorners
 import ua.com.radiokot.camerapp.stamps.domain.shape.StampShapeOneStampWithoutCornersLandscape
-import java.time.ZonedDateTime
+import ua.com.radiokot.camerapp.util.Iso8601OffsetDateTimeSerializer
+import java.time.OffsetDateTime
 
 @Serializable
 class OneStampEnvelopeManifest(
     val assets: List<Asset>,
-    val createdAt: String,
+    @Serializable(with = Iso8601OffsetDateTimeSerializer::class)
+    val createdAt: OffsetDateTime,
     val envelopeColor: EnvelopeColor? = null,
     val message: String? = null,
     val packageID: String,
@@ -87,7 +89,8 @@ class OneStampEnvelopeManifest(
     @Serializable
     class Stamp(
         val id: String,
-        val createdAt: String,
+        @Serializable(with = Iso8601OffsetDateTimeSerializer::class)
+        val createdAt: OffsetDateTime,
         val cropInfo: CropInfo,
         val imageAssetID: String,
         val previewImageAssetID: String,
@@ -183,10 +186,7 @@ fun OneStampEnvelopeManifest.Stamp.toStamp(
         collectionId = "OneStampPackage",
         imageUri = "$OneStampEnvelopeAssetsDirectory/$fileName",
         caption = title.takeIf { it != OneStampEnvelopeManifest.Stamp.UNTITLED_TITLE },
-        takenAtLocal =
-            ZonedDateTime
-                .parse(createdAt)
-                .toLocalDateTime(),
+        takenAtLocal = createdAt.toLocalDateTime(),
         shape =
             when (shapeKind) {
                 OneStampEnvelopeManifest.Stamp.Shape.Kind.PressCutA ->
