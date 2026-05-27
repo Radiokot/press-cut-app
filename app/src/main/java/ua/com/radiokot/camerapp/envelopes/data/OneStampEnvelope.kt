@@ -18,12 +18,15 @@
 */
 
 @file:Suppress("unused")
+@file:OptIn(ExperimentalSerializationApi::class)
 
 package ua.com.radiokot.camerapp.envelopes.data
 
+import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonNames
 import ua.com.radiokot.camerapp.stamps.domain.Stamp
 import ua.com.radiokot.camerapp.stamps.domain.shape.StampShapeA
 import ua.com.radiokot.camerapp.stamps.domain.shape.StampShapeOneStamp
@@ -115,15 +118,28 @@ class OneStampEnvelopeManifest(
                 PressCutA,
 
                 @SerialName("rectangleWithCorner")
+                @JsonNames(
+                    "rectangleWithCornerAndPadding",
+                )
                 RectangleWithCorner,
 
                 @SerialName("rectangleSmall")
+                @JsonNames(
+                    "rectangleSmallAndPadding",
+                )
                 RectangleSmall,
 
                 @SerialName("rectangle")
+                @JsonNames(
+                    "rectangleAndPadding",
+                )
                 Rectangle,
 
+
                 @SerialName("square")
+                @JsonNames(
+                    "squareAndPadding",
+                )
                 Square,
             }
 
