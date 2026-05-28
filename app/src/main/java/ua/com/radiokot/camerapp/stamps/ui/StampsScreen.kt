@@ -113,7 +113,7 @@ fun StampsScreen(
     onStampLongClicked: (StampsScreenItem) -> Unit,
     selectedCountState: IntState,
     onMoveSelectedAction: () -> Unit,
-    onShareSelectedAction: () -> Unit,
+    onSendSelectedAction: () -> Unit,
     onDeleteSelectedAction: () -> Unit,
     onNewStampAction: () -> Unit,
     sharedTransitionScope: SharedTransitionScope?,
@@ -357,9 +357,9 @@ fun StampsScreen(
                 areSelectionActionsVisible = false
                 onMoveSelectedAction()
             },
-            onShare = {
+            onSend = {
                 areSelectionActionsVisible = false
-                onShareSelectedAction()
+                onSendSelectedAction()
             },
             onDelete = {
                 areSelectionActionsVisible = false
@@ -520,7 +520,7 @@ private fun SelectionActions(
     modifier: Modifier = Modifier,
     cornerRadius: Dp = 10.dp,
     onMove: () -> Unit,
-    onShare: () -> Unit,
+    onSend: () -> Unit,
     onDelete: () -> Unit,
 ) = Column(
     modifier = modifier
@@ -564,11 +564,11 @@ private fun SelectionActions(
     )
 
     BasicText(
-        text = "Share",
+        text = "Send",
         style = textStyle,
         modifier = Modifier
             .clickable(
-                onClick = onShare,
+                onClick = onSend,
             )
             .padding(
                 vertical = 20.dp,
@@ -629,7 +629,7 @@ fun StampsScreenPreview(
         onStampLongClicked = { },
         selectedCountState = 0.let(::mutableIntStateOf),
         onMoveSelectedAction = { },
-        onShareSelectedAction = { },
+        onSendSelectedAction = { },
         onDeleteSelectedAction = { },
         onNewStampAction = { },
         sharedTransitionScope = null,

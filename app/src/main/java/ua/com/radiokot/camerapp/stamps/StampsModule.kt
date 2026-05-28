@@ -122,7 +122,7 @@ val stampsModule = module {
             stampRepository = get(),
             collectionRepository = get(),
             onboardingPreferences = get(),
-            createEnvelopeShareIntentUseCase = get(),
+            createSendEnvelopeIntentUseCase = get(),
             parameters =
                 getOrNull()
                     ?: error("No StampsScreenViewModel.Parameters provided"),

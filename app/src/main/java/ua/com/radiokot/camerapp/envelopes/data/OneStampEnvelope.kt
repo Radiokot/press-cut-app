@@ -17,11 +17,12 @@
    along with Press-Cut. If not, see <http://www.gnu.org/licenses/>.
 */
 
-@file:Suppress("unused")
+@file:Suppress("unused", "FunctionName")
 @file:OptIn(ExperimentalSerializationApi::class)
 
 package ua.com.radiokot.camerapp.envelopes.data
 
+import com.ashampoo.kim.model.ImageSize
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -38,13 +39,14 @@ import ua.com.radiokot.camerapp.stamps.domain.shape.StampShapeOneStampWithoutCor
 import ua.com.radiokot.camerapp.stamps.domain.shape.StampShapeOneStampWithoutCornersLandscape
 import ua.com.radiokot.camerapp.util.Iso8601OffsetDateTimeSerializer
 import java.time.OffsetDateTime
+import kotlin.math.abs
 
 @Serializable
 class OneStampEnvelopeManifest(
     val assets: List<Asset>,
     @Serializable(with = Iso8601OffsetDateTimeSerializer::class)
     val createdAt: OffsetDateTime,
-    val envelopeColor: EnvelopeColor? = null,
+    val envelopeColor: ArgbColor? = null,
     val message: String? = null,
     val packageID: String,
     val schemaVersion: Int,
@@ -52,7 +54,7 @@ class OneStampEnvelopeManifest(
     val stamps: List<Stamp>,
 ) {
     @Serializable
-    class EnvelopeColor(
+    class ArgbColor(
         val alpha: Double,
         val blue: Double,
         val green: Double,
@@ -112,7 +114,9 @@ class OneStampEnvelopeManifest(
         @Serializable
         data class Shape(
             val kind: Kind? = null,
+            val pressCutKind: Kind? = null,
             val orientation: Orientation,
+            val paddingBackgroundColor: ArgbColor? = null,
         ) {
 
             @Serializable
@@ -133,10 +137,10 @@ class OneStampEnvelopeManifest(
                 RectangleSmall,
 
                 @SerialName("rectangle")
-                @JsonNames(
-                    "rectangleAndPadding",
-                )
                 Rectangle,
+
+                @SerialName("rectangleAndPadding")
+                RectangleAndPadding,
 
 
                 @SerialName("square")
@@ -157,7 +161,7 @@ class OneStampEnvelopeManifest(
         }
 
         companion object {
-            const val UNTITLED_TITLE = "Untitled"
+            const val UNTITLED_STAMP_TITLE = "Untitled"
         }
     }
 
@@ -179,45 +183,75 @@ fun OneStampEnvelopeManifest.Stamp.toStamp(
     val fileName =
         assetFileNamesById[previewAssetId]
             ?: error("Stamp preview asset not found")
-    val (shapeKind, shapeOrientation) = stampShape
+    val (oneStampShapeKind, pressCutShapeKind, shapeOrientation) = stampShape
+    val shapeKind = pressCutShapeKind ?: oneStampShapeKind
 
     return Stamp(
         id = id,
         collectionId = "OneStampPackage",
         imageUri = "$OneStampEnvelopeAssetsDirectory/$fileName",
-        caption = title.takeIf { it != OneStampEnvelopeManifest.Stamp.UNTITLED_TITLE },
+        caption = title.takeIf { it != OneStampEnvelopeManifest.Stamp.UNTITLED_STAMP_TITLE },
         takenAtLocal = createdAt.toLocalDateTime(),
-        shape =
-            when (shapeKind) {
-                OneStampEnvelopeManifest.Stamp.Shape.Kind.PressCutA ->
-                    StampShapeA
+        shape = when (shapeKind) {
+            OneStampEnvelopeManifest.Stamp.Shape.Kind.PressCutA ->
+                StampShapeA
 
-                OneStampEnvelopeManifest.Stamp.Shape.Kind.Square ->
-                    StampShapeOneStampSquare
+            OneStampEnvelopeManifest.Stamp.Shape.Kind.Square ->
+                StampShapeOneStampSquare
 
-                OneStampEnvelopeManifest.Stamp.Shape.Kind.RectangleWithCorner
-                    if shapeOrientation == OneStampEnvelopeManifest.Stamp.Shape.Orientation.Portrait ->
-                    StampShapeOneStamp
+            OneStampEnvelopeManifest.Stamp.Shape.Kind.RectangleWithCorner
+                if shapeOrientation == OneStampEnvelopeManifest.Stamp.Shape.Orientation.Portrait ->
+                StampShapeOneStamp
 
-                OneStampEnvelopeManifest.Stamp.Shape.Kind.RectangleWithCorner ->
-                    StampShapeOneStampLandscape
+            OneStampEnvelopeManifest.Stamp.Shape.Kind.RectangleWithCorner ->
+                StampShapeOneStampLandscape
 
-                OneStampEnvelopeManifest.Stamp.Shape.Kind.Rectangle
-                    if shapeOrientation == OneStampEnvelopeManifest.Stamp.Shape.Orientation.Portrait ->
-                    StampShapeOneStampWithoutCorners
+            OneStampEnvelopeManifest.Stamp.Shape.Kind.Rectangle,
+            OneStampEnvelopeManifest.Stamp.Shape.Kind.RectangleAndPadding,
+                ->
+                when (shapeOrientation) {
+                    OneStampEnvelopeManifest.Stamp.Shape.Orientation.Portrait ->
+                        StampShapeOneStampWithoutCorners
 
-                OneStampEnvelopeManifest.Stamp.Shape.Kind.Rectangle ->
-                    StampShapeOneStampWithoutCornersLandscape
+                    OneStampEnvelopeManifest.Stamp.Shape.Orientation.Landscape ->
+                        StampShapeOneStampWithoutCornersLandscape
+                }
 
-                OneStampEnvelopeManifest.Stamp.Shape.Kind.RectangleSmall
-                    if shapeOrientation == OneStampEnvelopeManifest.Stamp.Shape.Orientation.Portrait ->
-                    StampShapeOneStampSmall
+            OneStampEnvelopeManifest.Stamp.Shape.Kind.RectangleSmall
+                if shapeOrientation == OneStampEnvelopeManifest.Stamp.Shape.Orientation.Portrait ->
+                StampShapeOneStampSmall
 
-                OneStampEnvelopeManifest.Stamp.Shape.Kind.RectangleSmall ->
-                    StampShapeOneStampSmallLandscape
+            OneStampEnvelopeManifest.Stamp.Shape.Kind.RectangleSmall ->
+                StampShapeOneStampSmallLandscape
 
-                null -> error("Unsupported stamp shape $shapeKind $shapeOrientation")
-            }
+            null -> error("Unsupported stamp shape $shapeKind $shapeOrientation")
+        }
+    )
+}
+
+fun OneStampEnvelopeCropInfo(
+    stampSize: ImageSize,
+    paddingPercent: Double = 0.0,
+): OneStampEnvelopeManifest.Stamp.CropInfo {
+
+    val widthD = stampSize.width.toDouble()
+    val heightD = stampSize.height.toDouble()
+
+    return OneStampEnvelopeManifest.Stamp.CropInfo(
+        cropRectInImage = listOf(
+            listOf(
+                widthD * paddingPercent,
+                heightD * paddingPercent,
+            ),
+            listOf(
+                widthD * (1 - paddingPercent * 2),
+                heightD * (1 - paddingPercent * 2),
+            )
+        ),
+        imageSize = listOf(
+            stampSize.width,
+            stampSize.height,
+        )
     )
 }
 

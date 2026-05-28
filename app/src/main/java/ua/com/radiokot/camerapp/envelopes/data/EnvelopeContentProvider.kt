@@ -31,7 +31,7 @@ import org.koin.core.component.inject
 import ua.com.radiokot.camerapp.BuildConfig
 import ua.com.radiokot.camerapp.envelopes.domain.CreateEnvelopeUseCase
 
-class SharedEnvelopeContentProvider :
+class EnvelopeContentProvider :
     ContentProvider(),
     KoinComponent {
 
@@ -105,7 +105,7 @@ class SharedEnvelopeContentProvider :
 
     companion object {
         const val ENVELOPE_CONTENT_TYPE = "application/octet-stream"
-        const val AUTHORITY = BuildConfig.sharedEnvelopeContentProviderAuthority
+        const val AUTHORITY = BuildConfig.envelopeContentProviderAuthority
 
         private val envelopeDataByUri = mutableMapOf<Uri, EnvelopeData>()
 

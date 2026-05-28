@@ -93,7 +93,7 @@ fun NavGraphBuilder.stampsDestination(
                 .collectAsState()
                 .asIntState(),
         onMoveSelectedAction = viewModel::onMoveSelectedAction,
-        onShareSelectedAction = viewModel::onShareSelectedAction,
+        onSendSelectedAction = viewModel::onSendSelectedAction,
         onDeleteSelectedAction = viewModel::onDeleteSelectedAction,
         onNewStampAction = viewModel::onNewStampAction,
         sharedTransitionScope = sharedTransitionScope,
@@ -136,7 +136,7 @@ fun NavGraphBuilder.stampsDestination(
                     )
                 }
 
-                is StampsScreenViewModel.Event.ProceedToEnvelopeShare -> {
+                is StampsScreenViewModel.Event.ProceedToSendEnvelope -> {
                     context.startActivity(
                         Intent.createChooser(
                             event.intent,

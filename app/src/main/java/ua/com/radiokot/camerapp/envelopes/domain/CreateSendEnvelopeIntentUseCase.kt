@@ -17,27 +17,14 @@
    along with Press-Cut. If not, see <http://www.gnu.org/licenses/>.
 */
 
-package ua.com.radiokot.camerapp.envelopes.data
+package ua.com.radiokot.camerapp.envelopes.domain
 
 import android.content.Intent
-import ua.com.radiokot.camerapp.envelopes.domain.CreateEnvelopeShareIntentUseCase
 
-class CpCreateEnvelopeShareIntentUseCase : CreateEnvelopeShareIntentUseCase {
+interface CreateSendEnvelopeIntentUseCase {
 
-    override operator fun invoke(
+    operator fun invoke(
         message: String?,
         stampIds: Set<String>,
-    ): Intent {
-        val uri =
-            SharedEnvelopeContentProvider
-                .provideNewEnvelope(
-                    message = message,
-                    stampIds = stampIds,
-                )
-
-        return Intent(Intent.ACTION_SEND)
-            .setDataAndType(uri, SharedEnvelopeContentProvider.ENVELOPE_CONTENT_TYPE)
-            .putExtra(Intent.EXTRA_STREAM, uri)
-            .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-    }
+    ): Intent
 }

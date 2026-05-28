@@ -31,9 +31,9 @@ android {
 
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
 
-        def sharedEnvelopeContentProviderAuthority = "${applicationId}.envelopes"
-        manifestPlaceholders.sharedEnvelopeContentProviderAuthority = sharedEnvelopeContentProviderAuthority
-        buildConfigField "String", "sharedEnvelopeContentProviderAuthority", "\"$sharedEnvelopeContentProviderAuthority\""
+        def envelopeContentProviderAuthority = "${applicationId}.envelopes"
+        manifestPlaceholders.envelopeContentProviderAuthority = envelopeContentProviderAuthority
+        buildConfigField "String", "envelopeContentProviderAuthority", "\"$envelopeContentProviderAuthority\""
     }
 
     externalNativeBuild {

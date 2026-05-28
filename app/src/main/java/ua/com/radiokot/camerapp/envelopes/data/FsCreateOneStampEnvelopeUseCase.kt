@@ -28,7 +28,6 @@ import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.encodeToStream
 import ua.com.radiokot.camerapp.BuildConfig
 import ua.com.radiokot.camerapp.envelopes.data.OneStampEnvelopeManifest.Asset.Role
-import ua.com.radiokot.camerapp.envelopes.data.OneStampEnvelopeManifest.Stamp.CropInfo
 import ua.com.radiokot.camerapp.envelopes.data.OneStampEnvelopeManifest.Stamp.Shape
 import ua.com.radiokot.camerapp.envelopes.domain.CreateEnvelopeUseCase
 import ua.com.radiokot.camerapp.stamps.data.FsStampRepository
@@ -50,6 +49,7 @@ import java.util.zip.ZipEntry
 import java.util.zip.ZipOutputStream
 
 class FsCreateOneStampEnvelopeUseCase(
+    private val applicationId: String,
     private val stampRepository: FsStampRepository,
 ) : CreateEnvelopeUseCase {
 
@@ -114,21 +114,23 @@ class FsCreateOneStampEnvelopeUseCase(
             ZipEntry(OneStampEnvelopeManifestFile)
         )
 
+        val pressCutColor = OneStampEnvelopeManifest.ArgbColor(
+            alpha = 1.0,
+            red = 1.0,
+            green = 0.9764705882,
+            blue = 0.9215686275,
+        )
+
         val manifest = OneStampEnvelopeManifest(
             packageID = packageId,
             schemaVersion = 1,
             createdAt = Instant
                 .now()
                 .atOffset(ZoneOffset.UTC),
-            envelopeColor = OneStampEnvelopeManifest.EnvelopeColor(
-                alpha = 1.0,
-                red = 1.0,
-                green = 0.976,
-                blue = 0.921,
-            ),
+            envelopeColor = pressCutColor,
             sourceApplication = OneStampEnvelopeManifest.SourceApplication(
                 build = BuildConfig.VERSION_CODE.toString(),
-                bundleIdentifier = BuildConfig.sharedEnvelopeContentProviderAuthority,
+                bundleIdentifier = applicationId,
                 name = "PressCut",
                 version = BuildConfig.VERSION_NAME,
             ),
@@ -176,12 +178,15 @@ class FsCreateOneStampEnvelopeUseCase(
                             stampId = stamp.id,
                             role = Role.Image,
                         ),
-                    title = stamp.caption ?: OneStampEnvelopeManifest.Stamp.UNTITLED_TITLE,
+                    title = stamp.caption ?: OneStampEnvelopeManifest.Stamp.UNTITLED_STAMP_TITLE,
                     stampShape = when (stamp.shape) {
+                        // Make the A shape appear in a rectangle & padding shape in OneStamp.
                         StampShapeA ->
                             Shape(
-                                kind = Shape.Kind.PressCutA,
+                                pressCutKind = Shape.Kind.PressCutA,
+                                kind = Shape.Kind.RectangleAndPadding,
                                 orientation = Shape.Orientation.Portrait,
+                                paddingBackgroundColor = pressCutColor,
                             )
 
                         StampShapeOneStamp ->
@@ -226,21 +231,15 @@ class FsCreateOneStampEnvelopeUseCase(
                                 orientation = Shape.Orientation.Landscape,
                             )
                     },
-                    cropInfo = CropInfo(
-                        cropRectInImage = listOf(
-                            listOf(
+                    cropInfo = OneStampEnvelopeCropInfo(
+                        stampSize = imageSize,
+                        paddingPercent =
+                            // Add padding to make A shape look pretty in OneStamp
+                            // when combined with rectangle & padding shape.
+                            if (stamp.shape == StampShapeA)
+                                0.01
+                            else
                                 0.0,
-                                0.0,
-                            ),
-                            listOf(
-                                imageSize.width.toDouble(),
-                                imageSize.height.toDouble(),
-                            ),
-                        ),
-                        imageSize = listOf(
-                            imageSize.width,
-                            imageSize.height,
-                        ),
                     ),
                 )
             },
