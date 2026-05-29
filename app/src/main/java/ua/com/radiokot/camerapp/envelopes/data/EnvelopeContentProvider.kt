@@ -22,8 +22,10 @@ package ua.com.radiokot.camerapp.envelopes.data
 import android.content.ContentProvider
 import android.content.ContentValues
 import android.database.Cursor
+import android.database.MatrixCursor
 import android.net.Uri
 import android.os.ParcelFileDescriptor
+import android.provider.OpenableColumns
 import androidx.core.net.toUri
 import kotlinx.coroutines.runBlocking
 import org.koin.core.component.KoinComponent
@@ -52,13 +54,19 @@ class EnvelopeContentProvider :
         }
 
         val writer = PipeDataWriter<Nothing> { output, _, _, _, _ ->
+            // Some apps hammer the method multiple times
+            // and don't even read the data which breaks the pipe sometimes.
+            // So far I didn't find a way to check if the reader is reading.
             runBlocking {
-                ParcelFileDescriptor.AutoCloseOutputStream(output).use { outputStream ->
+                runCatching {
                     createEnvelopeUseCase(
                         id = envelopeData.id,
                         message = envelopeData.message,
                         stampIds = envelopeData.stampIds,
-                        outputStream = outputStream,
+                        outputStream =
+                            ParcelFileDescriptor
+                                .AutoCloseOutputStream(output)
+                                .buffered(),
                     )
                 }
             }
@@ -84,8 +92,31 @@ class EnvelopeContentProvider :
         selection: String?,
         selectionArgs: Array<out String?>?,
         sortOrder: String?,
-    ): Cursor? {
-        return null
+    ): Cursor {
+        val envelopeData = envelopeDataByUri[uri]
+        checkNotNull(envelopeData) {
+            "Requested URI is not provided"
+        }
+
+        val cursor = MatrixCursor(
+            arrayOf(
+                OpenableColumns.DISPLAY_NAME,
+                OpenableColumns.SIZE,
+            ),
+            1
+        )
+        cursor.addRow(
+            arrayOf<Any?>(
+                uri.toString().substringAfterLast('/'),
+
+                // Gmail WANTS this!
+                // It is actually shown in the attachment section.
+                // Doesn't need to be the exact size though.
+                envelopeData.stampIds.size * 364000,
+            )
+        )
+
+        return cursor
     }
 
     override fun delete(p0: Uri, p1: String?, p2: Array<out String?>?): Int =
