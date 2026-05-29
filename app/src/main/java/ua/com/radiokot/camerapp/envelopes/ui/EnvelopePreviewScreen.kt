@@ -149,12 +149,12 @@ fun EnvelopePreviewScreen(
 
     if (errorMessage == null) {
         LeTextButton(
-            text = "Save the stamps",
+            text = "Save",
             onClick = onSaveAction,
         )
     } else {
         LeTextButton(
-            text = "Too bad",
+            text = "Too Bad",
             onClick = onErrorAcknowledged,
         )
     }

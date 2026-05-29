@@ -200,7 +200,7 @@ fun IntroScreen(
     )
 
     LeTextButton(
-        text = "All right",
+        text = "All Right",
         onClick = onDone,
     )
 }

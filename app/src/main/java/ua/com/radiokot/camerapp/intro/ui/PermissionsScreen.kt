@@ -157,7 +157,7 @@ fun PermissionsScreen(
     )
 
     LeTextButton(
-        text = "Grant permissions",
+        text = "Grant Permissions",
         onClick = onGrantAction,
     )
 }
