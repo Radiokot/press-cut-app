@@ -34,6 +34,10 @@ android {
         def envelopeContentProviderAuthority = "${applicationId}.envelopes"
         manifestPlaceholders.envelopeContentProviderAuthority = envelopeContentProviderAuthority
         buildConfigField "String", "envelopeContentProviderAuthority", "\"$envelopeContentProviderAuthority\""
+
+        def stampFileContentProviderAuthority = "${applicationId}.stampfiles"
+        manifestPlaceholders.stampFileContentProviderAuthority = stampFileContentProviderAuthority
+        buildConfigField "String", "stampFileContentProviderAuthority", "\"$stampFileContentProviderAuthority\""
     }
 
     externalNativeBuild {

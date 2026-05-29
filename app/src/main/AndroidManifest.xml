@@ -89,6 +89,12 @@
             android:exported="false"
             android:grantUriPermissions="true" />
 
+        <provider
+            android:name=".stamps.data.StampFileContentProvider"
+            android:authorities="${stampFileContentProviderAuthority}"
+            android:exported="false"
+            android:grantUriPermissions="true" />
+
         <receiver
             android:name=".util.ShareSheetShareEventReceiver"
             android:exported="false" />
