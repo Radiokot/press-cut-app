@@ -35,9 +35,15 @@ class CpCreateSendEnvelopeIntentUseCase : CreateSendEnvelopeIntentUseCase {
                     stampIds = stampIds,
                 )
 
+        var intentText = "Open this with PressCut on Android or OneStamp on iOS"
+        if (message != null) {
+            intentText = message + "\n\n" + intentText
+        }
+
         return Intent(Intent.ACTION_SEND)
             .setDataAndType(uri, EnvelopeContentProvider.ENVELOPE_CONTENT_TYPE)
             .putExtra(Intent.EXTRA_STREAM, uri)
+            .putExtra(Intent.EXTRA_TEXT, intentText)
             .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
     }
 }

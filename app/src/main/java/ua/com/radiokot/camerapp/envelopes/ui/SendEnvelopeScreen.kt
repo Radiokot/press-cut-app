@@ -32,8 +32,11 @@ import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.text.TextStyle
@@ -78,9 +81,15 @@ fun SendEnvelopeScreen(
                 overscrollEffect = null,
             )
     ) {
+        val messageFocusRequester = remember(::FocusRequester)
+        LaunchedEffect(messageFocusRequester) {
+            messageFocusRequester.requestFocus()
+        }
+
         CaptionInput(
             inputState = messageInputState,
             hint = "A memo",
+            focusRequester = messageFocusRequester,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(

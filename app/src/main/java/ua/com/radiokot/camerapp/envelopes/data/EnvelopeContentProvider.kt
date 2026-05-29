@@ -113,8 +113,8 @@ class EnvelopeContentProvider :
             message: String?,
             stampIds: Set<String>,
         ): Uri {
-            val id = System.currentTimeMillis().toString()
-            val uri = "content://$AUTHORITY/PressCutStamps$id.onestamp".toUri()
+            val id = (System.currentTimeMillis() / 1000).toString()
+            val uri = "content://$AUTHORITY/PressCut-Stamps-$id.onestamp".toUri()
 
             envelopeDataByUri[uri] = EnvelopeData(
                 id = id,
