@@ -121,7 +121,7 @@ class OneStampEnvelopeManifest(
 
             @Serializable
             enum class Kind {
-                @SerialName("pressCutA")
+                @SerialName("a")
                 PressCutA,
 
                 @SerialName("rectangleWithCorner")

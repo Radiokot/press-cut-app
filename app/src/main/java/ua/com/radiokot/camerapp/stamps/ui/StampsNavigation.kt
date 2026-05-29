@@ -49,6 +49,7 @@ fun NavGraphBuilder.stampsDestination(
         destinationCollectionId: String,
         stampSelectionIndex: Int,
     ) -> Unit,
+    onProceedToSendEnvelope: (stampSelectionIndex: Int) -> Unit,
     onDone: () -> Unit,
 ) = composable(
     route = StampsRoute,
@@ -137,11 +138,8 @@ fun NavGraphBuilder.stampsDestination(
                 }
 
                 is StampsScreenViewModel.Event.ProceedToSendEnvelope -> {
-                    context.startActivity(
-                        Intent.createChooser(
-                            event.intent,
-                            "Stamps",
-                        )
+                    onProceedToSendEnvelope(
+                        event.stampSelectionIndex,
                     )
                 }
 

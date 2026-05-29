@@ -22,18 +22,19 @@ package ua.com.radiokot.camerapp.envelopes.ui
 import android.net.Uri
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeContentPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
@@ -43,48 +44,29 @@ import androidx.compose.ui.unit.sp
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import ua.com.radiokot.camerapp.R
+import ua.com.radiokot.camerapp.stamps.ui.CaptionInput
 import ua.com.radiokot.camerapp.stamps.ui.StampBoxView
 import ua.com.radiokot.camerapp.stamps.ui.StampSampleItem
 import ua.com.radiokot.camerapp.stamps.ui.UiStampShapeA
 import ua.com.radiokot.camerapp.ui.LeTextButton
 import ua.com.radiokot.camerapp.ui.PodkovaFamily
-import ua.com.radiokot.camerapp.ui.Vignette
 import ua.com.radiokot.camerapp.ui.paperBackground
 import ua.com.radiokot.camerapp.util.StableHolder
 
 @Composable
-fun EnvelopePreviewScreen(
+fun SendEnvelopeScreen(
     modifier: Modifier = Modifier,
-    errorMessage: String?,
+    messageInputState: TextFieldState,
     someStamps: ImmutableList<StampSampleItem>,
     stampCount: Int,
-    message: String?,
-    onSaveAction: () -> Unit,
-    onErrorAcknowledged: () -> Unit,
+    onSendAction: () -> Unit,
 ) = Column(
     horizontalAlignment = Alignment.CenterHorizontally,
     modifier = modifier
         .safeContentPadding()
+        .imePadding()
         .padding(24.dp)
 ) {
-    BasicText(
-        text = "You received stamps",
-        style = TextStyle(
-            fontFamily = PodkovaFamily,
-            fontSize = 24.sp,
-            textAlign = TextAlign.Center,
-        ),
-        modifier = Modifier
-            .fillMaxWidth()
-    )
-
-    Vignette(
-        modifier = Modifier
-            .padding(
-                vertical = 32.dp,
-            )
-    )
-
     Column(
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -96,38 +78,15 @@ fun EnvelopePreviewScreen(
                 overscrollEffect = null,
             )
     ) {
-        if (errorMessage != null) {
-            BasicText(
-                text = errorMessage,
-                style = TextStyle(
-                    fontFamily = PodkovaFamily,
-                    fontSize = 20.sp,
-                    textAlign = TextAlign.Center,
-                ),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(
-                        bottom = 72.dp,
-                    )
-            )
-            return@Column
-        }
-
-        if (message != null) {
-            BasicText(
-                text = "«$message»",
-                style = TextStyle(
-                    fontFamily = PodkovaFamily,
-                    fontSize = 20.sp,
-                    textAlign = TextAlign.Center,
-                ),
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(
-                        bottom = 32.dp,
-                    )
-            )
-        }
+        CaptionInput(
+            inputState = messageInputState,
+            hint = "A memo",
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(
+                    bottom = 32.dp
+                )
+        )
 
         StampBoxView(
             name = pluralStringResource(
@@ -140,31 +99,34 @@ fun EnvelopePreviewScreen(
             sharedTransitionScope = null,
             animatedVisibilityScope = null,
         )
-
-        Spacer(
-            modifier = Modifier
-                .height(72.dp)
-        )
     }
 
-    if (errorMessage == null) {
-        LeTextButton(
-            text = "Save the stamps",
-            onClick = onSaveAction,
-        )
-    } else {
-        LeTextButton(
-            text = "Too bad",
-            onClick = onErrorAcknowledged,
-        )
-    }
+    BasicText(
+        text = "On iOS, your stamps can be received in OneStamp",
+        style = TextStyle(
+            fontFamily = PodkovaFamily,
+            textAlign = TextAlign.Center,
+            fontSize = 16.sp,
+            color = Color(0xff7e7a74),
+        ),
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(
+                vertical = 16.dp,
+            )
+    )
+
+    LeTextButton(
+        text = "Send",
+        onClick = onSendAction,
+    )
 }
 
 @Preview
 @Composable
-private fun EnvelopePreviewScreenPreview() {
-    EnvelopePreviewScreen(
-        stampCount = 10,
+private fun SendEnvelopeScreenPreview() {
+    SendEnvelopeScreen(
+        messageInputState = TextFieldState("My message for the receiver"),
         someStamps = persistentListOf(
             StampSampleItem(
                 imageUri = StableHolder(Uri.EMPTY),
@@ -182,10 +144,8 @@ private fun EnvelopePreviewScreenPreview() {
                 key = "3",
             ),
         ),
-        message = "From Oleg",
-        errorMessage = null,
-        onSaveAction = {},
-        onErrorAcknowledged = {},
+        stampCount = 1,
+        onSendAction = {},
         modifier = Modifier
             .fillMaxSize()
             .paperBackground(

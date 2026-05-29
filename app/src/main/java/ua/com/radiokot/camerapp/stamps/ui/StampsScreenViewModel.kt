@@ -19,7 +19,6 @@
 
 package ua.com.radiokot.camerapp.stamps.ui
 
-import android.content.Intent
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.ViewModel
@@ -243,22 +242,17 @@ class StampsScreenViewModel(
 
         clearSelection()
 
-        val shareIntent =
-            createSendEnvelopeIntentUseCase(
-                // TODO enter the message on the sharing screen.
-                message = "My message",
-                stampIds = stampToShareIds,
-            )
+        val selectionIndex = StampSelections + stampToShareIds
 
         log.debug {
-            "onSendSelectedAction(): proceeding to share:" +
+            "onSendSelectedAction(): proceeding to sending an envelope:" +
                     "\nstampToShareIds=${stampToShareIds.size}" +
-                    "\nshareIntent=$shareIntent"
+                    "\nselectionIndex=$selectionIndex"
         }
 
         events.tryEmit(
             Event.ProceedToSendEnvelope(
-                intent = shareIntent,
+                stampSelectionIndex = selectionIndex,
             )
         )
     }
@@ -384,7 +378,7 @@ class StampsScreenViewModel(
         ) : Event
 
         class ProceedToSendEnvelope(
-            val intent: Intent,
+            val stampSelectionIndex: Int,
         ) : Event
 
         object Done : Event

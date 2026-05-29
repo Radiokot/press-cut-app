@@ -34,6 +34,7 @@ import ua.com.radiokot.camerapp.envelopes.domain.CreateSendEnvelopeIntentUseCase
 import ua.com.radiokot.camerapp.envelopes.domain.GetEnvelopePreviewUseCase
 import ua.com.radiokot.camerapp.envelopes.ui.EnvelopePreviewScreenViewModel
 import ua.com.radiokot.camerapp.envelopes.ui.SaveEnvelopeStampsScreenViewModel
+import ua.com.radiokot.camerapp.envelopes.ui.SendEnvelopeScreenViewModel
 import java.io.File
 
 const val DIRECTORY_TEMP_STAMP_IMAGES = "temp-stamp-images-dir"
@@ -89,6 +90,16 @@ val envelopesModule = module {
             parameters =
                 getOrNull()
                     ?: error("No SaveEnvelopeStampsScreenViewModel.Parameters provided"),
+        )
+    }
+
+    viewModel {
+        SendEnvelopeScreenViewModel(
+            stampRepository = get(),
+            createSendEnvelopeIntentUseCase = get(),
+            parameters =
+                getOrNull()
+                    ?: error("No SendEnvelopeScreenViewModel.Parameters provided"),
         )
     }
 }

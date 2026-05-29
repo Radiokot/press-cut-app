@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Added:
 
 - Support for more OneStamp shapes
+- Ability to send stamp envelopes, to both PressCut and OneStamp on iOS
 
 ## [1.1.0] - 2026-05-25
 

@@ -88,5 +88,9 @@
             android:authorities="${envelopeContentProviderAuthority}"
             android:exported="false"
             android:grantUriPermissions="true" />
+
+        <receiver
+            android:name=".util.ShareSheetShareEventReceiver"
+            android:exported="false" />
     </application>
 </manifest>

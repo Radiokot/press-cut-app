@@ -60,6 +60,8 @@ import ua.com.radiokot.camerapp.about.ui.aboutDestination
 import ua.com.radiokot.camerapp.collectionselection.ui.SelectDestinationCollectionContract
 import ua.com.radiokot.camerapp.collectionselection.ui.selectDestinationCollectionDestination
 import ua.com.radiokot.camerapp.cut.ui.NewStampActivity
+import ua.com.radiokot.camerapp.envelopes.ui.SendEnvelopeRoute
+import ua.com.radiokot.camerapp.envelopes.ui.sendEnvelopeDestination
 import ua.com.radiokot.camerapp.intro.domain.OnboardingPreferences
 import ua.com.radiokot.camerapp.intro.ui.IntroRoute
 import ua.com.radiokot.camerapp.intro.ui.PermissionsRoute
@@ -322,6 +324,19 @@ private fun SharedTransitionScope.StampsNavHost(
                     launchSingleTop = true
                 }
             },
+            onProceedToSendEnvelope = {
+                navController.navigate(
+                    route = SendEnvelopeRoute(
+                        stampSelectionIndex = it,
+                    )
+                ) {
+                    launchSingleTop = true
+                }
+            },
+            onDone = navController::navigateUp,
+        )
+
+        sendEnvelopeDestination(
             onDone = navController::navigateUp,
         )
 
