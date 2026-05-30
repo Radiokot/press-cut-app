@@ -7,4 +7,6 @@ If you ever need to back up your collection or transfer it to a new phone, just 
 
 Have friends using iPhone? Exchange stamps with them! Press-Cut envelopes can be opened in OneStamp on iOS and vice versa.
 
-Press-Cut is inspired by OneStamp for iOS, made by Weiqing Chu. The app uses many open-source libraries and icons from Noun Project (details in the app).
+Press-Cut is a free open-source app under the GPLv3 license. It is inspired by OneStamp for iOS, made by Weiqing Chu. Press-Cut uses many open-source libraries and icons from Noun Project (details in the app).
+
+Source code: https://github.com/Radiokot/press-cut-app
