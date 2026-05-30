@@ -16,7 +16,7 @@ If you ever need to back up your collection or transfer it to a new phone, just 
 
 <img src="app/src/main/res/drawable/onestamp_presscut.webp" width=200 alt="Receive stamps from OneStamp" />
 
-Have friends using iPhone? Exchange stamps with them! PressCut envelopes can be opened in [OneStamp on iOS](https://apps.apple.com/us/app/onestamp/id6760986254) and vice versa.
+Have friends using iPhone? Exchange stamps with them! Press-Cut envelopes can be opened in [OneStamp on iOS](https://apps.apple.com/us/app/onestamp/id6760986254) and vice versa.
 
 ## Download
 

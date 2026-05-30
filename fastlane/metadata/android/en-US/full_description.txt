@@ -5,6 +5,6 @@ They remain there even if you uninstall the app.
 
 If you ever need to back up your collection or transfer it to a new phone, just copy the "PressCutStamps" contents from the "Pictures" folder.
 
-Have friends using iPhone? Exchange stamps with them! PressCut envelopes can be opened in OneStamp on iOS and vice versa.
+Have friends using iPhone? Exchange stamps with them! Press-Cut envelopes can be opened in OneStamp on iOS and vice versa.
 
 Press-Cut is inspired by OneStamp for iOS, made by Weiqing Chu. The app uses many open-source libraries and icons from Noun Project (details in the app).

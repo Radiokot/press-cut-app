@@ -131,7 +131,7 @@ class FsCreateOneStampEnvelopeUseCase(
             sourceApplication = OneStampEnvelopeManifest.SourceApplication(
                 build = BuildConfig.VERSION_CODE.toString(),
                 bundleIdentifier = applicationId,
-                name = "PressCut",
+                name = "Press-Cut",
                 version = BuildConfig.VERSION_NAME,
             ),
             message = message,

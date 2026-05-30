@@ -145,7 +145,7 @@ class EnvelopeContentProvider :
             stampIds: Set<String>,
         ): Uri {
             val id = (System.currentTimeMillis() / 1000).toString()
-            val uri = "content://$AUTHORITY/PressCut-Stamps-$id.onestamp".toUri()
+            val uri = "content://$AUTHORITY/PressCutStamps-$id.onestamp".toUri()
 
             envelopeDataByUri[uri] = EnvelopeData(
                 id = id,

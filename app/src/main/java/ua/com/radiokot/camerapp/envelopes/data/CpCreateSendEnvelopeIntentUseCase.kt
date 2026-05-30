@@ -35,7 +35,7 @@ class CpCreateSendEnvelopeIntentUseCase : CreateSendEnvelopeIntentUseCase {
                     stampIds = stampIds,
                 )
 
-        var intentText = "Open this with PressCut on Android or OneStamp on iOS"
+        var intentText = "Open this with Press-Cut on Android or OneStamp on iOS"
         if (message != null) {
             intentText = message + "\n\n" + intentText
         }
