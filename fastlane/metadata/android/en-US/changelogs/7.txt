@@ -1,7 +1,0 @@
-Added:
-- Temperature adjustment
-- Glitch effect
-- Ability to open envelopes sent from OneStamp on iOS
-
-Changed:
-- Made the Vibrance adjustment stronger

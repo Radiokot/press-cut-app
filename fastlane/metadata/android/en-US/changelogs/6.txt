@@ -1,2 +1,0 @@
-Fixed:
-- Incorrect start destination in the directory access dialog on some devices

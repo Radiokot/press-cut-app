@@ -16,7 +16,7 @@ If you ever need to back up your collection or transfer it to a new phone, just 
 
 <img src="app/src/main/res/drawable/onestamp_presscut.webp" width=200 alt="Receive stamps from OneStamp" />
 
-Have friends using  [OneStamp on iOS](https://apps.apple.com/us/app/onestamp/id6760986254)? You can receive stamps from them – PressCut opens envelope files.
+Have friends using iPhone? Exchange stamps with them! PressCut envelopes can be opened in [OneStamp on iOS](https://apps.apple.com/us/app/onestamp/id6760986254) and vice versa.
 
 ## Download
 
@@ -32,9 +32,9 @@ Have friends using  [OneStamp on iOS](https://apps.apple.com/us/app/onestamp/id6
 
 ## Technical details
 
-The core concept of the app is that the stamp storage is the external file system. Stamps are stored as WebPs in the public "Pictures" folder. Stamp metadata (title, cut date) is stored in the XMP chunk, and can be seen in other software, for example, in Windows explorerexample. Collections are just folders, and the metadata (title) is stored in a single `.collection.webp` file's XMP chunk. The metadata file being an image is sketchy, but it's due to the modern Android restrictions. For details, see `FsStampRepository` and `FsStampCollectionRepository`.
+The core concept of the app is that the stamp storage is the external file system. Stamps are stored as WebPs in the public "Pictures" folder. Stamp metadata (title, cut date) is stored in the XMP chunk, and can be seen in other software, for example, in Windows explorer. Collections are just folders, and the metadata (title) is stored in a single `.collection.webp` file's XMP chunk. The metadata file being an image is sketchy, but it's due to the modern Android restrictions. For details, see `FsStampRepository` and `FsStampCollectionRepository`.
 
-On old Androids, the app uses external storage permission. On modern Androids, it uses read images permission combined with SAF directory access. Since SAF is slow, it is only used to reclaim ownership of files either left from previous app instalation or copied to the stamp folder manually by the user (see `SafFileLocksmith`).
+On old Androids, the app uses external storage permission. On modern Androids, it uses read images permission combined with SAF directory access. Since SAF is slow, it is only used to reclaim ownership of files either left from previous app installation or copied to the stamp folder manually by the user (see `SafFileLocksmith`).
 
 ### Setup
 

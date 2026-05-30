@@ -183,8 +183,8 @@ fun IntroScreen(
         )
 
         BasicText(
-            text = "Have friends using OneStamp on iOS? You can receive stamps from them – " +
-                    "PressCut opens envelope files.",
+            text = "Have friends using iPhone? Exchange stamps with them! " +
+                    "PressCut envelopes can be opened in OneStamp on iOS and vice versa.",
             style = textStyle,
             modifier = Modifier
                 .fillMaxWidth()

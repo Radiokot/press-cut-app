@@ -1,0 +1,3 @@
+Added:
+- Support for more OneStamp shapes
+- Ability to send stamp envelopes, to both PressCut and OneStamp on iOS
