@@ -23,14 +23,13 @@ import android.net.Uri
 import android.view.WindowManager
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
-import androidx.compose.animation.AnimatedContent
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
-import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.VectorConverter
 import androidx.compose.animation.core.VisibilityThreshold
-import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
@@ -84,6 +83,7 @@ import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalResources
 import androidx.compose.ui.res.painterResource
@@ -91,12 +91,17 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.util.fastCoerceAtLeast
+import androidx.compose.ui.util.fastRoundToInt
 import com.skydoves.landscapist.image.LandscapistImage
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import ua.com.radiokot.camerapp.R
 import ua.com.radiokot.camerapp.ui.PodkovaFamily
 import ua.com.radiokot.camerapp.ui.paperBackground
@@ -120,18 +125,7 @@ fun StampScreen(
     onSwipedToExit: () -> Unit,
     sharedTransitionScope: SharedTransitionScope?,
     animatedVisibilityScope: AnimatedVisibilityScope?,
-) = BoxWithConstraints(
-    modifier = modifier
-        // IME is handled in the composition.
-        .safeGesturesPadding()
-        .displayCutoutPadding()
 ) {
-    val isScreenVeryTall = remember(maxHeight) {
-        maxHeight >= 640.dp
-    }
-    val isScreenQuiteTall = remember(maxHeight) {
-        maxHeight >= 460.dp
-    }
     val imePadding = WindowInsets.ime.asPaddingValues()
     val coroutineScope = rememberCoroutineScope()
     val detailsAlpha = remember {
@@ -148,17 +142,13 @@ fun StampScreen(
     var areActionsVisible by retain {
         mutableStateOf(false)
     }
-    val visibleActionsVerticalOffset by animateDpAsState(
-        targetValue =
-            if (areActionsVisible)
-                (-48).dp
-            else
-                0.dp,
-        animationSpec = spring(
-            stiffness = Spring.StiffnessMediumLow,
-            visibilityThreshold = Dp.VisibilityThreshold,
+    val animatableBottomContentHeight = remember {
+        Animatable(
+            initialValue = 0,
+            typeConverter = Int.VectorConverter,
+            visibilityThreshold = Int.VisibilityThreshold,
         )
-    )
+    }
     val captionInputFocusRequester = remember(::FocusRequester)
 
     LaunchedEffect(Unit) {
@@ -185,250 +175,295 @@ fun StampScreen(
         }
     }
 
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier
-            .fillMaxWidth()
-            .align(Alignment.Center)
-            .graphicsLayer {
-                translationY =
-                    if (isScreenVeryTall)
-                        -0.3f * imePadding.calculateBottomPadding().toPx() +
-                                visibleActionsVerticalOffset.toPx()
-                    else
-                        0f
-            }
-    ) {
-        Column(
-            verticalArrangement = Arrangement.Bottom,
-            modifier = Modifier
-                .run {
-                    if (!isScreenQuiteTall) {
-                        return@run this
-                    }
+    Layout(
+        measurePolicy = { elements, layoutConstraints ->
+            val width = layoutConstraints.maxWidth
+            val height = layoutConstraints.maxHeight
 
-                    weight(4f)
+            val wrapContentConstraints = Constraints(
+                maxWidth = width,
+                maxHeight = height,
+            )
+
+            val caption = elements[0].measure(wrapContentConstraints)
+
+            val targetBottomContentHeight =
+                (elements
+                    .getOrNull(3)
+                    ?.takeIf { areActionsVisible }
+                    ?: elements[2])
+                    .maxIntrinsicHeight(width)
+            if (animatableBottomContentHeight.value == 0) {
+                runBlocking {
+                    animatableBottomContentHeight.snapTo(targetBottomContentHeight)
                 }
-                .graphicsLayer {
-                    alpha = detailsAlpha.value
+            } else if (animatableBottomContentHeight.targetValue != targetBottomContentHeight) {
+                coroutineScope.launch {
+                    animatableBottomContentHeight.animateTo(
+                        targetValue = targetBottomContentHeight,
+                        animationSpec = spring(stiffness = Spring.StiffnessMediumLow),
+                    )
                 }
-        ) {
+            }
+
+            var stampHeight = shape.size.height.toPx().toInt() * 2
+            var stampTop =
+                ((height - stampHeight) / 2
+                        - animatableBottomContentHeight.value * 0.35f
+                        - imePadding.calculateBottomPadding().roundToPx() * 0.3f)
+                    .toInt()
+                    .fastCoerceAtLeast(caption.height)
+
+            var bottomContentBottom = stampTop + stampHeight + animatableBottomContentHeight.value
+            if (bottomContentBottom > height) {
+                stampTop =
+                    (stampTop - bottomContentBottom + layoutConstraints.maxHeight)
+                        .fastCoerceAtLeast(caption.height)
+                bottomContentBottom = stampTop + stampHeight + animatableBottomContentHeight.value
+
+                if (bottomContentBottom > height) {
+                    val stampSizeScale =
+                        (1f - (bottomContentBottom - height).toFloat() / stampHeight)
+                            .fastCoerceAtLeast(0.5f)
+                    stampHeight = (stampHeight * stampSizeScale).toInt()
+                }
+            }
+
+            val stamp = elements[1].measure(
+                Constraints.fixed(
+                    width = width,
+                    height = stampHeight,
+                )
+            )
+
+            val bottomContentConstraints = Constraints(
+                maxWidth =
+                    (StampContainerBaseSize.width.toPx() * 2.5f)
+                        .fastRoundToInt(),
+                maxHeight =
+                    (height - stampTop - stampHeight)
+                        .fastCoerceAtLeast(0),
+            )
+
+            val bottomDate = elements[2].measure(bottomContentConstraints)
+            val bottomActions = elements.getOrNull(3)?.measure(bottomContentConstraints)
+
+            layout(width, height) {
+                caption.place(
+                    x = 0,
+                    y = stampTop - caption.height,
+                )
+                bottomDate.place(
+                    x = (width - bottomDate.width) / 2,
+                    y = stampTop + stamp.height,
+                )
+                bottomActions?.place(
+                    x = (width - bottomActions.width) / 2,
+                    y = stampTop + stamp.height,
+                )
+                stamp.place(
+                    x = (width - stamp.width) / 2,
+                    y = stampTop,
+                )
+            }
+        },
+        content = {
             CaptionInput(
                 isEnabled = isCaptionInputEnabled,
                 inputState = captionState,
                 focusRequester = captionInputFocusRequester,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(24.dp)
+                    .padding(
+                        bottom = 24.dp,
+                    )
                     .graphicsLayer {
                         alpha = detailsAlpha.value
                     }
             )
-        }
 
-        Box(
-            contentAlignment = Alignment.Center,
-            modifier = Modifier
-                .fillMaxWidth()
-                .graphicsLayer {
-                    translationY = dragVerticalOffset.value
-                }
-                .pointerInput(Unit) {
-                    val dragAnimationSpec = spring<Float>(
-                        stiffness = Spring.StiffnessHigh
-                    )
+            BoxWithConstraints(
+                contentAlignment = Alignment.Center,
+                modifier = Modifier
+                    .graphicsLayer {
+                        translationY = dragVerticalOffset.value
+                    }
+                    .pointerInput(Unit) {
+                        val dragAnimationSpec = spring<Float>(
+                            stiffness = Spring.StiffnessHigh
+                        )
 
-                    detectDragGestures(
-                        onDragStart = {
-                            coroutineScope.launch {
-                                detailsAlpha.animateTo(0f)
-                            }
-                        },
-                        onDrag = { _, offset ->
-                            coroutineScope.launch {
-                                dragVerticalOffset.animateTo(
-                                    targetValue = dragVerticalOffset.targetValue + offset.y,
-                                    animationSpec = dragAnimationSpec,
-                                )
-                            }
-                        },
-                        onDragEnd = onDragEnd@{
-                            if (dragVerticalOffset.targetValue.absoluteValue >= swipeToExitThreshold) {
-                                onSwipedToExit()
-                                return@onDragEnd
-                            }
-
-                            coroutineScope.launch {
-                                dragVerticalOffset.animateTo(
-                                    targetValue = 0f,
-                                    animationSpec = spring(
-                                        dampingRatio = Spring.DampingRatioMediumBouncy,
+                        detectDragGestures(
+                            onDragStart = {
+                                coroutineScope.launch {
+                                    detailsAlpha.animateTo(0f)
+                                }
+                            },
+                            onDrag = { _, offset ->
+                                coroutineScope.launch {
+                                    dragVerticalOffset.animateTo(
+                                        targetValue = dragVerticalOffset.targetValue + offset.y,
+                                        animationSpec = dragAnimationSpec,
                                     )
-                                )
-                            }
-                            coroutineScope.launch {
-                                detailsAlpha.animateTo(1f)
-                            }
-                        },
+                                }
+                            },
+                            onDragEnd = onDragEnd@{
+                                if (dragVerticalOffset.targetValue.absoluteValue >= swipeToExitThreshold) {
+                                    onSwipedToExit()
+                                    return@onDragEnd
+                                }
+
+                                coroutineScope.launch {
+                                    dragVerticalOffset.animateTo(
+                                        targetValue = 0f,
+                                        animationSpec = spring(
+                                            dampingRatio = Spring.DampingRatioMediumBouncy,
+                                        )
+                                    )
+                                }
+                                coroutineScope.launch {
+                                    detailsAlpha.animateTo(1f)
+                                }
+                            },
+                        )
+                    }
+            ) {
+                val size = remember(maxHeight) {
+                    DpSize(
+                        width = shape.size.width * (maxHeight / shape.size.height),
+                        height = maxHeight,
                     )
                 }
-        ) {
-            val stampImageLoadingOptions =
-                shape
-                    .getPreviewImageLoadingOptions(
-                        density = LocalDensity.current,
+                val density = LocalDensity.current
+                val stampImageLoadingOptions = remember(shape, density) {
+                    shape.getPreviewImageLoadingOptions(
+                        density = density,
                     )
+                }
 
-            LandscapistImage(
-                imageModel = imageUri::value,
-                requestBuilder = stampImageLoadingOptions.requestBuilder,
-                imageOptions = stampImageLoadingOptions.imageOptions,
-                component = EmptyImageComponent,
-                modifier = Modifier
-                    .size(
-                        if (isScreenQuiteTall)
-                            shape.size * 2f
-                        else
-                            shape.size * 1.5f
-                    )
-                    .run {
-                        if (sharedTransitionScope == null || animatedVisibilityScope == null) {
-                            return@run this
+                LandscapistImage(
+                    imageModel = imageUri::value,
+                    requestBuilder = stampImageLoadingOptions.requestBuilder,
+                    imageOptions = stampImageLoadingOptions.imageOptions,
+                    component = EmptyImageComponent,
+                    modifier = Modifier
+                        .size(size)
+                        .run {
+                            if (sharedTransitionScope == null || animatedVisibilityScope == null) {
+                                return@run this
+                            }
+
+                            with(sharedTransitionScope) {
+                                sharedElement(
+                                    sharedContentState = rememberSharedContentState(stampId),
+                                    animatedVisibilityScope = animatedVisibilityScope,
+                                )
+                            }
                         }
-
-                        with(sharedTransitionScope) {
-                            sharedElement(
-                                sharedContentState = rememberSharedContentState(stampId),
-                                animatedVisibilityScope = animatedVisibilityScope,
+                        .dropShadow(
+                            shape = RectangleShape,
+                            shadow = Shadow(
+                                radius = 16.dp,
+                                color = Color(0x7447525E),
                             )
-                        }
-                    }
-                    .dropShadow(
-                        shape = RectangleShape,
-                        shadow = Shadow(
-                            radius = 16.dp,
-                            color = Color(0x7447525E),
                         )
-                    )
-                    .run {
-                        if (imageUri.value !== Uri.EMPTY) {
-                            return@run this
+                        .run {
+                            if (imageUri.value !== Uri.EMPTY) {
+                                return@run this
+                            }
+
+                            background(Color.Yellow)
                         }
-
-                        background(Color.Yellow)
-                    }
-            )
-        }
-
-        Column(
-            verticalArrangement = Arrangement.Top,
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier
-                .weight(5f)
-                .verticalScroll(
-                    state = rememberScrollState(),
-                    overscrollEffect = null,
                 )
-                .graphicsLayer {
-                    alpha = detailsAlpha.value
-                }
-        ) {
-            AnimatedContent(
-                targetState = areActionsVisible,
-                transitionSpec = {
-                    val toShowActions = targetState
-                    ContentTransform(
-                        targetContentEnter =
-                            if (toShowActions)
-                                fadeIn() + slideInVertically()
-                            else
-                                fadeIn(),
-                        initialContentExit =
-                            if (!toShowActions)
-                                fadeOut() + slideOutVertically()
-                            else
-                                fadeOut(),
-                        sizeTransform = null,
+            }
+
+            AnimatedVisibility(
+                visible = !areActionsVisible,
+                enter = fadeIn(),
+                exit = fadeOut(),
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier
+                        .heightIn(
+                            min = 64.dp
+                        )
+                        .fillMaxWidth()
+                ) {
+                    Spacer(
+                        modifier = Modifier
+                            .width(40.dp)
                     )
-                },
-                modifier = Modifier
-                    .width(StampContainerBaseSize.width * 2.5f)
-            ) { showActions ->
 
-                if (!showActions) {
-                    Row(
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically,
+                    BasicText(
+                        text = takenAt.value.toString(),
+                        style = TextStyle(
+                            fontFamily = PodkovaFamily,
+                            fontSize = 16.sp,
+                            color = Color(0xFFB9AC8C),
+                            textAlign = TextAlign.Center,
+                        ),
+                    )
+
+                    Image(
+                        painter = painterResource(R.drawable.ic_pencil),
+                        contentDescription = "Edit",
+                        colorFilter = ColorFilter.tint(Color(0xFFB9AC8C)),
                         modifier = Modifier
-                            .heightIn(
-                                min = 64.dp
+                            .clickable(
+                                onClick = { areActionsVisible = !areActionsVisible },
                             )
-                            .fillMaxWidth()
-                    ) {
-                        Spacer(
-                            modifier = Modifier
-                                .width(40.dp)
-                        )
-
-                        BasicText(
-                            text = takenAt.value.toString(),
-                            style = TextStyle(
-                                fontFamily = PodkovaFamily,
-                                fontSize = 16.sp,
-                                color = Color(0xFFB9AC8C),
-                                textAlign = TextAlign.Center,
-                            ),
-                        )
-
-                        Image(
-                            painter = painterResource(R.drawable.ic_pencil),
-                            contentDescription = "Edit",
-                            colorFilter = ColorFilter.tint(Color(0xFFB9AC8C)),
-                            modifier = Modifier
-                                .clickable(
-                                    onClick = { areActionsVisible = !areActionsVisible },
-                                )
-                                .padding(
-                                    vertical = 16.dp,
-                                    horizontal = 12.dp,
-                                )
-                                .size(16.dp)
-                        )
-                    }
-                } else {
-                    Actions(
-                        isCaptionSet = captionState.text.isNotEmpty(),
-                        onAddCaption = {
-                            areActionsVisible = false
-                            onAddCaptionAction()
-                            coroutineScope.launch {
-                                delay(100)
-                                captionInputFocusRequester.requestFocus()
-                            }
-                        },
-                        onDelete = {
-                            areActionsVisible = false
-                            onDeleteAction()
-                        },
-                        onMove = {
-                            areActionsVisible = false
-                            onMoveAction()
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
                             .padding(
-                                top = 32.dp,
-                                bottom = 24.dp,
+                                vertical = 16.dp,
+                                horizontal = 12.dp,
                             )
+                            .size(16.dp)
                     )
-
-                    BackHandler {
-                        areActionsVisible = false
-                    }
                 }
             }
-        }
-    }
+
+            AnimatedVisibility(
+                visible = areActionsVisible,
+                enter = fadeIn() + slideInVertically(),
+                exit = fadeOut() + slideOutVertically(),
+            ) {
+                Actions(
+                    isCaptionSet = captionState.text.isNotEmpty(),
+                    onAddCaption = {
+                        areActionsVisible = false
+                        onAddCaptionAction()
+                        coroutineScope.launch {
+                            delay(100)
+                            captionInputFocusRequester.requestFocus()
+                        }
+                    },
+                    onDelete = {
+                        areActionsVisible = false
+                        onDeleteAction()
+                    },
+                    onMove = {
+                        areActionsVisible = false
+                        onMoveAction()
+                    },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(
+                            top = 32.dp,
+                            bottom = 24.dp,
+                        )
+                )
+
+                BackHandler {
+                    areActionsVisible = false
+                }
+            }
+        },
+        modifier = modifier
+            .safeGesturesPadding()
+            .displayCutoutPadding()
+            .padding(24.dp)
+    )
 }
 
 @Composable
@@ -449,6 +484,10 @@ private fun Actions(
             width = 2.dp,
             color = Color(0xFF6B624B),
             shape = RoundedCornerShape(cornerRadius),
+        )
+        .verticalScroll(
+            state = rememberScrollState(),
+            overscrollEffect = null,
         )
 ) {
     val textStyle = remember {
