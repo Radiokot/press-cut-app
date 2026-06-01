@@ -81,6 +81,7 @@ class StampFileContentProvider :
 
         val cursor = MatrixCursor(
             arrayOf(
+                MediaStore.MediaColumns.DATA,
                 OpenableColumns.DISPLAY_NAME,
                 OpenableColumns.SIZE,
                 MediaStore.MediaColumns.DATE_TAKEN,
@@ -89,6 +90,7 @@ class StampFileContentProvider :
         )
         cursor.addRow(
             arrayOf(
+                file.absolutePath,
                 file.name,
                 file.length(),
                 stamp.takenAtLocal.toString(),
