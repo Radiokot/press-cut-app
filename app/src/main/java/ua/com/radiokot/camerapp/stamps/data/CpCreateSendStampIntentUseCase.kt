@@ -34,6 +34,7 @@ class CpCreateSendStampIntentUseCase : CreateSendStampIntentUseCase {
         return Intent(Intent.ACTION_SEND)
             .setDataAndType(uri, EnvelopeContentProvider.ENVELOPE_CONTENT_TYPE)
             .putExtra(Intent.EXTRA_STREAM, uri)
+            .putExtra(Intent.EXTRA_TEXT, stamp.caption)
             .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
     }
 }
