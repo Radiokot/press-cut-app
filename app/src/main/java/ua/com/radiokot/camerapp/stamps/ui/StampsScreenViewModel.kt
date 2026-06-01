@@ -41,7 +41,6 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
-import ua.com.radiokot.camerapp.envelopes.domain.CreateSendEnvelopeIntentUseCase
 import ua.com.radiokot.camerapp.intro.domain.OnboardingPreferences
 import ua.com.radiokot.camerapp.stamps.domain.Stamp
 import ua.com.radiokot.camerapp.stamps.domain.StampCollectionRepository
@@ -57,7 +56,6 @@ class StampsScreenViewModel(
     private val stampRepository: StampRepository,
     private val collectionRepository: StampCollectionRepository,
     private val onboardingPreferences: OnboardingPreferences,
-    private val createSendEnvelopeIntentUseCase: CreateSendEnvelopeIntentUseCase,
     parameters: Parameters,
 ) : ViewModel() {
 

@@ -122,6 +122,7 @@ fun StampScreen(
     onAddCaptionAction: () -> Unit,
     onDeleteAction: () -> Unit,
     onMoveAction: () -> Unit,
+    onSendAction: () -> Unit,
     onSwipedToExit: () -> Unit,
     sharedTransitionScope: SharedTransitionScope?,
     animatedVisibilityScope: AnimatedVisibilityScope?,
@@ -393,7 +394,7 @@ fun StampScreen(
                 ) {
                     Spacer(
                         modifier = Modifier
-                            .width(40.dp)
+                            .width(32.dp)
                     )
 
                     BasicText(
@@ -407,18 +408,24 @@ fun StampScreen(
                     )
 
                     Image(
-                        painter = painterResource(R.drawable.ic_pencil),
+                        painter = painterResource(R.drawable.ic_more_vert),
                         contentDescription = "Edit",
                         colorFilter = ColorFilter.tint(Color(0xFFB9AC8C)),
                         modifier = Modifier
                             .clickable(
-                                onClick = { areActionsVisible = !areActionsVisible },
+                                indication = null,
+                                interactionSource = null,
+                                onClick = {
+                                    areActionsVisible = !areActionsVisible
+                                },
+                            )
+                            .size(
+                                width = 32.dp,
+                                height = 56.dp,
                             )
                             .padding(
-                                vertical = 16.dp,
-                                horizontal = 12.dp,
+                                vertical = 18.dp,
                             )
-                            .size(16.dp)
                     )
                 }
             }
@@ -445,6 +452,10 @@ fun StampScreen(
                     onMove = {
                         areActionsVisible = false
                         onMoveAction()
+                    },
+                    onSend = {
+                        areActionsVisible = false
+                        onSendAction()
                     },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -473,6 +484,7 @@ private fun Actions(
     isCaptionSet: Boolean,
     onAddCaption: () -> Unit,
     onMove: () -> Unit,
+    onSend: () -> Unit,
     onDelete: () -> Unit,
 ) = Column(
     modifier = modifier
@@ -542,6 +554,26 @@ private fun Actions(
     )
 
     BasicText(
+        text = "Send",
+        style = textStyle,
+        modifier = Modifier
+            .clickable(
+                onClick = onSend,
+            )
+            .padding(
+                vertical = 20.dp,
+            )
+            .fillMaxWidth()
+    )
+
+    Spacer(
+        modifier = Modifier
+            .height(1.dp)
+            .fillMaxWidth()
+            .background(Color(0xFFcbc4bb))
+    )
+
+    BasicText(
         text = "Hold to delete",
         style = textStyle.copy(
             color = Color(0xFFD97D7D),
@@ -579,6 +611,7 @@ private fun StampScreenPreview(
             onAddCaptionAction = { },
             onDeleteAction = { },
             onMoveAction = { },
+            onSendAction = { },
             onSwipedToExit = { },
             sharedTransitionScope = null,
             animatedVisibilityScope = null,
@@ -598,6 +631,7 @@ private fun ActionsPreview(
         onAddCaption = {},
         onDelete = {},
         onMove = {},
+        onSend = {},
         modifier = Modifier
             .width(350.dp)
     )

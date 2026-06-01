@@ -19,6 +19,7 @@
 
 package ua.com.radiokot.camerapp.stamps.ui
 
+import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.runtime.Immutable
@@ -32,6 +33,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import ua.com.radiokot.camerapp.stamps.domain.CreateSendStampIntentUseCase
 import ua.com.radiokot.camerapp.stamps.domain.Stamp
 import ua.com.radiokot.camerapp.stamps.domain.StampRepository
 import ua.com.radiokot.camerapp.util.StableHolder
@@ -44,6 +46,7 @@ import java.util.Optional
 class StampScreenViewModel(
     private val parameters: Parameters,
     private val stampRepository: StampRepository,
+    private val createSendStampIntentUseCase: CreateSendStampIntentUseCase,
 ) : ViewModel() {
 
     private val log by lazyLogger("StampScreenVM")
@@ -146,6 +149,19 @@ class StampScreenViewModel(
         events.emit(Event.Done)
     }
 
+    fun onSendAction() {
+        val intent = createSendStampIntentUseCase(
+            stamp = stamp,
+        )
+
+        log.debug {
+            "onSendAction(): proceeding to send intent:" +
+                    "\nintent=$intent"
+        }
+
+        events.tryEmit(Event.ProceedToSendIntent(intent))
+    }
+
     private suspend fun saveUpdates() {
         val newCaption =
             caption
@@ -191,6 +207,10 @@ class StampScreenViewModel(
     sealed interface Event {
         class ProceedToMoveDestinationCollectionSelection(
             val currentCollectionId: String,
+        ) : Event
+
+        class ProceedToSendIntent(
+            val intent: Intent,
         ) : Event
 
         object Done : Event

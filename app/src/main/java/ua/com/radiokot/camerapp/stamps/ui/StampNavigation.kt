@@ -21,12 +21,14 @@
 
 package ua.com.radiokot.camerapp.stamps.ui
 
+import android.content.Intent
 import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavType
 import androidx.navigation.compose.composable
@@ -68,6 +70,7 @@ fun NavGraphBuilder.stampDestination(
         onAddCaptionAction = viewModel::onAddCaptionAction,
         onDeleteAction = viewModel::onDeleteAction,
         onMoveAction = viewModel::onMoveAction,
+        onSendAction = viewModel::onSendAction,
         imageUri = viewModel.imageUri,
         shape = viewModel.shape,
         takenAt = viewModel.takenAt,
@@ -78,6 +81,8 @@ fun NavGraphBuilder.stampDestination(
             .fillMaxSize()
     )
 
+    val context = LocalContext.current
+
     LaunchedEffect(viewModel) {
         viewModel.events.collect { event ->
             when (event) {
@@ -87,6 +92,15 @@ fun NavGraphBuilder.stampDestination(
                             currentCollectionId = event.currentCollectionId,
                             isSingleStamp = true,
                         ),
+                    )
+                }
+
+                is StampScreenViewModel.Event.ProceedToSendIntent -> {
+                    context.startActivity(
+                        Intent.createChooser(
+                            event.intent,
+                            "Send a stamp",
+                        )
                     )
                 }
 
