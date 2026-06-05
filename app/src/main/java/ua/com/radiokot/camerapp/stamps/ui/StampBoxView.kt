@@ -52,6 +52,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.skydoves.landscapist.image.LandscapistImage
 import kotlinx.collections.immutable.ImmutableList
+import ua.com.radiokot.camerapp.ui.LocalColors
 import ua.com.radiokot.camerapp.ui.PodkovaFamily
 import ua.com.radiokot.camerapp.util.EmptyImageComponent
 import kotlin.math.absoluteValue
@@ -68,6 +69,8 @@ fun StampBoxView(
     modifier = modifier
         .requiredSize(CollectionViewSize)
 ) {
+    val colors = LocalColors.current
+
     Spacer(
         modifier = Modifier
             .fillMaxWidth()
@@ -85,12 +88,12 @@ fun StampBoxView(
                 }
             }
             .background(
-                color = Color(0xFFCBC4BB),
+                color = colors.stampBoxBack,
                 shape = CollectionViewShape,
             )
             .border(
                 width = 2.dp,
-                color = Color(0xFF6B624B),
+                color = colors.componentStroke,
                 shape = CollectionViewShape,
             )
             .align(Alignment.BottomCenter)
@@ -212,19 +215,24 @@ fun StampBoxView(
                 }
             }
             .background(
-                color = Color(0xFFFFF9EB),
+                color = colors.componentBackground,
                 shape = CollectionViewShape,
             )
             .border(
                 width = 2.dp,
-                color = Color(0xFF6B624B),
+                color = colors.componentStroke,
                 shape = CollectionViewShape,
             )
             .padding(8.dp)
     ) {
         BasicText(
             text = name,
-            style = CollectionViewNameStyle,
+            style = TextStyle(
+                fontFamily = PodkovaFamily,
+                fontSize = 20.sp,
+                textAlign = TextAlign.Center,
+                color = colors.textPrimary,
+            ),
             modifier = Modifier
                 .fillMaxWidth()
                 .run {
@@ -251,11 +259,6 @@ private val RightSampleRotationAngles = floatArrayOf(6f, 5f, 4f)
 val CollectionViewSize = DpSize(
     width = StampContainerBaseSize.width * 1.55f,
     height = StampContainerBaseSize.height
-)
-val CollectionViewNameStyle = TextStyle(
-    fontFamily = PodkovaFamily,
-    fontSize = 20.sp,
-    textAlign = TextAlign.Center,
 )
 val CollectionViewShape = RoundedCornerShape(10.dp)
 
@@ -310,7 +313,7 @@ private fun StampSampleView(
                 shape = RectangleShape,
                 shadow = Shadow(
                     radius = 4.dp,
-                    color = Color(0x7447525E),
+                    color = LocalColors.current.stampShadow,
                 )
             )
     )

@@ -37,7 +37,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
@@ -52,6 +51,7 @@ import ua.com.radiokot.camerapp.stamps.ui.StampBoxView
 import ua.com.radiokot.camerapp.stamps.ui.StampSampleItem
 import ua.com.radiokot.camerapp.stamps.ui.UiStampShapeA
 import ua.com.radiokot.camerapp.ui.LeTextButton
+import ua.com.radiokot.camerapp.ui.LocalColors
 import ua.com.radiokot.camerapp.ui.PodkovaFamily
 import ua.com.radiokot.camerapp.ui.paperBackground
 import ua.com.radiokot.camerapp.util.StableHolder
@@ -116,7 +116,7 @@ fun SendEnvelopeScreen(
             fontFamily = PodkovaFamily,
             textAlign = TextAlign.Center,
             fontSize = 16.sp,
-            color = Color(0xff7e7a74),
+            color = LocalColors.current.textSecondary,
         ),
         modifier = Modifier
             .fillMaxWidth()

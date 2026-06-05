@@ -37,7 +37,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
@@ -51,8 +50,9 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableSet
 import ua.com.radiokot.camerapp.R
 import ua.com.radiokot.camerapp.ui.LeTextButton
-import ua.com.radiokot.camerapp.ui.Vignette
+import ua.com.radiokot.camerapp.ui.LocalColors
 import ua.com.radiokot.camerapp.ui.PodkovaFamily
+import ua.com.radiokot.camerapp.ui.Vignette
 
 @Composable
 fun PermissionsScreen(
@@ -75,6 +75,7 @@ fun PermissionsScreen(
             fontFamily = PodkovaFamily,
             fontSize = 24.sp,
             textAlign = TextAlign.Center,
+            color = LocalColors.current.textPrimary,
         ),
         modifier = Modifier
             .fillMaxWidth()
@@ -172,7 +173,7 @@ private fun PermissionItem(
         Image(
             painter = icon,
             contentDescription = "Icon",
-            colorFilter = ColorFilter.tint(Color(0xFFB9AC8C)),
+            colorFilter = ColorFilter.tint(LocalColors.current.standaloneIcon),
             modifier = Modifier
                 .padding(
                     top = 4.dp,
@@ -182,15 +183,24 @@ private fun PermissionItem(
         )
 
         Column {
+            val colors = LocalColors.current
             BasicText(
                 text = name,
-                style = PermissionNameTextStyle,
+                style = TextStyle(
+                    fontFamily = PodkovaFamily,
+                    fontSize = 20.sp,
+                    color = colors.textPrimary
+                ),
                 modifier = Modifier
                     .fillMaxWidth()
             )
             BasicText(
                 text = description,
-                style = PermissionDescriptionTextStyle,
+                style = TextStyle(
+                    fontFamily = PodkovaFamily,
+                    fontSize = 16.sp,
+                    color = colors.textSecondary,
+                ),
                 modifier = Modifier
                     .padding(
                         top = 2.dp,
@@ -200,18 +210,6 @@ private fun PermissionItem(
         }
     }
 }
-
-private val PermissionNameTextStyle =
-    TextStyle(
-        fontFamily = PodkovaFamily,
-        fontSize = 20.sp,
-    )
-private val PermissionDescriptionTextStyle =
-    TextStyle(
-        fontFamily = PodkovaFamily,
-        fontSize = 16.sp,
-        color = Color(0xff7e7a74),
-    )
 
 @SuppressLint("InlinedApi")
 @Preview

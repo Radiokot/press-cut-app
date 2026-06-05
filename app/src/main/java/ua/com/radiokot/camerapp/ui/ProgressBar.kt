@@ -49,7 +49,6 @@ import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -71,6 +70,7 @@ fun ProgressBar(
     modifier: Modifier = Modifier,
     progressState: FloatState,
 ) {
+    val colors = LocalColors.current
     val animatedProgress by animateFloatAsState(
         targetValue = progressState.floatValue,
         animationSpec = spring(
@@ -87,8 +87,8 @@ fun ProgressBar(
                 minHeight = okContainerSize,
             )
     ) {
-        val strokeColor = Color(0xFF6B624B)
-        val barColor = Color(0xFFD7C3AA)
+        val strokeColor = colors.componentStroke
+        val barColor = colors.progressBarProgress
 
         Spacer(
             modifier = Modifier
@@ -155,7 +155,7 @@ fun ProgressBar(
                     Image(
                         painter = painterResource(R.drawable.ok_by_pronto_illustration_from_noun_project),
                         contentDescription = "OK",
-                        colorFilter = ColorFilter.tint(Color(0xFF6B624B)),
+                        colorFilter = ColorFilter.tint(strokeColor),
                         modifier = Modifier
                             .size(60.dp)
                             .background(
@@ -164,7 +164,7 @@ fun ProgressBar(
                             )
                             .border(
                                 width = 3.dp,
-                                color = Color(0xFFfff9eb),
+                                color = colors.screenBackground,
                                 shape = CircleShape,
                             )
                             .padding(3.dp)

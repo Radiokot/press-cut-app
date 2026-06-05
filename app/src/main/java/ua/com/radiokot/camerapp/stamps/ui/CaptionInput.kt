@@ -38,7 +38,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.input.ImeAction
@@ -48,6 +48,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import ua.com.radiokot.camerapp.ui.LocalColors
 import ua.com.radiokot.camerapp.ui.PodkovaFamily
 
 @Composable
@@ -61,17 +62,18 @@ fun CaptionInput(
     contentAlignment = Alignment.Center,
     modifier = modifier
 ) {
-    val hintStyle = remember {
+    val colors = LocalColors.current
+    val hintStyle = remember(colors) {
         TextStyle(
             fontFamily = PodkovaFamily,
             fontSize = 24.sp,
-            color = Color(0xFFB9AC8C),
+            color = colors.textInputHint,
             textAlign = TextAlign.Center,
         )
     }
     val inputStyle = remember {
         hintStyle.copy(
-            color = Color.Unspecified,
+            color = colors.textPrimary,
         )
     }
     val focusManager = LocalFocusManager.current
@@ -109,6 +111,7 @@ fun CaptionInput(
         onKeyboardAction = {
             focusManager.clearFocus()
         },
+        cursorBrush = SolidColor(colors.textInputCursor),
         enabled = isEnabled,
         readOnly = !isEnabled,
         modifier = Modifier

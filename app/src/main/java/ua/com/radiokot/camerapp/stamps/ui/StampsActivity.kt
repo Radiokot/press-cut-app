@@ -33,7 +33,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
@@ -51,10 +50,8 @@ import androidx.compose.ui.util.fastRoundToInt
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
-import com.skydoves.landscapist.image.LocalLandscapist
 import org.koin.android.ext.android.inject
 import org.koin.androidx.viewmodel.ext.android.viewModel
-import org.koin.compose.koinInject
 import ua.com.radiokot.camerapp.about.ui.AboutRoute
 import ua.com.radiokot.camerapp.about.ui.aboutDestination
 import ua.com.radiokot.camerapp.collectionselection.ui.SelectDestinationCollectionContract
@@ -68,6 +65,7 @@ import ua.com.radiokot.camerapp.intro.ui.PermissionsRoute
 import ua.com.radiokot.camerapp.intro.ui.PermissionsScreenViewModel
 import ua.com.radiokot.camerapp.intro.ui.introDestination
 import ua.com.radiokot.camerapp.intro.ui.permissionsDestination
+import ua.com.radiokot.camerapp.ui.AppTheme
 import ua.com.radiokot.camerapp.ui.paperBackground
 import ua.com.radiokot.camerapp.util.lazyLogger
 
@@ -107,9 +105,7 @@ class StampsActivity : ComponentActivity() {
         }
 
         setContent {
-            CompositionLocalProvider(
-                LocalLandscapist provides koinInject(),
-            ) {
+            AppTheme {
                 var isStampsScreenWarmupShown by remember {
                     mutableStateOf(true)
                 }

@@ -51,81 +51,88 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import ua.com.radiokot.camerapp.ui.LocalColors
 
+@Composable
 fun Modifier.selectionEnvelope(
     animationProgressState: State<Float>,
     heightFraction: Float = 0.6f,
-) = drawWithCache {
-    val (width, height) = size
-    val overlap = 1.dp.toPx()
-    val roundingPathEffect = PathEffect.cornerPathEffect(6.dp.toPx())
+): Modifier {
 
-    val leftPart = Path().apply {
-        moveTo(-overlap, height)
-        lineTo(-overlap, height * (1 - heightFraction))
-        lineTo(overlap + width, height)
-        close()
-    }
-    val rightPart = Path().apply {
-        moveTo(overlap + width, height)
-        lineTo(overlap + width, height * (1 - heightFraction))
-        lineTo(-overlap, height)
-        close()
-    }
-    val leftFillPaint = Paint().apply {
-        color = Color(0xFFfff9eb)
-        style = PaintingStyle.Fill
-        pathEffect = roundingPathEffect
-        isAntiAlias = true
-    }
-    val rightFillPaint = Paint().apply {
-        color = Color(0xFFF1EBDB)
-        style = PaintingStyle.Fill
-        pathEffect = roundingPathEffect
-        isAntiAlias = true
-    }
-    val strokePaint = Paint().apply {
-        color = Color(0xFF6B624B)
-        style = PaintingStyle.Stroke
-        strokeWidth = 2.dp.toPx()
-        pathEffect = roundingPathEffect
-        isAntiAlias = true
-    }
+    val colors = LocalColors.current
 
-    onDrawWithContent {
-        drawContent()
+    return drawWithCache {
+        val (width, height) = size
+        val overlap = 1.dp.toPx()
+        val roundingPathEffect = PathEffect.cornerPathEffect(6.dp.toPx())
 
-        if (animationProgressState.value <= 0.05f) {
-            return@onDrawWithContent
+        val leftPart = Path().apply {
+            moveTo(-overlap, height)
+            lineTo(-overlap, height * (1 - heightFraction))
+            lineTo(overlap + width, height)
+            close()
+        }
+        val rightPart = Path().apply {
+            moveTo(overlap + width, height)
+            lineTo(overlap + width, height * (1 - heightFraction))
+            lineTo(-overlap, height)
+            close()
+        }
+        val leftFillPaint = Paint().apply {
+            color = colors.selectionEnvelopeLeft
+            style = PaintingStyle.Fill
+            pathEffect = roundingPathEffect
+            isAntiAlias = true
+        }
+        val rightFillPaint = Paint().apply {
+            color = colors.selectionEnvelopeRight
+            style = PaintingStyle.Fill
+            pathEffect = roundingPathEffect
+            isAntiAlias = true
+        }
+        val strokePaint = Paint().apply {
+            color = colors.componentStroke
+            style = PaintingStyle.Stroke
+            strokeWidth = 2.dp.toPx()
+            pathEffect = roundingPathEffect
+            isAntiAlias = true
         }
 
-        scale(
-            scaleX = 1f,
-            scaleY = animationProgressState.value,
-            pivot = Offset(
-                x = 0f,
-                y = height,
-            )
-        ) {
-            drawIntoCanvas { canvas ->
-                strokePaint.alpha = animationProgressState.value
+        onDrawWithContent {
+            drawContent()
 
-                canvas.drawOutline(
-                    outline = Outline.Generic(rightPart),
-                    paint = rightFillPaint
+            if (animationProgressState.value <= 0.05f) {
+                return@onDrawWithContent
+            }
+
+            scale(
+                scaleX = 1f,
+                scaleY = animationProgressState.value,
+                pivot = Offset(
+                    x = 0f,
+                    y = height,
                 )
-                canvas.drawOutline(
-                    outline = Outline.Generic(rightPart),
-                    paint = strokePaint
-                )
-                canvas.drawOutline(
-                    outline = Outline.Generic(leftPart),
-                    paint = leftFillPaint
-                )
-                canvas.drawOutline(
-                    outline = Outline.Generic(leftPart),
-                    paint = strokePaint
-                )
+            ) {
+                drawIntoCanvas { canvas ->
+                    strokePaint.alpha = animationProgressState.value
+
+                    canvas.drawOutline(
+                        outline = Outline.Generic(rightPart),
+                        paint = rightFillPaint
+                    )
+                    canvas.drawOutline(
+                        outline = Outline.Generic(rightPart),
+                        paint = strokePaint
+                    )
+                    canvas.drawOutline(
+                        outline = Outline.Generic(leftPart),
+                        paint = leftFillPaint
+                    )
+                    canvas.drawOutline(
+                        outline = Outline.Generic(leftPart),
+                        paint = strokePaint
+                    )
+                }
             }
         }
     }
@@ -134,13 +141,13 @@ fun Modifier.selectionEnvelope(
 
 @Preview
 @Composable
-private fun Envelope() {
+private fun SelectionEnvelopePreview() {
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
             .size(UiStampShapeA.size * 1.2f)
     ) {
-        val shadowColor = Color(0x7447525E)
+        val shadowColor = LocalColors.current.stampShadow
         val animationProgress = remember {
             Animatable(1f)
         }

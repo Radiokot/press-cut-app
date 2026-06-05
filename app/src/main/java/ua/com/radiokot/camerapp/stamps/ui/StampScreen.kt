@@ -103,6 +103,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import ua.com.radiokot.camerapp.R
+import ua.com.radiokot.camerapp.ui.LocalColors
 import ua.com.radiokot.camerapp.ui.PodkovaFamily
 import ua.com.radiokot.camerapp.ui.paperBackground
 import ua.com.radiokot.camerapp.util.EmptyImageComponent
@@ -365,7 +366,7 @@ fun StampScreen(
                             shape = RectangleShape,
                             shadow = Shadow(
                                 radius = 16.dp,
-                                color = Color(0x7447525E),
+                                color = LocalColors.current.stampShadow,
                             )
                         )
                         .run {
@@ -402,15 +403,15 @@ fun StampScreen(
                         style = TextStyle(
                             fontFamily = PodkovaFamily,
                             fontSize = 16.sp,
-                            color = Color(0xFFB9AC8C),
+                            color = LocalColors.current.textSecondary,
                             textAlign = TextAlign.Center,
                         ),
                     )
 
                     Image(
                         painter = painterResource(R.drawable.ic_more_vert),
-                        contentDescription = "Edit",
-                        colorFilter = ColorFilter.tint(Color(0xFFB9AC8C)),
+                        contentDescription = "More",
+                        colorFilter = ColorFilter.tint(LocalColors.current.textSecondary),
                         modifier = Modifier
                             .clickable(
                                 indication = null,
@@ -489,12 +490,12 @@ private fun Actions(
 ) = Column(
     modifier = modifier
         .background(
-            color = Color(0xFFfff9eb),
+            color = LocalColors.current.componentBackground,
             shape = RoundedCornerShape(cornerRadius),
         )
         .border(
             width = 2.dp,
-            color = Color(0xFF6B624B),
+            color = LocalColors.current.componentStroke,
             shape = RoundedCornerShape(cornerRadius),
         )
         .verticalScroll(
@@ -502,12 +503,14 @@ private fun Actions(
             overscrollEffect = null,
         )
 ) {
-    val textStyle = remember {
+    val colors = LocalColors.current
+    val textStyle = remember(colors) {
         TextStyle(
             fontSize = 20.sp,
             textAlign = TextAlign.Center,
             fontFamily = PodkovaFamily,
             fontWeight = FontWeight.Bold,
+            color = colors.textPrimary
         )
     }
 
@@ -529,7 +532,7 @@ private fun Actions(
             modifier = Modifier
                 .height(1.dp)
                 .fillMaxWidth()
-                .background(Color(0xFFcbc4bb))
+                .background(colors.componentDivider)
         )
     }
 
@@ -550,7 +553,7 @@ private fun Actions(
         modifier = Modifier
             .height(1.dp)
             .fillMaxWidth()
-            .background(Color(0xFFcbc4bb))
+            .background(colors.componentDivider)
     )
 
     BasicText(
@@ -570,13 +573,13 @@ private fun Actions(
         modifier = Modifier
             .height(1.dp)
             .fillMaxWidth()
-            .background(Color(0xFFcbc4bb))
+            .background(colors.componentDivider)
     )
 
     BasicText(
         text = "Hold to delete",
         style = textStyle.copy(
-            color = Color(0xFFD97D7D),
+            color = colors.textDanger,
         ),
         modifier = Modifier
             .holdToDeleteAction(

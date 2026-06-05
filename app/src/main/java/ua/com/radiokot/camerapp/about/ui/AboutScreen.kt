@@ -64,6 +64,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import ua.com.radiokot.camerapp.R
 import ua.com.radiokot.camerapp.stamps.ui.UiStampShapeA
+import ua.com.radiokot.camerapp.ui.LocalColors
 import ua.com.radiokot.camerapp.ui.PodkovaFamily
 import ua.com.radiokot.camerapp.ui.Vignette
 import ua.com.radiokot.camerapp.ui.paperBackground
@@ -82,12 +83,14 @@ fun AboutScreen(
         .safeContentPadding()
         .padding(24.dp)
 ) {
+    val colors = LocalColors.current
     BasicText(
         text = "About",
         style = TextStyle(
             fontFamily = PodkovaFamily,
             fontSize = 24.sp,
             textAlign = TextAlign.Center,
+            color = colors.textPrimary
         ),
         modifier = Modifier
             .fillMaxWidth()
@@ -109,7 +112,7 @@ fun AboutScreen(
             htmlString = aboutTextHtml,
             linkStyles = TextLinkStyles(
                 style = SpanStyle(
-                    color = Color(0xFF85794B),
+                    color = colors.textClickable,
                     textDecoration = TextDecoration.Underline,
                 )
             ),
@@ -124,6 +127,7 @@ fun AboutScreen(
     val textStyle = TextStyle(
         fontFamily = PodkovaFamily,
         fontSize = 20.sp,
+        color = colors.textPrimary,
     )
 
     BasicText(
@@ -176,7 +180,7 @@ fun AboutScreen(
                     shape = RectangleShape,
                     shadow = Shadow(
                         radius = 4.dp,
-                        color = Color(0x7447525E),
+                        color = colors.stampShadow,
                     )
                 )
                 .clickable(
@@ -201,7 +205,7 @@ fun AboutScreen(
                     shape = RectangleShape,
                     shadow = Shadow(
                         radius = 4.dp,
-                        color = Color(0x7447525E),
+                        color = colors.stampShadow,
                     )
                 )
         )

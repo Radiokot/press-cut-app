@@ -47,6 +47,7 @@ import ua.com.radiokot.camerapp.stamps.ui.StampBoxView
 import ua.com.radiokot.camerapp.stamps.ui.StampSampleItem
 import ua.com.radiokot.camerapp.stamps.ui.UiStampShapeA
 import ua.com.radiokot.camerapp.ui.LeTextButton
+import ua.com.radiokot.camerapp.ui.LocalColors
 import ua.com.radiokot.camerapp.ui.PodkovaFamily
 import ua.com.radiokot.camerapp.ui.Vignette
 import ua.com.radiokot.camerapp.ui.paperBackground
@@ -67,12 +68,14 @@ fun EnvelopePreviewScreen(
         .safeContentPadding()
         .padding(24.dp)
 ) {
+    val colors = LocalColors.current
     BasicText(
         text = "You received stamps",
         style = TextStyle(
             fontFamily = PodkovaFamily,
             fontSize = 24.sp,
             textAlign = TextAlign.Center,
+            color = colors.textPrimary,
         ),
         modifier = Modifier
             .fillMaxWidth()
@@ -103,6 +106,7 @@ fun EnvelopePreviewScreen(
                     fontFamily = PodkovaFamily,
                     fontSize = 20.sp,
                     textAlign = TextAlign.Center,
+                    color = colors.textPrimary,
                 ),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -120,6 +124,7 @@ fun EnvelopePreviewScreen(
                     fontFamily = PodkovaFamily,
                     fontSize = 20.sp,
                     textAlign = TextAlign.Center,
+                    color = colors.textPrimary,
                 ),
                 modifier = Modifier
                     .fillMaxWidth()

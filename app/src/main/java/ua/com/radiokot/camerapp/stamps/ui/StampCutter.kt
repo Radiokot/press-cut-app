@@ -53,6 +53,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import ua.com.radiokot.camerapp.ui.LeButton
+import ua.com.radiokot.camerapp.ui.LocalColors
 import ua.com.radiokot.camerapp.ui.PodkovaFamily
 import ua.com.radiokot.camerapp.ui.paperBackground
 
@@ -62,13 +63,14 @@ fun StampCutter(
     interactionSource: MutableInteractionSource = remember(::MutableInteractionSource),
     frameSize: DpSize,
 ) {
+    val colors = LocalColors.current
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier,
     ) {
         val stampPainter = rememberVectorPainter(UiStampShapeA.fill)
         val stampStrokePainter = rememberVectorPainter(UiStampShapeA.stroke)
-        val strokeColor = Color(0xFF6B624B)
+        val strokeColor = colors.componentStroke
 
         Spacer(
             modifier = Modifier
@@ -125,7 +127,7 @@ fun StampCutter(
         val outerCornerRadius = 24.dp
 
         LeButton(
-            innerColor = Color.Transparent,
+            frontColor = Color.Transparent,
             cornerRadius = outerCornerRadius,
             depth = 18.dp,
             interactionSource = interactionSource,
@@ -143,7 +145,7 @@ fun StampCutter(
                         compositingStrategy = CompositingStrategy.Offscreen
                     }
                     .drawWithCache {
-                        val outerColor = Color(0xFFfff9eb)
+                        val outerColor = colors.componentBackground
                         val outerCornerRadius = CornerRadius(
                             x = outerCornerRadius.toPx(),
                             y = outerCornerRadius.toPx(),

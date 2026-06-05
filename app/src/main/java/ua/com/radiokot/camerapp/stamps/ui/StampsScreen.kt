@@ -77,6 +77,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.shadow.Shadow
@@ -94,6 +95,7 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toPersistentList
 import ua.com.radiokot.camerapp.R
 import ua.com.radiokot.camerapp.ui.LeTextButton
+import ua.com.radiokot.camerapp.ui.LocalColors
 import ua.com.radiokot.camerapp.ui.PodkovaFamily
 import ua.com.radiokot.camerapp.ui.Vignette
 import ua.com.radiokot.camerapp.util.EmptyImageComponent
@@ -134,7 +136,7 @@ fun StampsScreen(
             }
         }
 ) {
-    val shadowColor = Color(0x7447525E)
+    val shadowColor = LocalColors.current.stampShadow
     val rotationAngles = retain {
         floatArrayOf(4f, 3f, 2f, -2f, -3f, -4f)
     }
@@ -215,7 +217,7 @@ fun StampsScreen(
                         style = TextStyle(
                             fontFamily = PodkovaFamily,
                             fontSize = 16.sp,
-                            color = Color(0xff7e7a74),
+                            color = LocalColors.current.textSecondary,
                             textAlign = TextAlign.Center
                         ),
                         modifier = Modifier
@@ -429,11 +431,13 @@ private fun SelectionController(
     selectedCount: Int,
     onActionsClicked: () -> Unit,
 ) {
+    val colors = LocalColors.current
     val cornerRadius = 10.dp
-    val textStyle = remember {
+    val textStyle = remember(colors) {
         TextStyle(
             fontFamily = PodkovaFamily,
             fontSize = 20.sp,
+            color = colors.textPrimary,
         )
     }
     val density = LocalDensity.current
@@ -446,12 +450,12 @@ private fun SelectionController(
     Row(
         modifier = modifier
             .background(
-                color = Color(0xFFfff9eb),
+                color = colors.componentBackground,
                 shape = RoundedCornerShape(cornerRadius),
             )
             .border(
                 width = 2.dp,
-                color = Color(0xFF6B624B),
+                color = colors.componentStroke,
                 shape = RoundedCornerShape(cornerRadius),
             )
             .height(IntrinsicSize.Max)
@@ -487,12 +491,13 @@ private fun SelectionController(
             modifier = Modifier
                 .width(1.dp)
                 .fillMaxHeight()
-                .background(Color(0xFFcbc4bb))
+                .background(colors.componentDivider)
         )
 
         Image(
             painter = painterResource(R.drawable.ic_more_vert),
             contentDescription = "Actions",
+            colorFilter = ColorFilter.tint(colors.textPrimary),
             modifier = Modifier
                 .fillMaxHeight()
                 .clickable(
@@ -525,21 +530,23 @@ private fun SelectionActions(
 ) = Column(
     modifier = modifier
         .background(
-            color = Color(0xFFfff9eb),
+            color = LocalColors.current.componentBackground,
             shape = RoundedCornerShape(cornerRadius),
         )
         .border(
             width = 2.dp,
-            color = Color(0xFF6B624B),
+            color = LocalColors.current.componentStroke,
             shape = RoundedCornerShape(cornerRadius),
         )
 ) {
+    val colors = LocalColors.current
     val textStyle = remember {
         TextStyle(
             fontSize = 20.sp,
             textAlign = TextAlign.Center,
             fontFamily = PodkovaFamily,
             fontWeight = FontWeight.Bold,
+            color = colors.textPrimary,
         )
     }
 
@@ -560,7 +567,7 @@ private fun SelectionActions(
         modifier = Modifier
             .height(1.dp)
             .fillMaxWidth()
-            .background(Color(0xFFcbc4bb))
+            .background(colors.componentDivider)
     )
 
     BasicText(
@@ -580,13 +587,13 @@ private fun SelectionActions(
         modifier = Modifier
             .height(1.dp)
             .fillMaxWidth()
-            .background(Color(0xFFcbc4bb))
+            .background(colors.componentDivider)
     )
 
     BasicText(
         text = "Hold to delete",
         style = textStyle.copy(
-            color = Color(0xFFD97D7D),
+            color = colors.textDanger,
         ),
         modifier = Modifier
             .holdToDeleteAction(

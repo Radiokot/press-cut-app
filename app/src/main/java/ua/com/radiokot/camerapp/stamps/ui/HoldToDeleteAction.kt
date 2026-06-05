@@ -25,37 +25,39 @@ import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.composed
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.RoundRect
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.unit.Dp
 import kotlinx.coroutines.launch
+import ua.com.radiokot.camerapp.ui.LocalColors
 
+@Composable
 fun Modifier.holdToDeleteAction(
     roundedCornerRadius: Dp,
     areTopCornersRounded: Boolean,
     onDelete: () -> Unit,
-) = composed {
+): Modifier {
     val deleteAnimationProgress = remember {
         Animatable(0f)
     }
     val hapticFeedback = LocalHapticFeedback.current
     val coroutineScope = rememberCoroutineScope()
+    val backgroundColor = LocalColors.current.holdToDeleteBackground
 
-    this
-        // When pressed, a growing red background is drawn.
+    // When pressed, a growing red background is drawn.
+    return this
         .drawWithCache {
             val roundedCornerRadius = CornerRadius(
                 x = roundedCornerRadius.toPx(),
@@ -69,7 +71,6 @@ fun Modifier.holdToDeleteAction(
                 else
                     roundedCornerRadius *
                             (1 - deleteAnimationProgress.value) / 0.2f
-            val color = Color(0xFFEAB8B8)
             val halfWidth = size.width / 2f
             val path = Path()
             path.addRoundRect(
@@ -94,7 +95,7 @@ fun Modifier.holdToDeleteAction(
             onDrawBehind {
                 drawPath(
                     path = path,
-                    color = color,
+                    color = backgroundColor,
                     alpha = deleteAnimationProgress.value * 2f,
                 )
             }

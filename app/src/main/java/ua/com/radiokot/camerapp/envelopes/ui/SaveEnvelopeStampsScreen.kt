@@ -38,6 +38,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import ua.com.radiokot.camerapp.ui.LocalColors
 import ua.com.radiokot.camerapp.ui.PodkovaFamily
 import ua.com.radiokot.camerapp.ui.ProgressBar
 import ua.com.radiokot.camerapp.ui.paperBackground
@@ -62,6 +63,7 @@ fun SaveEnvelopeStampsScreen(
             fontFamily = PodkovaFamily,
             fontSize = 24.sp,
             textAlign = TextAlign.Center,
+            color = LocalColors.current.textPrimary,
         )
     )
 

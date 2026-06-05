@@ -33,6 +33,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
@@ -54,6 +55,9 @@ import org.koin.core.parameter.parametersOf
 import ua.com.radiokot.camerapp.intro.ui.PermissionsRoute
 import ua.com.radiokot.camerapp.intro.ui.PermissionsScreenViewModel
 import ua.com.radiokot.camerapp.intro.ui.permissionsDestination
+import ua.com.radiokot.camerapp.ui.AppTheme
+import ua.com.radiokot.camerapp.ui.LightAppColors
+import ua.com.radiokot.camerapp.ui.LocalColors
 import ua.com.radiokot.camerapp.ui.paperBackground
 import ua.com.radiokot.camerapp.util.lazyLogger
 
@@ -88,26 +92,28 @@ class NewStampActivity : ComponentActivity() {
         }
 
         setContent {
-            SharedTransitionLayout(
-                modifier = Modifier
-                    .fillMaxSize()
-            ) {
-                StampCutNavHost(
-                    startWithPermissions = isPermissionActionRequired,
-                    collectionId = collectionId,
-                    onDidSave = {
-                        if (showToastOnSave) {
-                            Toast.makeText(
-                                this@NewStampActivity,
-                                "Stamp saved",
-                                Toast.LENGTH_SHORT
-                            ).show()
-                        }
-                        finish()
-                    },
+            AppTheme {
+                SharedTransitionLayout(
                     modifier = Modifier
                         .fillMaxSize()
-                )
+                ) {
+                    StampCutNavHost(
+                        startWithPermissions = isPermissionActionRequired,
+                        collectionId = collectionId,
+                        onDidSave = {
+                            if (showToastOnSave) {
+                                Toast.makeText(
+                                    this@NewStampActivity,
+                                    "Stamp saved",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                            finish()
+                        },
+                        modifier = Modifier
+                            .fillMaxSize()
+                    )
+                }
             }
         }
     }
@@ -141,6 +147,11 @@ private fun SharedTransitionScope.StampCutNavHost(
     var stampImageBitmapToSave by remember {
         mutableStateOf<Bitmap?>(null)
     }
+    val paperBackgroundWithColorModifier =
+        Modifier
+            .paperBackground(
+                drawBackgroundColor = true,
+            )
 
     NavHost(
         navController = navController,
@@ -164,10 +175,7 @@ private fun SharedTransitionScope.StampCutNavHost(
                     launchSingleTop = true
                 }
             },
-            modifier = Modifier
-                .paperBackground(
-                    drawBackgroundColor = true,
-                )
+            modifier = paperBackgroundWithColorModifier
         )
 
         composable(
@@ -177,16 +185,20 @@ private fun SharedTransitionScope.StampCutNavHost(
             val surfaceRequest by viewModel.surfaceRequest.collectAsState()
             val cutImage by viewModel.cutImage.collectAsState()
 
-            StampCutScreen(
-                useCases = viewModel.useCases,
-                surfaceRequest = surfaceRequest,
-                cutImage = cutImage,
-                onCutAction = viewModel::onCutAction,
-                sharedTransitionScope = this@StampCutNavHost,
-                animatedVisibilityScope = this@composable,
-                modifier = Modifier
-                    .fillMaxSize()
-            )
+            CompositionLocalProvider(
+                LocalColors provides LightAppColors
+            ) {
+                StampCutScreen(
+                    useCases = viewModel.useCases,
+                    surfaceRequest = surfaceRequest,
+                    cutImage = cutImage,
+                    onCutAction = viewModel::onCutAction,
+                    sharedTransitionScope = this@StampCutNavHost,
+                    animatedVisibilityScope = this@composable,
+                    modifier = Modifier
+                        .fillMaxSize()
+                )
+            }
 
             LaunchedEffect(viewModel) {
                 viewModel.events.collect { event ->

@@ -22,7 +22,6 @@ package ua.com.radiokot.camerapp.ui
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -38,7 +37,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
@@ -51,12 +49,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -64,12 +59,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import ua.com.radiokot.camerapp.R
 
 @Composable
 fun LeButton(
     modifier: Modifier = Modifier,
-    innerColor: Color = Color(0xFFfff9eb),
+    frontColor: Color = LocalColors.current.leButtonFront,
     cornerRadius: Dp = 10.dp,
     depth: Dp = 10.dp,
     interactionSource: MutableInteractionSource = remember(::MutableInteractionSource),
@@ -77,6 +71,7 @@ fun LeButton(
     onClick: (() -> Unit)?,
     content: @Composable BoxScope.() -> Unit,
 ) {
+    val colors = LocalColors.current
     val hapticFeedback by rememberUpdatedState(LocalHapticFeedback.current)
     val isPressed by produceState(false) {
         interactionSource.interactions.collect { interaction ->
@@ -129,12 +124,12 @@ fun LeButton(
                 .fillMaxWidth()
                 .height(depth + cornerRadius + 1.dp)
                 .background(
-                    color = Color(0xFFcbc4bb),
+                    color = colors.leButtonDepth,
                     shape = depthShape,
                 )
                 .border(
                     width = 2.dp,
-                    color = Color(0xFF6B624B),
+                    color = colors.componentStroke,
                     shape = depthShape,
                 )
         )
@@ -162,12 +157,12 @@ fun LeButton(
                     translationY = pressOffset.toPx()
                 }
                 .background(
-                    color = innerColor,
+                    color = frontColor,
                     shape = shape,
                 )
                 .border(
                     width = 2.dp,
-                    color = Color(0xFF6B624B),
+                    color = colors.componentStroke,
                     shape = shape,
                 )
         )
@@ -180,14 +175,7 @@ fun LeTextButton(
     text: String,
     onClick: () -> Unit,
 ) {
-    val textStyle = remember {
-        TextStyle(
-            fontSize = 20.sp,
-            textAlign = TextAlign.Center,
-            fontFamily = PodkovaFamily,
-            fontWeight = FontWeight.Bold,
-        )
-    }
+    val colors = LocalColors.current
 
     LeButton(
         modifier = modifier,
@@ -195,34 +183,16 @@ fun LeTextButton(
     ) {
         BasicText(
             text = text,
-            style = textStyle,
+            style = TextStyle(
+                fontSize = 20.sp,
+                textAlign = TextAlign.Center,
+                fontFamily = PodkovaFamily,
+                fontWeight = FontWeight.Bold,
+                color = colors.textPrimary,
+            ),
             modifier = Modifier
                 .align(Alignment.Center)
                 .padding(10.dp)
-        )
-    }
-}
-
-@Composable
-fun LeIconButton(
-    modifier: Modifier = Modifier,
-    contentDescription: String? = null,
-    colorFilter: ColorFilter? = null,
-    innerColor: Color = Color(0xFFfff9eb),
-    iconPainter: Painter,
-    onClick: () -> Unit,
-) {
-    LeButton(
-        modifier = modifier,
-        innerColor = innerColor,
-        onClick = onClick,
-    ) {
-        Image(
-            painter = iconPainter,
-            contentDescription = contentDescription,
-            colorFilter = colorFilter,
-            modifier = Modifier
-                .align(Alignment.Center)
         )
     }
 }
@@ -247,13 +217,6 @@ private fun LeButtonPreview(
             modifier = Modifier
                 .fillMaxWidth(0.75f)
                 .padding(24.dp)
-        )
-
-        LeIconButton(
-            iconPainter = painterResource(R.drawable.ic_pencil),
-            onClick = {},
-            modifier = Modifier
-                .width(56.dp)
         )
     }
 }

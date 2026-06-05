@@ -49,7 +49,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
@@ -59,13 +58,18 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import ua.com.radiokot.camerapp.R
 import ua.com.radiokot.camerapp.ui.LeTextButton
+import ua.com.radiokot.camerapp.ui.LocalColors
+import ua.com.radiokot.camerapp.ui.PodkovaFamily
 import ua.com.radiokot.camerapp.ui.paperBackground
 import ua.com.radiokot.camerapp.util.StableHolder
 import ua.com.radiokot.camerapp.util.plus
@@ -196,6 +200,7 @@ private fun NewCollectionView(
     contentAlignment = Alignment.Center,
 ) {
     val layoutDirection = LocalLayoutDirection.current
+    val colors = LocalColors.current
 
     Spacer(
         modifier = Modifier
@@ -207,8 +212,6 @@ private fun NewCollectionView(
                     layoutDirection = layoutDirection,
                     density = this,
                 )
-                val frontBackgroundColor = Color(0xFFFFF9EB)
-                val strokeColor = Color(0xFF6B624B)
                 val strokeInterval = StampContainerBaseSize.width.toPx() * 0.08f
                 val dashStrokeStyle = Stroke(
                     cap = StrokeCap.Round,
@@ -233,7 +236,7 @@ private fun NewCollectionView(
                 onDrawBehind {
                     drawOutline(
                         outline = backOutline,
-                        color = strokeColor,
+                        color = colors.componentStroke,
                         style = dashStrokeStyle,
                     )
                     translate(
@@ -242,17 +245,17 @@ private fun NewCollectionView(
                     ) {
                         drawOutline(
                             outline = frontOutline,
-                            color = frontBackgroundColor,
+                            color = colors.componentBackground,
                             style = Fill,
                         )
                         drawOutline(
                             outline = frontOutline,
-                            color = frontBackgroundColor,
+                            color = colors.componentBackground,
                             style = plainStrokeStyle,
                         )
                         drawOutline(
                             outline = frontOutline,
-                            color = strokeColor,
+                            color = colors.componentStroke,
                             style = dashStrokeStyle,
                         )
                     }
@@ -271,7 +274,12 @@ private fun NewCollectionView(
     ) {
         BasicText(
             text = "New Collection",
-            style = CollectionViewNameStyle,
+            style = TextStyle(
+                fontFamily = PodkovaFamily,
+                fontSize = 20.sp,
+                textAlign = TextAlign.Center,
+                color = colors.textPrimary
+            ),
             modifier = Modifier
                 .fillMaxWidth()
         )

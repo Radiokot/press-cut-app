@@ -58,7 +58,6 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -74,6 +73,7 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import ua.com.radiokot.camerapp.ui.LocalColors
 import ua.com.radiokot.camerapp.ui.PodkovaFamily
 import ua.com.radiokot.camerapp.ui.paperBackground
 import ua.com.radiokot.camerapp.ui.rememberSnapFlingBehavior
@@ -96,6 +96,7 @@ fun AdjustmentsController(
                 fontSize = 16.sp,
                 textAlign = TextAlign.Center,
                 fontFamily = PodkovaFamily,
+                color = LocalColors.current.textPrimary,
             ),
             modifier = Modifier
                 .fillMaxWidth()
@@ -178,6 +179,7 @@ private fun ItemSelector(
         }
     }
     val coroutineScope = rememberCoroutineScope()
+    val colors = LocalColors.current
 
     LazyRow(
         state = rowState,
@@ -206,7 +208,7 @@ private fun ItemSelector(
                     .align(Alignment.Center)
                     .border(
                         width = 2.dp,
-                        color = Color(0xFFB9AC8C),
+                        color = colors.standaloneIcon,
                         shape = CircleShape,
                     )
                     .clickable(
@@ -232,7 +234,7 @@ private fun ItemSelector(
                         fontSize = 18.sp,
                         fontFamily = PodkovaFamily,
                         fontWeight = FontWeight.Bold,
-                        color = Color(0xFFB9AC8C),
+                        color = colors.standaloneIcon,
                     )
                 )
             }
@@ -245,7 +247,7 @@ private fun ItemSelector(
             .align(Alignment.Center)
             .border(
                 width = 2.dp,
-                color = Color(0xFF6B624B),
+                color = colors.componentStroke,
                 shape = CircleShape,
             )
     ) {
@@ -275,7 +277,7 @@ private fun ItemSelector(
                 modifier = Modifier
                     .fillMaxSize()
                     .background(
-                        color = Color(0xFFEFE7CD),
+                        color = colors.adjustmentsControllerAdjustedBackground,
                         shape = CircleShape,
                     )
             ) {
@@ -285,7 +287,8 @@ private fun ItemSelector(
                             .format(valueState.intValue),
                     style = TextStyle(
                         fontFamily = PodkovaFamily,
-                        fontWeight = FontWeight.Medium
+                        fontWeight = FontWeight.Medium,
+                        color = colors.textPrimary
                     )
                 )
             }
@@ -340,6 +343,7 @@ private fun ValueDial(
         snapshotFlow { valueState.intValue }
     }
     val hapticFeedback = LocalHapticFeedback.current
+    val colors = LocalColors.current
 
     LaunchedEffect(internalValueFlow) {
         internalValueFlow.collect { newInternalValue ->
@@ -399,9 +403,9 @@ private fun ValueDial(
                     .background(
                         color =
                             if (i % step == 0)
-                                Color(0xFF9A8E72)
+                                colors.adjustmentsControllerDialMajor
                             else
-                                Color(0x99B9AC8C),
+                                colors.adjustmentsControllerDialMinor,
                     )
             )
         }
@@ -415,7 +419,7 @@ private fun ValueDial(
             )
             .border(
                 width = 2.dp,
-                color = Color(0xFF6B624B),
+                color = colors.componentStroke,
                 shape = CircleShape,
             )
     )

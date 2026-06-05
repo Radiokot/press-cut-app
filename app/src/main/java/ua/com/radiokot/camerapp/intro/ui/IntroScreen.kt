@@ -51,6 +51,7 @@ import androidx.compose.ui.zIndex
 import ua.com.radiokot.camerapp.R
 import ua.com.radiokot.camerapp.stamps.ui.UiStampShapeA
 import ua.com.radiokot.camerapp.ui.LeTextButton
+import ua.com.radiokot.camerapp.ui.LocalColors
 import ua.com.radiokot.camerapp.ui.PodkovaFamily
 import ua.com.radiokot.camerapp.ui.Vignette
 import ua.com.radiokot.camerapp.ui.paperBackground
@@ -64,6 +65,7 @@ fun IntroScreen(
         .safeContentPadding()
         .padding(24.dp)
 ) {
+    val colors = LocalColors.current
 
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -81,6 +83,7 @@ fun IntroScreen(
                 fontFamily = PodkovaFamily,
                 fontSize = 24.sp,
                 textAlign = TextAlign.Center,
+                color = colors.textPrimary,
             ),
             modifier = Modifier
                 .fillMaxWidth()
@@ -96,6 +99,7 @@ fun IntroScreen(
         val textStyle = TextStyle(
             fontFamily = PodkovaFamily,
             fontSize = 20.sp,
+            color = colors.textPrimary,
         )
 
         BasicText(
@@ -128,7 +132,7 @@ fun IntroScreen(
                         shape = RectangleShape,
                         shadow = Shadow(
                             radius = 4.dp,
-                            color = Color(0x7447525E),
+                            color = colors.stampShadow,
                         )
                     )
                     .zIndex(10f)
@@ -148,7 +152,7 @@ fun IntroScreen(
                         shape = RectangleShape,
                         shadow = Shadow(
                             radius = 4.dp,
-                            color = Color(0x7447525E),
+                            color = colors.stampShadow,
                         )
                     )
             )

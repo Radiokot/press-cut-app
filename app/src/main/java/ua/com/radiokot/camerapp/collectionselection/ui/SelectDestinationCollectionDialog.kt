@@ -34,7 +34,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -44,6 +43,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
+import ua.com.radiokot.camerapp.ui.LocalColors
 import ua.com.radiokot.camerapp.ui.PodkovaFamily
 
 @Composable
@@ -56,19 +56,22 @@ fun SelectDestinationCollectionDialog(
 ) = Dialog(
     onDismissRequest = onCancel,
 ) {
-    val actionTextStyle = remember {
+    val colors = LocalColors.current
+    val actionTextStyle = remember(colors) {
         TextStyle(
             fontSize = 20.sp,
             textAlign = TextAlign.Center,
             fontFamily = PodkovaFamily,
             fontWeight = FontWeight.Bold,
+            color = colors.textPrimary,
         )
     }
-    val collectionTextStyle = remember {
+    val collectionTextStyle = remember(colors) {
         TextStyle(
             fontSize = 20.sp,
             textAlign = TextAlign.Center,
             fontFamily = PodkovaFamily,
+            color = colors.textPrimary,
         )
     }
 
@@ -77,7 +80,7 @@ fun SelectDestinationCollectionDialog(
         modifier = Modifier
             .fillMaxWidth()
             .background(
-                color = Color(0xFFfff9eb),
+                color = colors.componentBackground,
                 shape = RoundedCornerShape(10.dp),
             )
     ) {
@@ -116,7 +119,7 @@ fun SelectDestinationCollectionDialog(
                     modifier = Modifier
                         .height(1.dp)
                         .fillMaxWidth()
-                        .background(Color(0xFFcbc4bb))
+                        .background(colors.componentDivider)
                 )
 
                 BasicText(
@@ -141,7 +144,7 @@ fun SelectDestinationCollectionDialog(
             modifier = Modifier
                 .height(1.dp)
                 .fillMaxWidth()
-                .background(Color(0xFFcbc4bb))
+                .background(colors.componentDivider)
         )
 
         BasicText(
@@ -161,7 +164,7 @@ fun SelectDestinationCollectionDialog(
             modifier = Modifier
                 .height(1.dp)
                 .fillMaxWidth()
-                .background(Color(0xFFcbc4bb))
+                .background(colors.componentDivider)
         )
 
         BasicText(

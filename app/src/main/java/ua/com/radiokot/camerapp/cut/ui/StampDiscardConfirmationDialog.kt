@@ -40,6 +40,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
+import ua.com.radiokot.camerapp.ui.LocalColors
 import ua.com.radiokot.camerapp.ui.PodkovaFamily
 
 @Composable
@@ -49,12 +50,14 @@ fun StampDiscardConfirmationDialog(
 ) = Dialog(
     onDismissRequest = onCancel,
 ) {
-    val actionTextStyle = remember {
+    val colors = LocalColors.current
+    val actionTextStyle = remember(colors) {
         TextStyle(
             fontSize = 20.sp,
             textAlign = TextAlign.Center,
             fontFamily = PodkovaFamily,
             fontWeight = FontWeight.Bold,
+            color = colors.textPrimary,
         )
     }
 
@@ -63,7 +66,7 @@ fun StampDiscardConfirmationDialog(
         modifier = Modifier
             .fillMaxWidth()
             .background(
-                color = Color(0xFFfff9eb),
+                color = colors.componentBackground,
                 shape = RoundedCornerShape(10.dp),
             )
     ) {
@@ -83,7 +86,7 @@ fun StampDiscardConfirmationDialog(
             modifier = Modifier
                 .height(1.dp)
                 .fillMaxWidth()
-                .background(Color(0xFFcbc4bb))
+                .background(colors.componentDivider)
         )
 
         BasicText(
@@ -103,7 +106,7 @@ fun StampDiscardConfirmationDialog(
             modifier = Modifier
                 .height(1.dp)
                 .fillMaxWidth()
-                .background(Color(0xFFcbc4bb))
+                .background(colors.componentDivider)
         )
 
         BasicText(

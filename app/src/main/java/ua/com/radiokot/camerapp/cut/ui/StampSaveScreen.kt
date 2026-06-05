@@ -62,6 +62,7 @@ import kotlinx.collections.immutable.persistentListOf
 import ua.com.radiokot.camerapp.stamps.ui.CaptionInput
 import ua.com.radiokot.camerapp.stamps.ui.UiStampShapeA
 import ua.com.radiokot.camerapp.ui.LeTextButton
+import ua.com.radiokot.camerapp.ui.LocalColors
 
 @Composable
 fun StampSaveScreen(
@@ -156,7 +157,7 @@ fun StampSaveScreen(
                     shape = RectangleShape,
                     shadow = Shadow(
                         radius = 16.dp,
-                        color = Color(0x7447525E),
+                        color = LocalColors.current.stampShadow,
                     )
                 )
         )

@@ -30,7 +30,6 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -38,11 +37,10 @@ import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
-import com.skydoves.landscapist.image.LocalLandscapist
-import org.koin.compose.koinInject
 import ua.com.radiokot.camerapp.collectionselection.ui.SelectDestinationCollectionContract
 import ua.com.radiokot.camerapp.collectionselection.ui.selectDestinationCollectionDestination
 import ua.com.radiokot.camerapp.envelopes.domain.EnvelopePreviewResult
+import ua.com.radiokot.camerapp.ui.AppTheme
 import ua.com.radiokot.camerapp.ui.paperBackground
 import ua.com.radiokot.camerapp.util.StableHolder
 
@@ -65,9 +63,7 @@ class OpenEnvelopeActivity : ComponentActivity() {
         val oneStampEnvelopeContentUri = StableHolder(intentData)
 
         setContent {
-            CompositionLocalProvider(
-                LocalLandscapist provides koinInject(),
-            ) {
+            AppTheme {
                 OpenEnvelopeNavHost(
                     oneStampEnvelopeContentUri = oneStampEnvelopeContentUri,
                     onDone = {

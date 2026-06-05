@@ -57,6 +57,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.delay
+import ua.com.radiokot.camerapp.ui.LocalColors
 import ua.com.radiokot.camerapp.ui.PodkovaFamily
 
 @Composable
@@ -167,21 +168,23 @@ private fun Actions(
 ) = Column(
     modifier = modifier
         .background(
-            color = Color(0xFFfff9eb),
+            color = LocalColors.current.componentBackground,
             shape = RoundedCornerShape(cornerRadius),
         )
         .border(
             width = 2.dp,
-            color = Color(0xFF6B624B),
+            color = LocalColors.current.componentStroke,
             shape = RoundedCornerShape(cornerRadius),
         )
 ) {
-    val textStyle = remember {
+    val colors = LocalColors.current
+    val textStyle = remember(colors) {
         TextStyle(
             fontSize = 20.sp,
             textAlign = TextAlign.Center,
             fontFamily = PodkovaFamily,
             fontWeight = FontWeight.Bold,
+            color = colors.textPrimary
         )
     }
 
@@ -203,13 +206,13 @@ private fun Actions(
             modifier = Modifier
                 .height(1.dp)
                 .fillMaxWidth()
-                .background(Color(0xFFcbc4bb))
+                .background(colors.componentDivider)
         )
 
         BasicText(
             text = "Hold to delete",
             style = textStyle.copy(
-                color = Color(0xFFD97D7D),
+                color = colors.textDanger,
             ),
             modifier = Modifier
                 .holdToDeleteAction(
