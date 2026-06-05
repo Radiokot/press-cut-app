@@ -86,7 +86,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -94,10 +94,12 @@ import com.skydoves.landscapist.image.LandscapistImage
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.toPersistentList
 import ua.com.radiokot.camerapp.R
+import ua.com.radiokot.camerapp.ui.AppTheme
 import ua.com.radiokot.camerapp.ui.LeTextButton
 import ua.com.radiokot.camerapp.ui.LocalColors
 import ua.com.radiokot.camerapp.ui.PodkovaFamily
 import ua.com.radiokot.camerapp.ui.Vignette
+import ua.com.radiokot.camerapp.ui.paperBackground
 import ua.com.radiokot.camerapp.util.EmptyImageComponent
 import ua.com.radiokot.camerapp.util.StableHolder
 import ua.com.radiokot.camerapp.util.plus
@@ -512,12 +514,22 @@ private fun SelectionController(
 }
 
 @Composable
-@Preview
+@PreviewLightDark
 private fun SelectionControllerPreview() {
-    SelectionController(
-        selectedCount = 24,
-        onActionsClicked = {}
-    )
+    AppTheme {
+        Box(
+            modifier = Modifier
+                .paperBackground(
+                    drawBackgroundColor = true,
+                )
+                .padding(24.dp)
+        ) {
+            SelectionController(
+                selectedCount = 24,
+                onActionsClicked = {}
+            )
+        }
+    }
 }
 
 @Composable
@@ -608,25 +620,24 @@ private fun SelectionActions(
     )
 }
 
-@Preview
 @Composable
-fun StampsScreenPreview(
+fun StampsScreenDummy(
     modifier: Modifier = Modifier,
 ) {
-    val stamps = (1..3)
-        .map { i ->
-            StampsScreenItem(
-                imageUri = StableHolder(Uri.EMPTY),
-                shape = UiStampShapeA,
-                isSelected = false,
-                key = i.toString(),
-            )
-        }
-        .toPersistentList()
+    val stamps = remember {
+        (1..6)
+            .map { i ->
+                StampsScreenItem(
+                    imageUri = StableHolder(Uri.EMPTY),
+                    shape = UiStampShapeA,
+                    isSelected = false,
+                    key = i.toString(),
+                )
+            }
+            .toPersistentList()
+    }
 
     StampsScreen(
-        modifier = modifier
-            .fillMaxSize(),
         collectionId = "",
         collectionNameInputState = TextFieldState("My stamps"),
         focusCollectionNameInput = false,
@@ -640,6 +651,21 @@ fun StampsScreenPreview(
         onDeleteSelectedAction = { },
         onNewStampAction = { },
         sharedTransitionScope = null,
-        animatedVisibilityScope = null
+        animatedVisibilityScope = null,
+        modifier = modifier
     )
+}
+
+@PreviewLightDark
+@Composable
+private fun StampsScreenPreview() {
+    AppTheme {
+        StampsScreenDummy(
+            modifier = Modifier
+                .fillMaxSize()
+                .paperBackground(
+                    drawBackgroundColor = true,
+                )
+        )
+    }
 }

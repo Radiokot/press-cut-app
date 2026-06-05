@@ -37,12 +37,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.persistentListOf
 import ua.com.radiokot.camerapp.ui.LocalColors
 import ua.com.radiokot.camerapp.ui.PodkovaFamily
 
@@ -85,11 +83,13 @@ fun SelectDestinationCollectionDialog(
             )
     ) {
         BasicText(
-            text = when(message){
+            text = when (message) {
                 SelectDestinationCollectionDialogMessage.MoveStamps ->
                     "Which collection to move the stamp to?"
+
                 SelectDestinationCollectionDialogMessage.MoveStamp ->
                     "Which collection to move the stamp to?"
+
                 SelectDestinationCollectionDialogMessage.SaveStamps ->
                     "Which collection to save the stamps to?"
             },
@@ -180,22 +180,4 @@ fun SelectDestinationCollectionDialog(
                 .fillMaxWidth()
         )
     }
-}
-
-@Preview
-@Composable
-private fun SelectDestinationCollectionDialogPreview(
-
-) {
-    SelectDestinationCollectionDialog(
-        message = SelectDestinationCollectionDialogMessage.SaveStamps,
-        collections = persistentListOf(
-            "Red collection",
-            "Outside",
-            "Patterns",
-        ),
-        onCollectionSelected = {},
-        onNewCollectionAction = {},
-        onCancel = {},
-    )
 }

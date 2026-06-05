@@ -23,6 +23,7 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.runtime.Composable
@@ -229,8 +230,10 @@ private fun StampCutterPreview(
     Box(
         contentAlignment = Alignment.Center,
         modifier = Modifier
-            .fillMaxSize()
-            .paperBackground()
+            .paperBackground(
+                drawBackgroundColor = true,
+            )
+            .padding(24.dp)
     ) {
         StampCutter(
             frameSize = UiStampShapeA.size * 1.5f,

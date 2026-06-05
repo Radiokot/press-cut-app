@@ -42,17 +42,19 @@ import androidx.compose.ui.graphics.painter.Painter
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableSet
 import ua.com.radiokot.camerapp.R
+import ua.com.radiokot.camerapp.ui.AppTheme
 import ua.com.radiokot.camerapp.ui.LeTextButton
 import ua.com.radiokot.camerapp.ui.LocalColors
 import ua.com.radiokot.camerapp.ui.PodkovaFamily
 import ua.com.radiokot.camerapp.ui.Vignette
+import ua.com.radiokot.camerapp.ui.paperBackground
 
 @Composable
 fun PermissionsScreen(
@@ -70,7 +72,7 @@ fun PermissionsScreen(
     }
 
     BasicText(
-        text = "Press-cut needs a few permissions to run",
+        text = "Press-Cut needs a few permissions to run",
         style = TextStyle(
             fontFamily = PodkovaFamily,
             fontSize = 24.sp,
@@ -212,22 +214,26 @@ private fun PermissionItem(
 }
 
 @SuppressLint("InlinedApi")
-@Preview
+@PreviewLightDark
 @Composable
-private fun PermissionsScreenPreview(
+private fun PermissionsScreenPreview() {
+    AppTheme {
 
-) {
-    PermissionsScreen(
-        permissions =
-            persistentListOf(
-                Manifest.permission.CAMERA,
-                Manifest.permission.READ_EXTERNAL_STORAGE,
-                Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                Manifest.permission.READ_MEDIA_IMAGES,
-            ),
-        isDocumentTreeAccessRequired = true,
-        onGrantAction = {},
-        modifier = Modifier
-            .fillMaxSize()
-    )
+        PermissionsScreen(
+            permissions =
+                persistentListOf(
+                    Manifest.permission.CAMERA,
+                    Manifest.permission.READ_EXTERNAL_STORAGE,
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                    Manifest.permission.READ_MEDIA_IMAGES,
+                ),
+            isDocumentTreeAccessRequired = true,
+            onGrantAction = {},
+            modifier = Modifier
+                .fillMaxSize()
+                .paperBackground(
+                    drawBackgroundColor = true,
+                )
+        )
+    }
 }

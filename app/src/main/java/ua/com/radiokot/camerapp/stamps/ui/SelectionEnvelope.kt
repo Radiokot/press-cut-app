@@ -47,11 +47,13 @@ import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import ua.com.radiokot.camerapp.ui.AppTheme
 import ua.com.radiokot.camerapp.ui.LocalColors
+import ua.com.radiokot.camerapp.ui.paperBackground
 
 @Composable
 fun Modifier.selectionEnvelope(
@@ -138,53 +140,57 @@ fun Modifier.selectionEnvelope(
     }
 }
 
-
-@Preview
+@PreviewLightDark
 @Composable
 private fun SelectionEnvelopePreview() {
-    Box(
-        contentAlignment = Alignment.Center,
-        modifier = Modifier
-            .size(UiStampShapeA.size * 1.2f)
-    ) {
-        val shadowColor = LocalColors.current.stampShadow
-        val animationProgress = remember {
-            Animatable(1f)
-        }
-
-        LaunchedEffect(Unit) {
-            while (isActive) {
-                delay(1000)
-                animationProgress.animateTo(
-                    targetValue =
-                        if (animationProgress.targetValue == 1f)
-                            0f
-                        else
-                            1f,
-                    animationSpec = spring(
-                        dampingRatio = Spring.DampingRatioMediumBouncy,
-                        stiffness = Spring.StiffnessMediumLow,
-                    )
-                )
-            }
-        }
-
-        Image(
-            painter = rememberVectorPainter(UiStampShapeA.fill),
-            colorFilter = ColorFilter.tint(Color(0xff757a80)),
-            contentDescription = null,
+    AppTheme {
+        Box(
+            contentAlignment = Alignment.Center,
             modifier = Modifier
-                .size(UiStampShapeA.size)
-                .dropShadow(
-                    shape = RectangleShape,
-                    shadow = Shadow(
-                        radius = 4.dp,
-                        color = shadowColor,
+                .size(UiStampShapeA.size * 1.3f)
+                .paperBackground(
+                    drawBackgroundColor = true,
+                )
+        ) {
+            val shadowColor = LocalColors.current.stampShadow
+            val animationProgress = remember {
+                Animatable(1f)
+            }
+
+            LaunchedEffect(Unit) {
+                while (isActive) {
+                    delay(1000)
+                    animationProgress.animateTo(
+                        targetValue =
+                            if (animationProgress.targetValue == 1f)
+                                0f
+                            else
+                                1f,
+                        animationSpec = spring(
+                            dampingRatio = Spring.DampingRatioMediumBouncy,
+                            stiffness = Spring.StiffnessMediumLow,
+                        )
                     )
-                )
-                .selectionEnvelope(
-                    animationProgressState = animationProgress.asState(),
-                )
-        )
+                }
+            }
+
+            Image(
+                painter = rememberVectorPainter(UiStampShapeA.fill),
+                colorFilter = ColorFilter.tint(Color.Magenta),
+                contentDescription = null,
+                modifier = Modifier
+                    .size(UiStampShapeA.size)
+                    .dropShadow(
+                        shape = RectangleShape,
+                        shadow = Shadow(
+                            radius = 4.dp,
+                            color = shadowColor,
+                        )
+                    )
+                    .selectionEnvelope(
+                        animationProgressState = animationProgress.asState(),
+                    )
+            )
+        }
     }
 }

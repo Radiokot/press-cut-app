@@ -50,8 +50,10 @@ import androidx.compose.ui.util.fastRoundToInt
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
+import com.skydoves.landscapist.image.LocalLandscapist
 import org.koin.android.ext.android.inject
 import org.koin.androidx.viewmodel.ext.android.viewModel
+import org.koin.compose.koinInject
 import ua.com.radiokot.camerapp.about.ui.AboutRoute
 import ua.com.radiokot.camerapp.about.ui.aboutDestination
 import ua.com.radiokot.camerapp.collectionselection.ui.SelectDestinationCollectionContract
@@ -105,7 +107,9 @@ class StampsActivity : ComponentActivity() {
         }
 
         setContent {
-            AppTheme {
+            AppTheme(
+                LocalLandscapist provides koinInject(),
+            ) {
                 var isStampsScreenWarmupShown by remember {
                     mutableStateOf(true)
                 }
@@ -115,7 +119,7 @@ class StampsActivity : ComponentActivity() {
                 // Until I find the cause, making the screen appear invisible for the first time
                 // makes further appearance and animation smooth.
                 if (isStampsScreenWarmupShown) {
-                    StampsScreenPreview(
+                    StampsScreenDummy(
                         modifier = Modifier
                             .alpha(0.01f)
                     )

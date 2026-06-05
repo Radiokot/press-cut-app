@@ -60,13 +60,14 @@ import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import kotlinx.collections.immutable.toImmutableList
 import ua.com.radiokot.camerapp.R
+import ua.com.radiokot.camerapp.ui.AppTheme
 import ua.com.radiokot.camerapp.ui.LeTextButton
 import ua.com.radiokot.camerapp.ui.LocalColors
 import ua.com.radiokot.camerapp.ui.PodkovaFamily
@@ -286,7 +287,7 @@ private fun NewCollectionView(
     }
 }
 
-@Preview
+@PreviewLightDark
 @Composable
 private fun CollectionsScreenPreview() {
     val items = listOf(
@@ -340,17 +341,21 @@ private fun CollectionsScreenPreview() {
         ),
     ).toImmutableList()
 
-    CollectionsScreen(
-        itemsState = items.let(::mutableStateOf),
-        onItemClicked = {},
-        onNewStampAction = {},
-        onItemLongClicked = {},
-        onNewCollectionAction = {},
-        onMoreClicked = {},
-        sharedTransitionScope = null,
-        animatedVisibilityScope = null,
-        modifier = Modifier
-            .fillMaxSize()
-            .paperBackground()
-    )
+    AppTheme {
+        CollectionsScreen(
+            itemsState = items.let(::mutableStateOf),
+            onItemClicked = {},
+            onNewStampAction = {},
+            onItemLongClicked = {},
+            onNewCollectionAction = {},
+            onMoreClicked = {},
+            sharedTransitionScope = null,
+            animatedVisibilityScope = null,
+            modifier = Modifier
+                .fillMaxSize()
+                .paperBackground(
+                    drawBackgroundColor = true,
+                )
+        )
+    }
 }

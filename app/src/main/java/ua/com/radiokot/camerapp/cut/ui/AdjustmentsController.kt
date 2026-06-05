@@ -64,7 +64,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.fastRoundToInt
@@ -73,6 +73,7 @@ import kotlinx.collections.immutable.persistentListOf
 import kotlinx.coroutines.flow.filter
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import ua.com.radiokot.camerapp.ui.AppTheme
 import ua.com.radiokot.camerapp.ui.LocalColors
 import ua.com.radiokot.camerapp.ui.PodkovaFamily
 import ua.com.radiokot.camerapp.ui.paperBackground
@@ -448,49 +449,49 @@ private fun toIndexAndOffset(
     return index to offsetPx
 }
 
-@Preview
+@PreviewLightDark
 @Composable
-private fun AdjustmentsControllerPreview(
-
-) = Box(
-    modifier = Modifier
-        .fillMaxSize()
-        .paperBackground()
-) {
-    val items = persistentListOf(
-        AdjustmentControllerItem(
-            title = "Brightness",
-            minValue = -100,
-            maxValue = 100,
-            key = "B",
-        ),
-        AdjustmentControllerItem(
-            title = "Contrast",
-            minValue = -100,
-            maxValue = 100,
-            key = "C",
-        ),
-        AdjustmentControllerItem(
-            title = "Vibrance",
-            minValue = -100,
-            maxValue = 100,
-            key = "V",
+private fun AdjustmentsControllerPreview() {
+    AppTheme {
+        val items = persistentListOf(
+            AdjustmentControllerItem(
+                title = "Brightness",
+                minValue = -100,
+                maxValue = 100,
+                key = "B",
+            ),
+            AdjustmentControllerItem(
+                title = "Contrast",
+                minValue = -100,
+                maxValue = 100,
+                key = "C",
+            ),
+            AdjustmentControllerItem(
+                title = "Vibrance",
+                minValue = -100,
+                maxValue = 100,
+                key = "V",
+            )
         )
-    )
-    val currentItem = remember {
-        mutableStateOf(items[1])
-    }
-    val currentValue = remember {
-        mutableIntStateOf(10)
-    }
+        val currentItem = remember {
+            mutableStateOf(items[1])
+        }
+        val currentValue = remember {
+            mutableIntStateOf(10)
+        }
 
-    AdjustmentsController(
-        items = items,
-        currentItemState = currentItem,
-        onCurrentItemChanged = currentItem::value::set,
-        valueState = currentValue,
-        onValueChanged = currentValue::intValue::set,
-        modifier = Modifier
-            .fillMaxWidth()
-    )
+        AdjustmentsController(
+            items = items,
+            currentItemState = currentItem,
+            onCurrentItemChanged = currentItem::value::set,
+            valueState = currentValue,
+            onValueChanged = currentValue::intValue::set,
+            modifier = Modifier
+                .fillMaxWidth()
+                .paperBackground(
+                    drawBackgroundColor = true,
+                )
+                .padding(24.dp)
+        )
+    }
 }

@@ -43,7 +43,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.dropShadow
 import androidx.compose.ui.draw.rotate
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.ColorMatrix
 import androidx.compose.ui.graphics.RectangleShape
@@ -58,12 +57,13 @@ import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.fromHtml
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
 import ua.com.radiokot.camerapp.R
 import ua.com.radiokot.camerapp.stamps.ui.UiStampShapeA
+import ua.com.radiokot.camerapp.ui.AppTheme
 import ua.com.radiokot.camerapp.ui.LocalColors
 import ua.com.radiokot.camerapp.ui.PodkovaFamily
 import ua.com.radiokot.camerapp.ui.Vignette
@@ -219,15 +219,17 @@ fun AboutScreen(
     )
 }
 
-@Preview
+@PreviewLightDark
 @Composable
 private fun AboutScreenPreview() {
-    AboutScreen(
-        onProceedToUrl = {},
-        modifier = Modifier
-            .fillMaxSize()
-            .paperBackground(
-                drawBackgroundColor = true,
-            )
-    )
+    AppTheme {
+        AboutScreen(
+            onProceedToUrl = {},
+            modifier = Modifier
+                .fillMaxSize()
+                .paperBackground(
+                    drawBackgroundColor = true,
+                )
+        )
+    }
 }

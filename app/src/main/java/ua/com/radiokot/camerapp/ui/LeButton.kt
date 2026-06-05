@@ -55,7 +55,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -197,7 +197,7 @@ fun LeTextButton(
     }
 }
 
-@Preview
+@PreviewLightDark
 @Composable
 private fun LeButtonPreview(
 
@@ -206,17 +206,18 @@ private fun LeButtonPreview(
         mutableIntStateOf(0)
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .paperBackground()
-    ) {
-        LeTextButton(
-            text = "Me clicked $counter time(s)",
-            onClick = { counter++ },
+    AppTheme {
+        Column(
             modifier = Modifier
-                .fillMaxWidth(0.75f)
+                .paperBackground(
+                    drawBackgroundColor = true,
+                )
                 .padding(24.dp)
-        )
+        ) {
+            LeTextButton(
+                text = "Me clicked $counter time(s)",
+                onClick = { counter++ },
+            )
+        }
     }
 }

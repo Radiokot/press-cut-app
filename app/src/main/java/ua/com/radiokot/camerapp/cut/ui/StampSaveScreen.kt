@@ -46,14 +46,13 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.dropShadow
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.RectangleShape
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.shadow.Shadow
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.IntSize
 import androidx.compose.ui.unit.dp
 import androidx.core.graphics.createBitmap
@@ -61,8 +60,10 @@ import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import ua.com.radiokot.camerapp.stamps.ui.CaptionInput
 import ua.com.radiokot.camerapp.stamps.ui.UiStampShapeA
+import ua.com.radiokot.camerapp.ui.AppTheme
 import ua.com.radiokot.camerapp.ui.LeTextButton
 import ua.com.radiokot.camerapp.ui.LocalColors
+import ua.com.radiokot.camerapp.ui.paperBackground
 
 @Composable
 fun StampSaveScreen(
@@ -193,11 +194,9 @@ fun StampSaveScreen(
     }
 }
 
-@Preview
+@PreviewLightDark
 @Composable
-private fun StampSaveScreenPreview(
-
-) {
+private fun StampSaveScreenPreview() {
     val adjustmentsControllerItems =
         persistentListOf(
             AdjustmentControllerItem(
@@ -237,22 +236,27 @@ private fun StampSaveScreenPreview(
         ).asImageBitmap()
     }
 
-    StampSaveScreen(
-        captionInputState = captionState,
-        imageState = frameImage.let(::mutableStateOf),
-        onImagePreviewSizeChanged = { },
-        onSaveAction = { },
-        adjustmentsControllerItems = adjustmentsControllerItems,
-        currentAdjustmentsControllerItemState =
-            adjustmentsControllerItems
-                .first()
-                .let(::mutableStateOf),
-        onCurrentAdjustmentsControllerItemChanged = {},
-        onAdjustmentsControllerValueChanged = {},
-        adjustmentsControllerValueState = 0.let(::mutableIntStateOf),
-        sharedTransitionScope = null,
-        animatedVisibilityScope = null,
-        modifier = Modifier
-            .fillMaxSize()
-    )
+    AppTheme {
+        StampSaveScreen(
+            captionInputState = captionState,
+            imageState = frameImage.let(::mutableStateOf),
+            onImagePreviewSizeChanged = { },
+            onSaveAction = { },
+            adjustmentsControllerItems = adjustmentsControllerItems,
+            currentAdjustmentsControllerItemState =
+                adjustmentsControllerItems
+                    .first()
+                    .let(::mutableStateOf),
+            onCurrentAdjustmentsControllerItemChanged = {},
+            onAdjustmentsControllerValueChanged = {},
+            adjustmentsControllerValueState = 0.let(::mutableIntStateOf),
+            sharedTransitionScope = null,
+            animatedVisibilityScope = null,
+            modifier = Modifier
+                .fillMaxSize()
+                .paperBackground(
+                    drawBackgroundColor = true,
+                )
+        )
+    }
 }

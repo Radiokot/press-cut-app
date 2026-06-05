@@ -90,7 +90,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.DpSize
@@ -103,6 +103,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import ua.com.radiokot.camerapp.R
+import ua.com.radiokot.camerapp.ui.AppTheme
 import ua.com.radiokot.camerapp.ui.LocalColors
 import ua.com.radiokot.camerapp.ui.PodkovaFamily
 import ua.com.radiokot.camerapp.ui.paperBackground
@@ -594,48 +595,53 @@ private fun Actions(
     )
 }
 
-@Preview
+@PreviewLightDark
 @Composable
-private fun StampScreenPreview(
-
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .paperBackground()
-    ) {
-        StampScreen(
-            stampId = "",
-            captionState = TextFieldState("My stamp"),
-            isCaptionInputEnabled = false,
-            imageUri = StableHolder(Uri.EMPTY),
-            shape = UiStampShapeA,
-            takenAt = StableHolder(LocalDate.now()),
-            onAddCaptionAction = { },
-            onDeleteAction = { },
-            onMoveAction = { },
-            onSendAction = { },
-            onSwipedToExit = { },
-            sharedTransitionScope = null,
-            animatedVisibilityScope = null,
+private fun StampScreenPreview() {
+    AppTheme {
+        Box(
             modifier = Modifier
                 .fillMaxSize()
-        )
+                .paperBackground(
+                    drawBackgroundColor = true,
+                )
+        ) {
+            StampScreen(
+                stampId = "",
+                captionState = TextFieldState("My stamp"),
+                isCaptionInputEnabled = false,
+                imageUri = StableHolder(Uri.EMPTY),
+                shape = UiStampShapeA,
+                takenAt = StableHolder(LocalDate.now()),
+                onAddCaptionAction = { },
+                onDeleteAction = { },
+                onMoveAction = { },
+                onSendAction = { },
+                onSwipedToExit = { },
+                sharedTransitionScope = null,
+                animatedVisibilityScope = null,
+                modifier = Modifier
+                    .fillMaxSize()
+            )
+        }
     }
 }
 
-@Preview
+@PreviewLightDark
 @Composable
-private fun ActionsPreview(
-
-) {
-    Actions(
-        isCaptionSet = false,
-        onAddCaption = {},
-        onDelete = {},
-        onMove = {},
-        onSend = {},
-        modifier = Modifier
-            .width(350.dp)
-    )
+private fun ActionsPreview() {
+    AppTheme {
+        Actions(
+            isCaptionSet = false,
+            onAddCaption = {},
+            onDelete = {},
+            onMove = {},
+            onSend = {},
+            modifier = Modifier
+                .width(350.dp)
+                .paperBackground(
+                    drawBackgroundColor = true,
+                )
+        )
+    }
 }

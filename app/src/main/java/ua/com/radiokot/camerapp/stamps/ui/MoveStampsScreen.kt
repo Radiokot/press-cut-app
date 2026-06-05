@@ -35,9 +35,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import ua.com.radiokot.camerapp.ui.AppTheme
 import ua.com.radiokot.camerapp.ui.LocalColors
 import ua.com.radiokot.camerapp.ui.PodkovaFamily
 import ua.com.radiokot.camerapp.ui.ProgressBar
@@ -85,14 +86,16 @@ fun MoveStampsScreen(
 }
 
 @Composable
-@Preview
+@PreviewLightDark
 private fun MoveStampsScreenPreview() {
-    MoveStampsScreen(
-        progressState = 0.5f.let(::mutableFloatStateOf),
-        modifier = Modifier
-            .fillMaxSize()
-            .paperBackground(
-                drawBackgroundColor = true,
-            )
-    )
+    AppTheme {
+        MoveStampsScreen(
+            progressState = 0.5f.let(::mutableFloatStateOf),
+            modifier = Modifier
+                .fillMaxSize()
+                .paperBackground(
+                    drawBackgroundColor = true,
+                )
+        )
+    }
 }

@@ -54,6 +54,7 @@ import androidx.compose.ui.graphics.drawscope.Fill
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.tooling.preview.PreviewParameter
 import androidx.compose.ui.tooling.preview.datasource.CollectionPreviewParameterProvider
 import androidx.compose.ui.unit.dp
@@ -195,19 +196,21 @@ private class ProgressBarPreviewParameterProvider
         values.toList()[index].floatValue.toString()
 }
 
-@Preview
+@PreviewLightDark
 @Composable
 private fun ProgressBarPreview(
     @PreviewParameter(ProgressBarPreviewParameterProvider::class)
     progressState: FloatState,
 ) {
-    ProgressBar(
-        progressState = progressState,
-        modifier = Modifier
-            .paperBackground(
-                drawBackgroundColor = true,
-            )
-    )
+    AppTheme {
+        ProgressBar(
+            progressState = progressState,
+            modifier = Modifier
+                .paperBackground(
+                    drawBackgroundColor = true,
+                )
+        )
+    }
 }
 
 @Preview

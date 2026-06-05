@@ -302,13 +302,6 @@ private fun StampSampleView(
             .rotate(
                 (possibleRotationAngles[sample.key.hashCode().absoluteValue % possibleRotationAngles.size])
             )
-            .run {
-                if (sample.imageUri.value !== Uri.EMPTY) {
-                    return@run this
-                }
-
-                background(fallbackColor)
-            }
             .dropShadow(
                 shape = RectangleShape,
                 shadow = Shadow(
@@ -316,5 +309,12 @@ private fun StampSampleView(
                     color = LocalColors.current.stampShadow,
                 )
             )
+            .run {
+                if (sample.imageUri.value !== Uri.EMPTY) {
+                    return@run this
+                }
+
+                background(fallbackColor)
+            }
     )
 }

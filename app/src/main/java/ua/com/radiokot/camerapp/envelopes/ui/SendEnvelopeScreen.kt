@@ -40,7 +40,7 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.collections.immutable.ImmutableList
@@ -50,6 +50,7 @@ import ua.com.radiokot.camerapp.stamps.ui.CaptionInput
 import ua.com.radiokot.camerapp.stamps.ui.StampBoxView
 import ua.com.radiokot.camerapp.stamps.ui.StampSampleItem
 import ua.com.radiokot.camerapp.stamps.ui.UiStampShapeA
+import ua.com.radiokot.camerapp.ui.AppTheme
 import ua.com.radiokot.camerapp.ui.LeTextButton
 import ua.com.radiokot.camerapp.ui.LocalColors
 import ua.com.radiokot.camerapp.ui.PodkovaFamily
@@ -131,34 +132,36 @@ fun SendEnvelopeScreen(
     )
 }
 
-@Preview
+@PreviewLightDark
 @Composable
 private fun SendEnvelopeScreenPreview() {
-    SendEnvelopeScreen(
-        messageInputState = TextFieldState("My message for the receiver"),
-        someStamps = persistentListOf(
-            StampSampleItem(
-                imageUri = StableHolder(Uri.EMPTY),
-                shape = UiStampShapeA,
-                key = "1",
+    AppTheme {
+        SendEnvelopeScreen(
+            messageInputState = TextFieldState("My message for the receiver"),
+            someStamps = persistentListOf(
+                StampSampleItem(
+                    imageUri = StableHolder(Uri.EMPTY),
+                    shape = UiStampShapeA,
+                    key = "1",
+                ),
+                StampSampleItem(
+                    imageUri = StableHolder(Uri.EMPTY),
+                    shape = UiStampShapeA,
+                    key = "2",
+                ),
+                StampSampleItem(
+                    imageUri = StableHolder(Uri.EMPTY),
+                    shape = UiStampShapeA,
+                    key = "3",
+                ),
             ),
-            StampSampleItem(
-                imageUri = StableHolder(Uri.EMPTY),
-                shape = UiStampShapeA,
-                key = "2",
-            ),
-            StampSampleItem(
-                imageUri = StableHolder(Uri.EMPTY),
-                shape = UiStampShapeA,
-                key = "3",
-            ),
-        ),
-        stampCount = 1,
-        onSendAction = {},
-        modifier = Modifier
-            .fillMaxSize()
-            .paperBackground(
-                drawBackgroundColor = true,
-            )
-    )
+            stampCount = 1,
+            onSendAction = {},
+            modifier = Modifier
+                .fillMaxSize()
+                .paperBackground(
+                    drawBackgroundColor = true,
+                )
+        )
+    }
 }

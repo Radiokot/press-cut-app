@@ -24,15 +24,15 @@ import androidx.compose.foundation.text.selection.LocalTextSelectionColors
 import androidx.compose.foundation.text.selection.TextSelectionColors
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.ProvidedValue
 import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.graphics.Color
-import com.skydoves.landscapist.image.LocalLandscapist
-import org.koin.compose.koinInject
 
 val LocalColors = compositionLocalOf<AppColors> { LightAppColors }
 
 @Composable
 fun AppTheme(
+    vararg extras: ProvidedValue<*>,
     isDark: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit,
 ) {
@@ -50,7 +50,7 @@ fun AppTheme(
                 alpha = 0.6f,
             )
         ),
-        LocalLandscapist provides koinInject(),
+        *extras,
         content = content,
     )
 }

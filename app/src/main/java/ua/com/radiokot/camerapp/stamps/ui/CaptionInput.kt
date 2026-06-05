@@ -23,7 +23,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.BasicTextField
@@ -45,11 +44,13 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import ua.com.radiokot.camerapp.ui.AppTheme
 import ua.com.radiokot.camerapp.ui.LocalColors
 import ua.com.radiokot.camerapp.ui.PodkovaFamily
+import ua.com.radiokot.camerapp.ui.paperBackground
 
 @Composable
 fun CaptionInput(
@@ -119,21 +120,25 @@ fun CaptionInput(
     )
 }
 
-@Preview
+@PreviewLightDark
 @Composable
 private fun CaptionInputPreview() {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(24.dp),
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(24.dp)
-    ) {
-        CaptionInput(
-            inputState = TextFieldState("")
-        )
+    AppTheme {
+        Column(
+            verticalArrangement = Arrangement.spacedBy(24.dp),
+            modifier = Modifier
+                .paperBackground(
+                    drawBackgroundColor = true,
+                )
+                .padding(24.dp)
+        ) {
+            CaptionInput(
+                inputState = TextFieldState("")
+            )
 
-        CaptionInput(
-            inputState = TextFieldState("My stamp")
-        )
+            CaptionInput(
+                inputState = TextFieldState("My stamp")
+            )
+        }
     }
 }

@@ -37,6 +37,8 @@ import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.rememberNavController
+import com.skydoves.landscapist.image.LocalLandscapist
+import org.koin.compose.koinInject
 import ua.com.radiokot.camerapp.collectionselection.ui.SelectDestinationCollectionContract
 import ua.com.radiokot.camerapp.collectionselection.ui.selectDestinationCollectionDestination
 import ua.com.radiokot.camerapp.envelopes.domain.EnvelopePreviewResult
@@ -63,7 +65,9 @@ class OpenEnvelopeActivity : ComponentActivity() {
         val oneStampEnvelopeContentUri = StableHolder(intentData)
 
         setContent {
-            AppTheme {
+            AppTheme(
+                LocalLandscapist provides koinInject(),
+            ) {
                 OpenEnvelopeNavHost(
                     oneStampEnvelopeContentUri = oneStampEnvelopeContentUri,
                     onDone = {
