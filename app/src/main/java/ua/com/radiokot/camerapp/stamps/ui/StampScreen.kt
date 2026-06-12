@@ -732,7 +732,7 @@ private fun StampScreenLayoutContent(
             .width(StampContainerBaseSize.width * 2.5f)
     ) {
         Actions(
-            isCaptionSet = captionState.text.isNotEmpty(),
+            canAddCaption = !isCaptionInputEnabled.value,
             onAddCaption = {
                 areActionsVisible.value = false
                 onAddCaptionAction()
@@ -766,7 +766,7 @@ private fun StampScreenLayoutContent(
 private fun Actions(
     modifier: Modifier = Modifier,
     cornerRadius: Dp = 10.dp,
-    isCaptionSet: Boolean,
+    canAddCaption: Boolean,
     onAddCaption: () -> Unit,
     onMove: () -> Unit,
     onSend: () -> Unit,
@@ -798,7 +798,7 @@ private fun Actions(
         )
     }
 
-    if (!isCaptionSet) {
+    if (canAddCaption) {
         BasicText(
             text = "Add a caption",
             style = textStyle,
@@ -915,7 +915,7 @@ private fun StampScreenPreview() {
 private fun ActionsPreview() {
     AppTheme {
         Actions(
-            isCaptionSet = false,
+            canAddCaption = false,
             onAddCaption = {},
             onDelete = {},
             onMove = {},
