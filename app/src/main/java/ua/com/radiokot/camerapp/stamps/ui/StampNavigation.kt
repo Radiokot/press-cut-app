@@ -26,7 +26,6 @@ import androidx.compose.animation.SharedTransitionScope
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavGraphBuilder
@@ -61,12 +60,11 @@ fun NavGraphBuilder.stampDestination(
             )
         )
     }
-    val isCaptionInputEnabled by viewModel.isCaptionInputEnabled.collectAsState()
 
     StampScreen(
         stampId = viewModel.stampId,
         captionState = viewModel.caption,
-        isCaptionInputEnabled = isCaptionInputEnabled,
+        isCaptionInputEnabled = viewModel.isCaptionInputEnabled.collectAsState(),
         onAddCaptionAction = viewModel::onAddCaptionAction,
         onDeleteAction = viewModel::onDeleteAction,
         onMoveAction = viewModel::onMoveAction,
