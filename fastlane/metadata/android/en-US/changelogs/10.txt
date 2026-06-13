@@ -1,0 +1,3 @@
+Added:
+- Ability to share individual stamps as posters
+- A landscape version of the stamp screen

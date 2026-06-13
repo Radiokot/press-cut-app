@@ -1,3 +1,0 @@
-Added:
-- Ability to send individual stamps as images
-- Dark theme

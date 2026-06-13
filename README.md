@@ -25,9 +25,6 @@ Have friends using iPhone? Exchange stamps with them! Press-Cut envelopes can be
 [<img src="repository-assets/icon-github.svg" alt="APK" style="height: 1em;"/> APK from the latest release](https://github.com/Radiokot/press-cut-app/releases/latest)
 
 
-[<img src="repository-assets/icon-fdroid.png" alt="F-Droid" style="height: 1em;"/> F-Droid](https://f-droid.org/packages/ua.com.radiokot.camerapp)
-
-
 [<img src="repository-assets/icon-gplay.svg" alt="Google Play" style="height: 1em;"/> Google Play](https://play.google.com/store/apps/details?id=ua.com.radiokot.camerapp)
 
 ## Technical details
