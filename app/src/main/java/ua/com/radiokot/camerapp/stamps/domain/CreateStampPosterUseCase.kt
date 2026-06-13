@@ -27,7 +27,6 @@ import android.text.Layout
 import android.text.StaticLayout
 import android.text.TextPaint
 import androidx.collection.mutableFloatListOf
-import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.util.fastRoundToInt
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.graphics.applyCanvas
@@ -40,7 +39,6 @@ import com.skydoves.landscapist.core.model.ImageResult
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.firstOrNull
 import ua.com.radiokot.camerapp.R
-import ua.com.radiokot.camerapp.ui.AppColors
 
 class CreateStampPosterUseCase(
     private val landscapist: Landscapist,
@@ -48,7 +46,7 @@ class CreateStampPosterUseCase(
 ) {
     suspend operator fun invoke(
         stamp: Stamp,
-        colors: AppColors,
+        options: StampPosterOptions,
     ): Bitmap {
         val posterBitmap = createBitmap(
             width = 900,
@@ -89,7 +87,7 @@ class CreateStampPosterUseCase(
                 stampDrawTop + stampDrawHeight,
             )
 
-        posterBitmap.applyCanvas {
+        return posterBitmap.applyCanvas {
             drawRect(
                 Rect(
                     0,
@@ -99,7 +97,7 @@ class CreateStampPosterUseCase(
                 ),
                 Paint().apply {
                     style = Paint.Style.FILL
-                    color = colors.componentBackground.toArgb()
+                    color = options.colors.paperBackground
                 }
             )
 
@@ -123,7 +121,7 @@ class CreateStampPosterUseCase(
                 Paint().apply {
                     style = Paint.Style.STROKE
                     strokeWidth = 3f
-                    color = colors.paperBackgroundLine.toArgb()
+                    color = options.colors.paperBackgroundLine
                 }
             )
 
@@ -132,7 +130,12 @@ class CreateStampPosterUseCase(
                 Paint(Paint.ANTI_ALIAS_FLAG).apply {
                     style = Paint.Style.FILL
                     color = android.graphics.Color.TRANSPARENT
-                    setShadowLayer(42f, 0f, 0f, colors.stampShadow.toArgb())
+                    setShadowLayer(
+                        42f,
+                        0f,
+                        0f,
+                        options.colors.stampShadow,
+                    )
                 }
             )
 
@@ -145,12 +148,14 @@ class CreateStampPosterUseCase(
                 }
             )
 
-            if (stamp.caption != null) {
+            if (options.withCaption && stamp.caption != null) {
+
                 val captionPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
-                    color = colors.textPrimary.toArgb()
+                    color = options.colors.caption
                     textSize = 60f
                     typeface = ResourcesCompat.getFont(context, R.font.podkova_regular)
                 }
+
                 val captionLayout =
                     StaticLayout
                         .Builder
@@ -167,12 +172,9 @@ class CreateStampPosterUseCase(
                 withTranslation(
                     x = (width - captionLayout.width) / 2f,
                     y = stampDrawRect.top - captionLayout.height - 56f,
-                ) {
-                    captionLayout.draw(this)
-                }
+                    block = captionLayout::draw,
+                )
             }
         }
-
-        return posterBitmap
     }
 }
