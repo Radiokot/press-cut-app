@@ -38,6 +38,10 @@ android {
         def stampFileContentProviderAuthority = "${applicationId}.stampfiles"
         manifestPlaceholders.stampFileContentProviderAuthority = stampFileContentProviderAuthority
         buildConfigField "String", "stampFileContentProviderAuthority", "\"$stampFileContentProviderAuthority\""
+
+        def stampPosterContentProviderAuthority = "${applicationId}.posters"
+        manifestPlaceholders.stampPosterContentProviderAuthority = stampPosterContentProviderAuthority
+        buildConfigField "String", "stampPosterContentProviderAuthority", "\"$stampPosterContentProviderAuthority\""
     }
 
     externalNativeBuild {

@@ -22,22 +22,25 @@ package ua.com.radiokot.camerapp.stamps.data
 import android.content.ContentProvider
 import android.content.ContentValues
 import android.database.Cursor
+import android.graphics.Bitmap
 import android.net.Uri
 import android.os.ParcelFileDescriptor
-import android.provider.MediaStore
 import android.provider.OpenableColumns
 import androidx.core.net.toUri
 import org.koin.android.ext.android.inject
 import org.koin.core.component.KoinComponent
 import ua.com.radiokot.camerapp.BuildConfig
+import ua.com.radiokot.camerapp.stamps.domain.CreateStampPosterUseCase
 import ua.com.radiokot.camerapp.stamps.domain.Stamp
+import ua.com.radiokot.camerapp.stamps.domain.StampPosterOptions
 import ua.com.radiokot.camerapp.util.MatrixCursor
+import ua.com.radiokot.camerapp.util.openPipeHelper
 
-class StampFileContentProvider :
+class StampPosterContentProvider :
     ContentProvider(),
     KoinComponent {
 
-    private val stampRepository: FsStampRepository by inject()
+    private val createStampPosterUseCase: CreateStampPosterUseCase by inject()
 
     override fun onCreate(): Boolean {
         return true
@@ -48,21 +51,29 @@ class StampFileContentProvider :
         mode: String,
     ): ParcelFileDescriptor {
 
-        val stamp = stampsByUri[uri]
-        checkNotNull(stamp) {
-            "Requested URI is not provided"
-        }
+        val (stamp, posterOptions) =
+            stampsAndOptionsByUri[uri]
+                ?: error("Requested URI is not provided")
 
-        return ParcelFileDescriptor.open(
-            stampRepository.getStampFile(stamp),
-            ParcelFileDescriptor.MODE_READ_ONLY,
-        )
+        return openPipeHelper { outputStream ->
+            val bitmap =
+                createStampPosterUseCase(
+                    stamp = stamp,
+                    options = posterOptions,
+                )
+            bitmap.compress(
+                Bitmap.CompressFormat.PNG,
+                100,
+                outputStream,
+            )
+            bitmap.recycle()
+        }
     }
 
     override fun getType(
         uri: Uri,
     ): String =
-        STAMP_FILE_CONTENT_TYPE
+        POSTER_FILE_CONTENT_TYPE
 
     override fun query(
         uri: Uri,
@@ -72,19 +83,19 @@ class StampFileContentProvider :
         sortOrder: String?,
     ): Cursor {
 
-        val stamp = stampsByUri[uri]
-        checkNotNull(stamp) {
-            "Requested URI is not provided"
-        }
-
-        val file = stampRepository.getStampFile(stamp)
+        val (stamp, _) =
+            stampsAndOptionsByUri[uri]
+                ?: error("Requested URI is not provided")
 
         return MatrixCursor(
             valuesByColumnName = mapOf(
-                MediaStore.MediaColumns.DATA to file.absolutePath,
-                OpenableColumns.DISPLAY_NAME to file.name,
-                OpenableColumns.SIZE to file.length(),
-                MediaStore.MediaColumns.DATE_TAKEN to stamp.takenAtLocal.toString(),
+                OpenableColumns.DISPLAY_NAME to getPosterFileName(
+                    stampId = stamp.id,
+                ),
+                // Gmail WANTS this!
+                // It is actually shown in the attachment section.
+                // Doesn't need to be the exact size though.
+                OpenableColumns.SIZE to 550 * 1024,
             ),
         )
     }
@@ -99,17 +110,24 @@ class StampFileContentProvider :
         error("Updates are not allowed")
 
     companion object {
-        const val AUTHORITY = BuildConfig.stampFileContentProviderAuthority
-        const val STAMP_FILE_CONTENT_TYPE = "image/webp"
+        const val AUTHORITY = BuildConfig.stampPosterContentProviderAuthority
+        const val POSTER_FILE_CONTENT_TYPE = "image/png"
+        private const val PNG_EXTENSION = "png"
 
-        private val stampsByUri = mutableMapOf<Uri, Stamp>()
+        private val stampsAndOptionsByUri = mutableMapOf<Uri, Pair<Stamp, StampPosterOptions>>()
 
         fun provide(
             stamp: Stamp,
+            posterOptions: StampPosterOptions,
         ): Uri {
-            val uri = "content://$AUTHORITY/${stamp.id}.${FsStampRepository.WEBP_EXTENSION}".toUri()
-            stampsByUri[uri] = stamp
+            val uri = "content://$AUTHORITY/${getPosterFileName(stamp.id)}".toUri()
+            stampsAndOptionsByUri[uri] = stamp to posterOptions
             return uri
         }
+
+        private fun getPosterFileName(
+            stampId: String,
+        ): String =
+            "${stampId}.$PNG_EXTENSION"
     }
 }

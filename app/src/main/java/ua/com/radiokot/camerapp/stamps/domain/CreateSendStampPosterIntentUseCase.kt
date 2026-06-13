@@ -17,23 +17,14 @@
    along with Press-Cut. If not, see <http://www.gnu.org/licenses/>.
 */
 
-package ua.com.radiokot.camerapp.stamps.data
+package ua.com.radiokot.camerapp.stamps.domain
 
 import android.content.Intent
-import ua.com.radiokot.camerapp.stamps.domain.CreateSendStampIntentUseCase
-import ua.com.radiokot.camerapp.stamps.domain.Stamp
 
-class CpCreateSendStampIntentUseCase : CreateSendStampIntentUseCase {
+interface CreateSendStampPosterIntentUseCase {
 
-    override fun invoke(
+    operator fun invoke(
         stamp: Stamp,
-    ): Intent {
-        val uri = StampFileContentProvider.provide(stamp)
-
-        return Intent(Intent.ACTION_SEND)
-            .setDataAndType(uri, StampFileContentProvider.STAMP_FILE_CONTENT_TYPE)
-            .putExtra(Intent.EXTRA_STREAM, uri)
-            .putExtra(Intent.EXTRA_TEXT, stamp.caption)
-            .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-    }
+        options: StampPosterOptions,
+    ): Intent
 }

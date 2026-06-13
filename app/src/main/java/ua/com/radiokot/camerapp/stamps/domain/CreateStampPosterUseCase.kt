@@ -164,7 +164,7 @@ class CreateStampPosterUseCase(
                             0,
                             stamp.caption.length,
                             captionPaint,
-                            (posterBitmap.width * 0.7f).fastRoundToInt()
+                            (posterBitmap.width * 0.9f).fastRoundToInt()
                         )
                         .setAlignment(Layout.Alignment.ALIGN_CENTER)
                         .build()

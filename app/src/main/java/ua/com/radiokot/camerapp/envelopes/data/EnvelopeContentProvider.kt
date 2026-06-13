@@ -22,16 +22,16 @@ package ua.com.radiokot.camerapp.envelopes.data
 import android.content.ContentProvider
 import android.content.ContentValues
 import android.database.Cursor
-import android.database.MatrixCursor
 import android.net.Uri
 import android.os.ParcelFileDescriptor
 import android.provider.OpenableColumns
 import androidx.core.net.toUri
-import kotlinx.coroutines.runBlocking
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import ua.com.radiokot.camerapp.BuildConfig
 import ua.com.radiokot.camerapp.envelopes.domain.CreateEnvelopeUseCase
+import ua.com.radiokot.camerapp.util.MatrixCursor
+import ua.com.radiokot.camerapp.util.openPipeHelper
 
 class EnvelopeContentProvider :
     ContentProvider(),
@@ -53,32 +53,14 @@ class EnvelopeContentProvider :
             "Requested URI is not provided"
         }
 
-        val writer = PipeDataWriter<Nothing> { output, _, _, _, _ ->
-            // Some apps hammer the method multiple times
-            // and don't even read the data which breaks the pipe sometimes.
-            // So far I didn't find a way to check if the reader is reading.
-            runBlocking {
-                runCatching {
-                    createEnvelopeUseCase(
-                        id = envelopeData.id,
-                        message = envelopeData.message,
-                        stampIds = envelopeData.stampIds,
-                        outputStream =
-                            ParcelFileDescriptor
-                                .AutoCloseOutputStream(output)
-                                .buffered(),
-                    )
-                }
-            }
+        return openPipeHelper { outputStream ->
+            createEnvelopeUseCase(
+                id = envelopeData.id,
+                message = envelopeData.message,
+                stampIds = envelopeData.stampIds,
+                outputStream = outputStream,
+            )
         }
-
-        return openPipeHelper(
-            uri,
-            "",
-            null,
-            null,
-            writer,
-        )
     }
 
     override fun getType(
@@ -98,25 +80,15 @@ class EnvelopeContentProvider :
             "Requested URI is not provided"
         }
 
-        val cursor = MatrixCursor(
-            arrayOf(
-                OpenableColumns.DISPLAY_NAME,
-                OpenableColumns.SIZE,
-            ),
-            1
-        )
-        cursor.addRow(
-            arrayOf<Any?>(
-                uri.toString().substringAfterLast('/'),
-
+        return MatrixCursor(
+            valuesByColumnName = mapOf(
+                OpenableColumns.DISPLAY_NAME to uri.toString().substringAfterLast('/'),
                 // Gmail WANTS this!
                 // It is actually shown in the attachment section.
                 // Doesn't need to be the exact size though.
-                envelopeData.stampIds.size * 364000,
-            )
+                OpenableColumns.SIZE to envelopeData.stampIds.size * 364000
+            ),
         )
-
-        return cursor
     }
 
     override fun delete(p0: Uri, p1: String?, p2: Array<out String?>?): Int =

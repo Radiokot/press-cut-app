@@ -34,6 +34,7 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import ua.com.radiokot.camerapp.stamps.domain.CreateSendStampIntentUseCase
+import ua.com.radiokot.camerapp.stamps.domain.CreateSendStampPosterIntentUseCase
 import ua.com.radiokot.camerapp.stamps.domain.Stamp
 import ua.com.radiokot.camerapp.stamps.domain.StampRepository
 import ua.com.radiokot.camerapp.util.StableHolder
@@ -47,6 +48,7 @@ class StampScreenViewModel(
     private val parameters: Parameters,
     private val stampRepository: StampRepository,
     private val createSendStampIntentUseCase: CreateSendStampIntentUseCase,
+    private val createSendStampPosterIntentUseCase: CreateSendStampPosterIntentUseCase,
 ) : ViewModel() {
 
     private val log by lazyLogger("StampScreenVM")
