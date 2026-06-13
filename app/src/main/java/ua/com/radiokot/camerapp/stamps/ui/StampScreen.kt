@@ -27,6 +27,7 @@ import android.net.Uri
 import android.view.WindowManager
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.LocalActivity
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.AnimatedVisibilityScope
 import androidx.compose.animation.EnterTransition
@@ -78,10 +79,13 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.retain.retain
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.dropShadow
@@ -134,7 +138,8 @@ fun StampScreen(
     onAddCaptionAction: () -> Unit,
     onDeleteAction: () -> Unit,
     onMoveAction: () -> Unit,
-    onSendAction: () -> Unit,
+    onSendAsImageAction: () -> Unit,
+    onSendAsPosterAction: () -> Unit,
     onSwipedToExit: () -> Unit,
     sharedTransitionScope: SharedTransitionScope?,
     animatedVisibilityScope: AnimatedVisibilityScope?,
@@ -192,7 +197,8 @@ fun StampScreen(
             areActionsVisible = areActionsVisible,
             onDeleteAction = onDeleteAction,
             onMoveAction = onMoveAction,
-            onSendAction = onSendAction,
+            onSendAsImageAction = onSendAsImageAction,
+            onSendAsPosterAction = onSendAsPosterAction,
             onSwipedToExit = onSwipedToExit,
             sharedTransitionScope = sharedTransitionScope,
             animatedVisibilityScope = animatedVisibilityScope,
@@ -213,7 +219,8 @@ fun StampScreen(
             areActionsVisible = areActionsVisible,
             onDeleteAction = onDeleteAction,
             onMoveAction = onMoveAction,
-            onSendAction = onSendAction,
+            onSendAsImageAction = onSendAsImageAction,
+            onSendAsPosterAction = onSendAsPosterAction,
             onSwipedToExit = onSwipedToExit,
             sharedTransitionScope = sharedTransitionScope,
             animatedVisibilityScope = animatedVisibilityScope,
@@ -237,7 +244,8 @@ private fun StampScreenPortrait(
     onAddCaptionAction: () -> Unit,
     onDeleteAction: () -> Unit,
     onMoveAction: () -> Unit,
-    onSendAction: () -> Unit,
+    onSendAsImageAction: () -> Unit,
+    onSendAsPosterAction: () -> Unit,
     onSwipedToExit: () -> Unit,
     sharedTransitionScope: SharedTransitionScope?,
     animatedVisibilityScope: AnimatedVisibilityScope?,
@@ -359,7 +367,8 @@ private fun StampScreenPortrait(
                 onAddCaptionAction = onAddCaptionAction,
                 onDeleteAction = onDeleteAction,
                 onMoveAction = onMoveAction,
-                onSendAction = onSendAction,
+                onSendAsImageAction = onSendAsImageAction,
+                onSendAsPosterAction = onSendAsPosterAction,
                 onSwipedToExit = onSwipedToExit,
                 sharedTransitionScope = sharedTransitionScope,
                 animatedVisibilityScope = animatedVisibilityScope,
@@ -396,7 +405,8 @@ fun StampScreenLandscape(
     onAddCaptionAction: () -> Unit,
     onDeleteAction: () -> Unit,
     onMoveAction: () -> Unit,
-    onSendAction: () -> Unit,
+    onSendAsImageAction: () -> Unit,
+    onSendAsPosterAction: () -> Unit,
     onSwipedToExit: () -> Unit,
     sharedTransitionScope: SharedTransitionScope?,
     animatedVisibilityScope: AnimatedVisibilityScope?,
@@ -507,7 +517,8 @@ fun StampScreenLandscape(
                 onAddCaptionAction = onAddCaptionAction,
                 onDeleteAction = onDeleteAction,
                 onMoveAction = onMoveAction,
-                onSendAction = onSendAction,
+                onSendAsImageAction = onSendAsImageAction,
+                onSendAsPosterAction = onSendAsPosterAction,
                 onSwipedToExit = onSwipedToExit,
                 sharedTransitionScope = sharedTransitionScope,
                 animatedVisibilityScope = animatedVisibilityScope,
@@ -544,7 +555,8 @@ private fun StampScreenLayoutContent(
     onAddCaptionAction: () -> Unit,
     onDeleteAction: () -> Unit,
     onMoveAction: () -> Unit,
-    onSendAction: () -> Unit,
+    onSendAsImageAction: () -> Unit,
+    onSendAsPosterAction: () -> Unit,
     onSwipedToExit: () -> Unit,
     sharedTransitionScope: SharedTransitionScope?,
     animatedVisibilityScope: AnimatedVisibilityScope?,
@@ -749,9 +761,13 @@ private fun StampScreenLayoutContent(
                 areActionsVisible.value = false
                 onMoveAction()
             },
-            onSend = {
+            onSendAsImage = {
                 areActionsVisible.value = false
-                onSendAction()
+                onSendAsImageAction()
+            },
+            onSendAsPoster = {
+                areActionsVisible.value = false
+                onSendAsPosterAction()
             },
             modifier = actionsModifier
         )
@@ -769,7 +785,8 @@ private fun Actions(
     canAddCaption: Boolean,
     onAddCaption: () -> Unit,
     onMove: () -> Unit,
-    onSend: () -> Unit,
+    onSendAsImage: () -> Unit,
+    onSendAsPoster: () -> Unit,
     onDelete: () -> Unit,
 ) = Column(
     modifier = modifier
@@ -798,84 +815,159 @@ private fun Actions(
         )
     }
 
-    if (canAddCaption) {
-        BasicText(
-            text = "Add a caption",
-            style = textStyle,
-            modifier = Modifier
-                .clickable(
-                    onClick = onAddCaption,
-                )
-                .padding(
-                    vertical = 20.dp,
-                )
-                .fillMaxWidth()
-        )
-
-        Spacer(
-            modifier = Modifier
-                .height(1.dp)
-                .fillMaxWidth()
-                .background(colors.componentDivider)
-        )
+    var submenu by remember {
+        mutableIntStateOf(0)
     }
 
-    BasicText(
-        text = "Move",
-        style = textStyle,
+    AnimatedContent(
+        targetState = submenu,
         modifier = Modifier
-            .clickable(
-                onClick = onMove,
-            )
-            .padding(
-                vertical = 20.dp,
-            )
             .fillMaxWidth()
-    )
+    ) { currentSubmenu ->
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+        ) {
+            if (currentSubmenu == 1) {
+                BasicText(
+                    text = "Send stamp as",
+                    style = textStyle.copy(
+                        fontWeight = FontWeight.Normal,
+                    ),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(
+                            vertical = 20.dp,
+                        )
+                )
 
-    Spacer(
-        modifier = Modifier
-            .height(1.dp)
-            .fillMaxWidth()
-            .background(colors.componentDivider)
-    )
+                Spacer(
+                    modifier = Modifier
+                        .height(1.dp)
+                        .fillMaxWidth()
+                        .background(colors.componentDivider)
+                )
 
-    BasicText(
-        text = "Send",
-        style = textStyle,
-        modifier = Modifier
-            .clickable(
-                onClick = onSend,
-            )
-            .padding(
-                vertical = 20.dp,
-            )
-            .fillMaxWidth()
-    )
+                BasicText(
+                    text = "An image",
+                    style = textStyle,
+                    modifier = Modifier
+                        .clickable(
+                            onClick = onSendAsImage,
+                        )
+                        .padding(
+                            vertical = 20.dp,
+                        )
+                        .fillMaxWidth()
+                )
 
-    Spacer(
-        modifier = Modifier
-            .height(1.dp)
-            .fillMaxWidth()
-            .background(colors.componentDivider)
-    )
+                Spacer(
+                    modifier = Modifier
+                        .height(1.dp)
+                        .fillMaxWidth()
+                        .background(colors.componentDivider)
+                )
 
-    BasicText(
-        text = "Hold to delete",
-        style = textStyle.copy(
-            color = colors.textDanger,
-        ),
-        modifier = Modifier
-            .holdToDeleteAction(
-                roundedCornerRadius = cornerRadius,
-                areTopCornersRounded = false,
-                onDelete = onDelete,
+                BasicText(
+                    text = "A poster",
+                    style = textStyle,
+                    modifier = Modifier
+                        .clickable(
+                            onClick = onSendAsPoster,
+                        )
+                        .padding(
+                            vertical = 20.dp,
+                        )
+                        .fillMaxWidth()
+                )
+
+                BackHandler { submenu = 0 }
+
+                return@Column
+            }
+
+            if (canAddCaption) {
+                BasicText(
+                    text = "Add a caption",
+                    style = textStyle,
+                    modifier = Modifier
+                        .clickable(
+                            onClick = onAddCaption,
+                        )
+                        .padding(
+                            vertical = 20.dp,
+                        )
+                        .fillMaxWidth()
+                )
+
+                Spacer(
+                    modifier = Modifier
+                        .height(1.dp)
+                        .fillMaxWidth()
+                        .background(colors.componentDivider)
+                )
+            }
+
+            BasicText(
+                text = "Move",
+                style = textStyle,
+                modifier = Modifier
+                    .clickable(
+                        onClick = onMove,
+                    )
+                    .padding(
+                        vertical = 20.dp,
+                    )
+                    .fillMaxWidth()
             )
-            .padding(
-                vertical = 20.dp,
+
+            Spacer(
+                modifier = Modifier
+                    .height(1.dp)
+                    .fillMaxWidth()
+                    .background(colors.componentDivider)
             )
-            .fillMaxWidth()
-    )
+
+            BasicText(
+                text = "Send",
+                style = textStyle,
+                modifier = Modifier
+                    .clickable(
+                        onClick = {
+                            submenu = 1
+                        },
+                    )
+                    .padding(
+                        vertical = 20.dp,
+                    )
+                    .fillMaxWidth()
+            )
+
+            Spacer(
+                modifier = Modifier
+                    .height(1.dp)
+                    .fillMaxWidth()
+                    .background(colors.componentDivider)
+            )
+
+            BasicText(
+                text = "Hold to delete",
+                style = textStyle.copy(
+                    color = colors.textDanger,
+                ),
+                modifier = Modifier
+                    .holdToDeleteAction(
+                        roundedCornerRadius = cornerRadius,
+                        areTopCornersRounded = false,
+                        onDelete = onDelete,
+                    )
+                    .padding(
+                        vertical = 20.dp,
+                    )
+                    .fillMaxWidth()
+            )
+        }
+    }
 }
 
 @PreviewLightDark
@@ -899,7 +991,8 @@ private fun StampScreenPreview() {
                 onAddCaptionAction = { },
                 onDeleteAction = { },
                 onMoveAction = { },
-                onSendAction = { },
+                onSendAsImageAction = { },
+                onSendAsPosterAction = { },
                 onSwipedToExit = { },
                 sharedTransitionScope = null,
                 animatedVisibilityScope = null,
@@ -919,7 +1012,8 @@ private fun ActionsPreview() {
             onAddCaption = {},
             onDelete = {},
             onMove = {},
-            onSend = {},
+            onSendAsImage = {},
+            onSendAsPoster = {},
             modifier = Modifier
                 .width(350.dp)
                 .paperBackground(

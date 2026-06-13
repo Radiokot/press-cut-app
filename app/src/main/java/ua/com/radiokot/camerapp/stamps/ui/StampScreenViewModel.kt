@@ -23,6 +23,7 @@ import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.runtime.Immutable
+import androidx.compose.ui.graphics.toArgb
 import androidx.core.net.toUri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -36,7 +37,9 @@ import kotlinx.coroutines.runBlocking
 import ua.com.radiokot.camerapp.stamps.domain.CreateSendStampIntentUseCase
 import ua.com.radiokot.camerapp.stamps.domain.CreateSendStampPosterIntentUseCase
 import ua.com.radiokot.camerapp.stamps.domain.Stamp
+import ua.com.radiokot.camerapp.stamps.domain.StampPosterOptions
 import ua.com.radiokot.camerapp.stamps.domain.StampRepository
+import ua.com.radiokot.camerapp.ui.LightAppColors
 import ua.com.radiokot.camerapp.util.StableHolder
 import ua.com.radiokot.camerapp.util.eventSharedFlow
 import ua.com.radiokot.camerapp.util.lazyLogger
@@ -151,13 +154,35 @@ class StampScreenViewModel(
         events.emit(Event.Done)
     }
 
-    fun onSendAction() {
+    fun onSendAsImageAction() {
         val intent = createSendStampIntentUseCase(
             stamp = stamp,
         )
 
         log.debug {
-            "onSendAction(): proceeding to send intent:" +
+            "onSendAsImageAction(): proceeding to send intent:" +
+                    "\nintent=$intent"
+        }
+
+        events.tryEmit(Event.ProceedToSendIntent(intent))
+    }
+
+    fun onSendAsPosterAction() {
+        val intent = createSendStampPosterIntentUseCase(
+            stamp = stamp,
+            options = StampPosterOptions(
+                withCaption = true,
+                colors = StampPosterOptions.Colors(
+                    paperBackground = LightAppColors.screenBackground.toArgb(),
+                    paperBackgroundLine = LightAppColors.paperBackgroundLine.toArgb(),
+                    stampShadow = LightAppColors.stampShadow.toArgb(),
+                    caption = LightAppColors.textPrimary.toArgb(),
+                ),
+            ),
+        )
+
+        log.debug {
+            "onSendAsImageAction(): proceeding to send intent:" +
                     "\nintent=$intent"
         }
 
