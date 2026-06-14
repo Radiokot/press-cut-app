@@ -51,8 +51,9 @@ class CreateStampPosterUseCase(
         val scale = options.scale
 
         val posterBitmap = createBitmap(
-            width = (900 * scale).fastRoundToInt(),
-            height = (1600 * scale).fastRoundToInt(),
+            width = (1080 * scale).fastRoundToInt(),
+            height = (1920 * scale).fastRoundToInt(),
+            config = Bitmap.Config.RGB_565,
         )
 
         val stampBitmap =
@@ -103,16 +104,16 @@ class CreateStampPosterUseCase(
                 }
             )
 
-            val paperBackgroundGridSize = (48 * scale).fastRoundToInt()
+            val paperBackgroundGridSize = (57 * scale).fastRoundToInt()
             val paperBackgroundLines = mutableFloatListOf()
 
-            for (x in (paperBackgroundGridSize - (6 * scale).fastRoundToInt()..posterBitmap.width step paperBackgroundGridSize)) {
-                paperBackgroundLines += x.toFloat()
-                paperBackgroundLines += 0f
-                paperBackgroundLines += x.toFloat()
-                paperBackgroundLines += posterBitmap.height.toFloat()
-            }
-            for (y in (paperBackgroundGridSize - (8 * scale).fastRoundToInt()..posterBitmap.height step paperBackgroundGridSize)) {
+            for (x in (paperBackgroundGridSize..posterBitmap.width step paperBackgroundGridSize)) {
+            paperBackgroundLines += x.toFloat()
+            paperBackgroundLines += 0f
+            paperBackgroundLines += x.toFloat()
+            paperBackgroundLines += posterBitmap.height.toFloat()
+        }
+            for (y in (paperBackgroundGridSize - (9 * scale).fastRoundToInt()..posterBitmap.height step paperBackgroundGridSize)) {
                 paperBackgroundLines += 0f
                 paperBackgroundLines += y.toFloat()
                 paperBackgroundLines += posterBitmap.width.toFloat()
@@ -122,7 +123,7 @@ class CreateStampPosterUseCase(
                 FloatArray(paperBackgroundLines.size, paperBackgroundLines::get),
                 Paint().apply {
                     style = Paint.Style.STROKE
-                    strokeWidth = 3f * scale
+                    strokeWidth = 3.6f * scale
                     color = options.colors.paperBackgroundLine
                 }
             )
@@ -133,7 +134,7 @@ class CreateStampPosterUseCase(
                     style = Paint.Style.FILL
                     color = android.graphics.Color.TRANSPARENT
                     setShadowLayer(
-                        42f * scale,
+                        48f * scale,
                         0f,
                         0f,
                         options.colors.stampShadow,
@@ -154,7 +155,7 @@ class CreateStampPosterUseCase(
 
                 val captionPaint = TextPaint(Paint.ANTI_ALIAS_FLAG).apply {
                     color = options.colors.caption
-                    textSize = 60f * scale
+                    textSize = 72f * scale
                     typeface = ResourcesCompat.getFont(context, R.font.podkova_regular)
                 }
 
@@ -173,7 +174,7 @@ class CreateStampPosterUseCase(
 
                 withTranslation(
                     x = (width - captionLayout.width) / 2f,
-                    y = stampDrawRect.top - captionLayout.height - 56f * scale,
+                    y = stampDrawRect.top - captionLayout.height - 67f * scale,
                     block = captionLayout::draw,
                 )
             }

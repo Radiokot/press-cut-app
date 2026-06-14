@@ -23,7 +23,7 @@ import androidx.annotation.ColorInt
 import androidx.annotation.FloatRange
 
 class StampPosterOptions(
-    @FloatRange(from = 0.2, to = 3.0)
+    @FloatRange(from = 0.2, to = 2.0)
     val scale: Float,
     val withCaption: Boolean,
     val colors: Colors,
@@ -32,7 +32,7 @@ class StampPosterOptions(
         require(scale >= 0.2) {
             "A poster that small's fookin' useless, innit?"
         }
-        require(scale <= 3) {
+        require(scale <= 2) {
             "You off yer nut, mate?"
         }
     }

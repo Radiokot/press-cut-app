@@ -95,7 +95,7 @@ class StampPosterContentProvider :
                 // Gmail WANTS this!
                 // It is actually shown in the attachment section.
                 // Doesn't need to be the exact size though.
-                OpenableColumns.SIZE to (550 * 1024 * posterOptions.scale).toInt(),
+                OpenableColumns.SIZE to (500 * 1024 * posterOptions.scale).toInt(),
             ),
         )
     }
