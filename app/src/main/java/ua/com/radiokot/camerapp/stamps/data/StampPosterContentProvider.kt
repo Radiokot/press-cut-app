@@ -83,7 +83,7 @@ class StampPosterContentProvider :
         sortOrder: String?,
     ): Cursor {
 
-        val (stamp, _) =
+        val (stamp, posterOptions) =
             stampsAndOptionsByUri[uri]
                 ?: error("Requested URI is not provided")
 
@@ -95,7 +95,7 @@ class StampPosterContentProvider :
                 // Gmail WANTS this!
                 // It is actually shown in the attachment section.
                 // Doesn't need to be the exact size though.
-                OpenableColumns.SIZE to 550 * 1024,
+                OpenableColumns.SIZE to (550 * 1024 * posterOptions.scale).toInt(),
             ),
         )
     }

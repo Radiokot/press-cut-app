@@ -171,6 +171,7 @@ class StampScreenViewModel(
         val intent = createSendStampPosterIntentUseCase(
             stamp = stamp,
             options = StampPosterOptions(
+                scale = 1f,
                 withCaption = true,
                 colors = StampPosterOptions.Colors(
                     paperBackground = LightAppColors.screenBackground.toArgb(),
