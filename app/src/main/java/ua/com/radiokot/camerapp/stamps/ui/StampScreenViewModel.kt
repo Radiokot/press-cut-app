@@ -35,9 +35,9 @@ import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import ua.com.radiokot.camerapp.stamps.domain.CreateSendStampIntentUseCase
-import ua.com.radiokot.camerapp.stamps.domain.CreateSendStampPosterIntentUseCase
+import ua.com.radiokot.camerapp.posters.domain.CreateSendStampPosterIntentUseCase
 import ua.com.radiokot.camerapp.stamps.domain.Stamp
-import ua.com.radiokot.camerapp.stamps.domain.StampPosterOptions
+import ua.com.radiokot.camerapp.posters.domain.StampPosterOptions
 import ua.com.radiokot.camerapp.stamps.domain.StampRepository
 import ua.com.radiokot.camerapp.ui.LightAppColors
 import ua.com.radiokot.camerapp.util.StableHolder

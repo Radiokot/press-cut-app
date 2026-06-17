@@ -17,7 +17,7 @@
    along with Press-Cut. If not, see <http://www.gnu.org/licenses/>.
 */
 
-package ua.com.radiokot.camerapp.stamps.data
+package ua.com.radiokot.camerapp.posters.data
 
 import android.content.ContentProvider
 import android.content.ContentValues
@@ -30,9 +30,9 @@ import androidx.core.net.toUri
 import org.koin.android.ext.android.inject
 import org.koin.core.component.KoinComponent
 import ua.com.radiokot.camerapp.BuildConfig
-import ua.com.radiokot.camerapp.stamps.domain.CreateStampPosterUseCase
+import ua.com.radiokot.camerapp.posters.domain.CreateStampPosterUseCase
 import ua.com.radiokot.camerapp.stamps.domain.Stamp
-import ua.com.radiokot.camerapp.stamps.domain.StampPosterOptions
+import ua.com.radiokot.camerapp.posters.domain.StampPosterOptions
 import ua.com.radiokot.camerapp.util.MatrixCursor
 import ua.com.radiokot.camerapp.util.openPipeHelper
 

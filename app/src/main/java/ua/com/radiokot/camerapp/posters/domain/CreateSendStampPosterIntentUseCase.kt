@@ -17,34 +17,15 @@
    along with Press-Cut. If not, see <http://www.gnu.org/licenses/>.
 */
 
-package ua.com.radiokot.camerapp.stamps.domain
+package ua.com.radiokot.camerapp.posters.domain
 
-import androidx.annotation.ColorInt
-import androidx.annotation.FloatRange
+import android.content.Intent
+import ua.com.radiokot.camerapp.stamps.domain.Stamp
 
-class StampPosterOptions(
-    @FloatRange(from = 0.2, to = 2.0)
-    val scale: Float,
-    val withCaption: Boolean,
-    val colors: Colors,
-) {
-    init {
-        require(scale >= 0.2) {
-            "A poster that small's fookin' useless, innit?"
-        }
-        require(scale <= 2) {
-            "You off yer nut, mate?"
-        }
-    }
+interface CreateSendStampPosterIntentUseCase {
 
-    class Colors(
-        @ColorInt
-        val paperBackground: Int,
-        @ColorInt
-        val paperBackgroundLine: Int,
-        @ColorInt
-        val stampShadow: Int,
-        @ColorInt
-        val caption: Int,
-    )
+    operator fun invoke(
+        stamp: Stamp,
+        options: StampPosterOptions,
+    ): Intent
 }

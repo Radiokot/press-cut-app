@@ -17,6 +17,8 @@
    along with Press-Cut. If not, see <http://www.gnu.org/licenses/>.
 */
 
+@file:Suppress("ConvertLongToDuration")
+
 package ua.com.radiokot.camerapp.stamps.ui
 
 import android.content.res.Configuration
@@ -47,7 +49,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.text.TextStyle

@@ -96,7 +96,7 @@
             android:grantUriPermissions="true" />
 
         <provider
-            android:name=".stamps.data.StampPosterContentProvider"
+            android:name=".posters.data.StampPosterContentProvider"
             android:authorities="${stampPosterContentProviderAuthority}"
             android:exported="false"
             android:grantUriPermissions="true" />

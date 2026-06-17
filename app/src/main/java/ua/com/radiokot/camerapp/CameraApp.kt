@@ -29,6 +29,7 @@ import ua.com.radiokot.camerapp.cut.cutModule
 import ua.com.radiokot.camerapp.envelopes.envelopesModule
 import ua.com.radiokot.camerapp.intro.introModule
 import ua.com.radiokot.camerapp.io.ioModule
+import ua.com.radiokot.camerapp.posters.postersModule
 import ua.com.radiokot.camerapp.stamps.stampsModule
 import ua.com.radiokot.camerapp.util.KoinSlf4jLogger
 import ua.com.radiokot.camerapp.util.NativeLibrary
@@ -58,6 +59,7 @@ class CameraApp : Application() {
                 introModule,
                 envelopesModule,
                 collectionSelectionModule,
+                postersModule,
             )
         }
     }

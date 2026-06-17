@@ -17,10 +17,11 @@
    along with Press-Cut. If not, see <http://www.gnu.org/licenses/>.
 */
 
-package ua.com.radiokot.camerapp.stamps.domain
+package ua.com.radiokot.camerapp.posters.domain
 
 import android.content.Context
 import android.graphics.Bitmap
+import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.Rect
 import android.text.Layout
@@ -39,6 +40,7 @@ import com.skydoves.landscapist.core.model.ImageResult
 import kotlinx.coroutines.flow.filterIsInstance
 import kotlinx.coroutines.flow.firstOrNull
 import ua.com.radiokot.camerapp.R
+import ua.com.radiokot.camerapp.stamps.domain.Stamp
 
 class CreateStampPosterUseCase(
     private val landscapist: Landscapist,
@@ -132,7 +134,7 @@ class CreateStampPosterUseCase(
                 stampDrawRect,
                 Paint(Paint.ANTI_ALIAS_FLAG).apply {
                     style = Paint.Style.FILL
-                    color = android.graphics.Color.TRANSPARENT
+                    color = Color.TRANSPARENT
                     setShadowLayer(
                         48f * scale,
                         0f,

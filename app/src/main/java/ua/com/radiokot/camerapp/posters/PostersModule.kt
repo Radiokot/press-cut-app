@@ -17,14 +17,25 @@
    along with Press-Cut. If not, see <http://www.gnu.org/licenses/>.
 */
 
-package ua.com.radiokot.camerapp.stamps.domain
+package ua.com.radiokot.camerapp.posters
 
-import android.content.Intent
+import org.koin.android.ext.koin.androidApplication
+import org.koin.dsl.bind
+import org.koin.dsl.module
+import ua.com.radiokot.camerapp.posters.data.CpCreateSendStampPosterIntentUseCase
+import ua.com.radiokot.camerapp.posters.domain.CreateSendStampPosterIntentUseCase
+import ua.com.radiokot.camerapp.posters.domain.CreateStampPosterUseCase
 
-interface CreateSendStampPosterIntentUseCase {
+val postersModule = module {
 
-    operator fun invoke(
-        stamp: Stamp,
-        options: StampPosterOptions,
-    ): Intent
+    single {
+        CreateStampPosterUseCase(
+            landscapist = get(),
+            context = androidApplication(),
+        )
+    }
+
+    single {
+        CpCreateSendStampPosterIntentUseCase()
+    } bind CreateSendStampPosterIntentUseCase::class
 }
