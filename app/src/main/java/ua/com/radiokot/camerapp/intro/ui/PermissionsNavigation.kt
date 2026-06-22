@@ -29,6 +29,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import org.koin.compose.viewmodel.koinViewModel
+import ua.com.radiokot.camerapp.cut.ui.showToast
+import ua.com.radiokot.camerapp.ui.LocalColors
 
 fun NavGraphBuilder.permissionsDestination(
     modifier: Modifier = Modifier,
@@ -47,23 +49,27 @@ fun NavGraphBuilder.permissionsDestination(
     )
 
     val context = LocalContext.current
+    val colors = LocalColors.current
+
     val documentTreeAccessRequestLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.OpenDocumentTree(),
         onResult = { resultUri ->
             if (resultUri == viewModel.requiredDocumentTreeAccessUri) {
                 viewModel.onDocumentTreeAccessGranted()
             } else if (resultUri != null) {
-                Toast.makeText(
-                    context,
-                    "Sorry, but the permission is required for the exact directory",
-                    Toast.LENGTH_LONG
-                ).show()
+                showToast(
+                    context = context,
+                    text = "Sorry, but the permission is required for the exact directory",
+                    length = Toast.LENGTH_LONG,
+                    colors = colors,
+                )
             } else {
-                Toast.makeText(
-                    context,
-                    "Sorry, but the app can't work reliably without this permission",
-                    Toast.LENGTH_LONG
-                ).show()
+                showToast(
+                    context = context,
+                    text = "Sorry, but the app can't work reliably without this permission",
+                    length = Toast.LENGTH_LONG,
+                    colors = colors,
+                )
             }
         },
     )
@@ -73,11 +79,12 @@ fun NavGraphBuilder.permissionsDestination(
             if (permissionsResult.all(Map.Entry<String, Boolean>::value)) {
                 viewModel.onRequestedPermissionsGranted()
             } else {
-                Toast.makeText(
-                    context,
-                    "Sorry, but the app can't work without these permissions",
-                    Toast.LENGTH_LONG
-                ).show()
+                showToast(
+                    context = context,
+                    text = "Sorry, but the app can't work without these permissions",
+                    length = Toast.LENGTH_LONG,
+                    colors = colors,
+                )
             }
         },
     )

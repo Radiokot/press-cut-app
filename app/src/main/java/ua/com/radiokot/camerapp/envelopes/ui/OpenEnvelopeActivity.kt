@@ -41,8 +41,10 @@ import com.skydoves.landscapist.image.LocalLandscapist
 import org.koin.compose.koinInject
 import ua.com.radiokot.camerapp.collectionselection.ui.SelectDestinationCollectionContract
 import ua.com.radiokot.camerapp.collectionselection.ui.selectDestinationCollectionDestination
+import ua.com.radiokot.camerapp.cut.ui.showToast
 import ua.com.radiokot.camerapp.envelopes.domain.EnvelopePreviewResult
 import ua.com.radiokot.camerapp.ui.AppTheme
+import ua.com.radiokot.camerapp.ui.LocalColors
 import ua.com.radiokot.camerapp.ui.paperBackground
 import ua.com.radiokot.camerapp.util.StableHolder
 
@@ -68,22 +70,26 @@ class OpenEnvelopeActivity : ComponentActivity() {
             AppTheme(
                 LocalLandscapist provides koinInject(),
             ) {
+                val colors = LocalColors.current
+
                 OpenEnvelopeNavHost(
                     oneStampEnvelopeContentUri = oneStampEnvelopeContentUri,
                     onDone = {
-                        Toast.makeText(
-                            this@OpenEnvelopeActivity,
-                            "Stamps saved",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        showToast(
+                            context = this@OpenEnvelopeActivity,
+                            text = "Stamps saved",
+                            length = Toast.LENGTH_SHORT,
+                            colors = colors,
+                        )
                         finish()
                     },
                     onErrorAcknowledged = {
-                        Toast.makeText(
-                            this@OpenEnvelopeActivity,
-                            "Sorry",
-                            Toast.LENGTH_SHORT
-                        ).show()
+                        showToast(
+                            context = this@OpenEnvelopeActivity,
+                            text = "Sorry",
+                            length = Toast.LENGTH_SHORT,
+                            colors = colors,
+                        )
                         finish()
                     },
                     modifier = Modifier

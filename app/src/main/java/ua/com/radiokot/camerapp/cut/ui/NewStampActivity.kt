@@ -97,16 +97,19 @@ class NewStampActivity : ComponentActivity() {
                     modifier = Modifier
                         .fillMaxSize()
                 ) {
+                    val colors = LocalColors.current
+
                     StampCutNavHost(
                         startWithPermissions = isPermissionActionRequired,
                         collectionId = collectionId,
                         onDidSave = {
                             if (showToastOnSave) {
-                                Toast.makeText(
-                                    this@NewStampActivity,
-                                    "Stamp saved",
-                                    Toast.LENGTH_SHORT
-                                ).show()
+                                showToast(
+                                    context = this@NewStampActivity,
+                                    text = "Stamp saved",
+                                    length = Toast.LENGTH_SHORT,
+                                    colors = colors,
+                                )
                             }
                             finish()
                         },
