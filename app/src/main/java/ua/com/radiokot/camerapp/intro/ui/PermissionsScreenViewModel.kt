@@ -91,6 +91,15 @@ class PermissionsScreenViewModel(
     }
 
     fun onRequestedPermissionsGranted() {
+        if (!stampDirectory.exists()) {
+            check(stampDirectory.mkdirs()) {
+                "Can't create the stamp directory"
+            }
+            log.debug {
+                "onRequestedPermissionsGranted(): stamp directory created"
+            }
+        }
+
         if (isDocumentTreeAccessRequired) {
             // Using document URI as initial instead of tree
             // is important for compatibility.
@@ -103,10 +112,6 @@ class PermissionsScreenViewModel(
             log.debug {
                 "onAllPermissionsGranted(): requesting document tree access:" +
                         "\ninitialUri=$initialUri"
-            }
-
-            if (!stampDirectory.exists()) {
-                stampDirectory.mkdirs()
             }
 
             events.tryEmit(

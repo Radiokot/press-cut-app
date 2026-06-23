@@ -27,15 +27,12 @@ import org.koin.core.qualifier.named
 import org.koin.dsl.bind
 import org.koin.dsl.module
 import ua.com.radiokot.camerapp.stamps.data.CpCreateSendStampIntentUseCase
-import ua.com.radiokot.camerapp.posters.data.CpCreateSendStampPosterIntentUseCase
 import ua.com.radiokot.camerapp.stamps.data.FsAddGiftStampsToPrimaryCollectionUseCase
 import ua.com.radiokot.camerapp.stamps.data.FsStampCollectionRepository
 import ua.com.radiokot.camerapp.stamps.data.FsStampRepository
 import ua.com.radiokot.camerapp.stamps.data.SafFileLocksmith
 import ua.com.radiokot.camerapp.stamps.domain.AddGiftStampsToPrimaryCollectionUseCase
 import ua.com.radiokot.camerapp.stamps.domain.CreateSendStampIntentUseCase
-import ua.com.radiokot.camerapp.posters.domain.CreateSendStampPosterIntentUseCase
-import ua.com.radiokot.camerapp.posters.domain.CreateStampPosterUseCase
 import ua.com.radiokot.camerapp.stamps.domain.EnsurePrimaryStampCollectionUseCase
 import ua.com.radiokot.camerapp.stamps.domain.GetSortedStampCollectionsUseCase
 import ua.com.radiokot.camerapp.stamps.domain.GetStampCollectionsWithSamplesUseCase
@@ -60,9 +57,9 @@ val stampsModule = module {
             stampDirectoryName
         ).also { dir ->
             if (!dir.exists()) {
-                check(dir.mkdirs()) {
-                    "Can't create the stamps directory"
-                }
+                // This is expected to fail until the permissions are given.
+                // The directory is created in a VM at that point.
+                dir.mkdirs()
             }
         }
     }
