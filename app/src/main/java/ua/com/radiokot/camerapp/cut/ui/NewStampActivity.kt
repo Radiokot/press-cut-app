@@ -37,7 +37,6 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.asIntState
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -52,6 +51,7 @@ import androidx.navigation.compose.rememberNavController
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
+import ua.com.radiokot.camerapp.adjustments.ui.ImageAdjustmentsControllerViewModel
 import ua.com.radiokot.camerapp.intro.ui.PermissionsRoute
 import ua.com.radiokot.camerapp.intro.ui.PermissionsScreenViewModel
 import ua.com.radiokot.camerapp.intro.ui.permissionsDestination
@@ -252,19 +252,8 @@ private fun SharedTransitionScope.StampCutNavHost(
                 onImagePreviewSizeChanged = viewModel::onPreviewSizeChanged,
                 onSaveAction = viewModel::onSaveAction,
                 adjustmentsControllerItems = imageAdjustmentsControllerViewModel.items,
-                currentAdjustmentsControllerItemState =
-                    imageAdjustmentsControllerViewModel.currentItem.collectAsState(),
-                onCurrentAdjustmentsControllerItemChanged =
-                    imageAdjustmentsControllerViewModel::onCurrentItemChanged,
-                adjustmentsControllerValueState =
-                    imageAdjustmentsControllerViewModel
-                        .currentValue
-                        .collectAsState()
-                        .asIntState(),
                 sharedTransitionScope = this@StampCutNavHost,
                 animatedVisibilityScope = this@composable,
-                onAdjustmentsControllerValueChanged =
-                    imageAdjustmentsControllerViewModel::onValueChanged,
                 modifier = Modifier
                     .paperBackground(
                         drawBackgroundColor = true,

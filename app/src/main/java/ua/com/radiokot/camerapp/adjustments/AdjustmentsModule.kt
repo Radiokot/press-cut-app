@@ -17,14 +17,15 @@
    along with Press-Cut. If not, see <http://www.gnu.org/licenses/>.
 */
 
-package ua.com.radiokot.camerapp.cut.ui
+package ua.com.radiokot.camerapp.adjustments
 
-import androidx.compose.runtime.Immutable
+import org.koin.core.module.dsl.viewModel
+import org.koin.dsl.module
+import ua.com.radiokot.camerapp.adjustments.ui.ImageAdjustmentsControllerViewModel
 
-@Immutable
-data class AdjustmentControllerItem(
-    val title: String,
-    val minValue: Int,
-    val maxValue: Int,
-    val key: Any,
-)
+val adjustmentsModule = module {
+
+    viewModel {
+        ImageAdjustmentsControllerViewModel()
+    }
+}

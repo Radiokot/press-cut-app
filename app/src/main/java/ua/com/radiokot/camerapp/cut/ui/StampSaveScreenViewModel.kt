@@ -49,7 +49,8 @@ import kotlinx.coroutines.flow.mapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import ua.com.radiokot.camerapp.cut.domain.ImageAdjustment
+import ua.com.radiokot.camerapp.adjustments.domain.ImageAdjustment
+import ua.com.radiokot.camerapp.adjustments.ui.ImageAdjustmentsControllerViewModel
 import ua.com.radiokot.camerapp.stamps.domain.StampCollection
 import ua.com.radiokot.camerapp.stamps.domain.StampRepository
 import ua.com.radiokot.camerapp.stamps.domain.shape.StampShapeA

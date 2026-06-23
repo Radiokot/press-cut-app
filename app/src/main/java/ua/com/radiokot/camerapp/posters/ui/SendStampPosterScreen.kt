@@ -39,7 +39,6 @@ import androidx.compose.foundation.layout.safeContentPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.IntState
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -59,8 +58,8 @@ import androidx.core.graphics.drawable.toBitmap
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import ua.com.radiokot.camerapp.R
-import ua.com.radiokot.camerapp.cut.ui.AdjustmentControllerItem
-import ua.com.radiokot.camerapp.cut.ui.AdjustmentsController
+import ua.com.radiokot.camerapp.adjustments.ui.AdjustmentsControllerItem
+import ua.com.radiokot.camerapp.adjustments.ui.AdjustmentsController
 import ua.com.radiokot.camerapp.ui.AppTheme
 import ua.com.radiokot.camerapp.ui.LeTextButton
 import ua.com.radiokot.camerapp.ui.LocalColors
@@ -70,11 +69,7 @@ fun SendStampPosterScreen(
     modifier: Modifier = Modifier,
     imageState: State<ImageBitmap>,
     onSendAction: () -> Unit,
-    adjustmentsControllerItems: ImmutableList<AdjustmentControllerItem>,
-    currentAdjustmentsControllerItemState: State<AdjustmentControllerItem>,
-    onCurrentAdjustmentsControllerItemChanged: (AdjustmentControllerItem) -> Unit,
-    adjustmentsControllerValueState: IntState,
-    onAdjustmentsControllerValueChanged: (Int) -> Unit,
+    adjustmentsControllerItems: ImmutableList<AdjustmentsControllerItem>,
 ) {
     val configuration = LocalConfiguration.current
     if (configuration.orientation == Configuration.ORIENTATION_LANDSCAPE) {
@@ -91,10 +86,6 @@ fun SendStampPosterScreen(
                 imageState = imageState,
                 onSendAction = onSendAction,
                 adjustmentsControllerItems = adjustmentsControllerItems,
-                currentAdjustmentsControllerItemState = currentAdjustmentsControllerItemState,
-                onCurrentAdjustmentsControllerItemChanged = onCurrentAdjustmentsControllerItemChanged,
-                adjustmentsControllerValueState = adjustmentsControllerValueState,
-                onAdjustmentsControllerValueChanged = onAdjustmentsControllerValueChanged,
             )
         }
     } else {
@@ -110,10 +101,6 @@ fun SendStampPosterScreen(
                 imageState = imageState,
                 onSendAction = onSendAction,
                 adjustmentsControllerItems = adjustmentsControllerItems,
-                currentAdjustmentsControllerItemState = currentAdjustmentsControllerItemState,
-                onCurrentAdjustmentsControllerItemChanged = onCurrentAdjustmentsControllerItemChanged,
-                adjustmentsControllerValueState = adjustmentsControllerValueState,
-                onAdjustmentsControllerValueChanged = onAdjustmentsControllerValueChanged,
             )
         }
     }
@@ -125,11 +112,7 @@ private fun SendStampPosterScreenLayoutContent(
     column: ColumnScope?,
     imageState: State<ImageBitmap>,
     onSendAction: () -> Unit,
-    adjustmentsControllerItems: ImmutableList<AdjustmentControllerItem>,
-    currentAdjustmentsControllerItemState: State<AdjustmentControllerItem>,
-    onCurrentAdjustmentsControllerItemChanged: (AdjustmentControllerItem) -> Unit,
-    adjustmentsControllerValueState: IntState,
-    onAdjustmentsControllerValueChanged: (Int) -> Unit,
+    adjustmentsControllerItems: ImmutableList<AdjustmentsControllerItem>,
 ) {
     BoxWithConstraints(
         contentAlignment = Alignment.Center,
@@ -192,10 +175,6 @@ private fun SendStampPosterScreenLayoutContent(
     ) {
         AdjustmentsController(
             items = adjustmentsControllerItems,
-            currentItemState = currentAdjustmentsControllerItemState,
-            onCurrentItemChanged = onCurrentAdjustmentsControllerItemChanged,
-            valueState = adjustmentsControllerValueState,
-            onValueChanged = onAdjustmentsControllerValueChanged,
             modifier = Modifier
                 .fillMaxWidth()
         )
@@ -215,21 +194,31 @@ private fun SendStampPosterScreenLayoutContent(
 @PreviewLightDark
 @Composable
 private fun SendStampPosterScreenPreview() {
-    val adjustmentsControllerItems =
+    val adjustmentsControllerItems = remember {
+        val themeValueState = mutableIntStateOf(0)
+        val captionValueState = mutableIntStateOf(0)
+
         persistentListOf(
-            AdjustmentControllerItem(
+            AdjustmentsControllerItem.Dial(
                 title = "Theme",
+                defaultValue = 0,
                 minValue = 0,
                 maxValue = 1,
-                key = "theme",
+                valueState = themeValueState,
+                onValueChanged = themeValueState::intValue::set,
+                key = "t",
             ),
-            AdjustmentControllerItem(
+            AdjustmentsControllerItem.Dial(
                 title = "Caption",
+                defaultValue = 0,
                 minValue = 0,
                 maxValue = 1,
-                key = "caption",
+                valueState = captionValueState,
+                onValueChanged = captionValueState::intValue::set,
+                key = "c",
             ),
         )
+    }
     val context = LocalContext.current
     val image = remember {
         ContextCompat
@@ -247,13 +236,6 @@ private fun SendStampPosterScreenPreview() {
             imageState = image.let(::mutableStateOf),
             onSendAction = {},
             adjustmentsControllerItems = adjustmentsControllerItems,
-            currentAdjustmentsControllerItemState =
-                adjustmentsControllerItems
-                    .first()
-                    .let(::mutableStateOf),
-            onCurrentAdjustmentsControllerItemChanged = {},
-            onAdjustmentsControllerValueChanged = {},
-            adjustmentsControllerValueState = 0.let(::mutableIntStateOf),
             modifier = Modifier
                 .fillMaxSize()
                 .background(LocalColors.current.screenBackground)

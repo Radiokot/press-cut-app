@@ -17,7 +17,7 @@
    along with Press-Cut. If not, see <http://www.gnu.org/licenses/>.
 */
 
-package ua.com.radiokot.camerapp.cut.domain
+package ua.com.radiokot.camerapp.adjustments.domain
 
 import androidx.annotation.FloatRange
 import androidx.compose.ui.util.fastCoerceIn

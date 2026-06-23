@@ -37,7 +37,6 @@ import androidx.compose.foundation.layout.safeGesturesPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.text.input.TextFieldState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.IntState
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
 import androidx.compose.runtime.mutableIntStateOf
@@ -58,6 +57,8 @@ import androidx.compose.ui.unit.dp
 import androidx.core.graphics.createBitmap
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
+import ua.com.radiokot.camerapp.adjustments.ui.AdjustmentsControllerItem
+import ua.com.radiokot.camerapp.adjustments.ui.AdjustmentsController
 import ua.com.radiokot.camerapp.stamps.ui.CaptionInput
 import ua.com.radiokot.camerapp.stamps.ui.UiStampShapeA
 import ua.com.radiokot.camerapp.ui.AppTheme
@@ -72,11 +73,7 @@ fun StampSaveScreen(
     imageState: State<ImageBitmap>,
     onImagePreviewSizeChanged: (IntSize) -> Unit,
     onSaveAction: () -> Unit,
-    adjustmentsControllerItems: ImmutableList<AdjustmentControllerItem>,
-    currentAdjustmentsControllerItemState: State<AdjustmentControllerItem>,
-    onCurrentAdjustmentsControllerItemChanged: (AdjustmentControllerItem) -> Unit,
-    adjustmentsControllerValueState: IntState,
-    onAdjustmentsControllerValueChanged: (Int) -> Unit,
+    adjustmentsControllerItems: ImmutableList<AdjustmentsControllerItem>,
     sharedTransitionScope: SharedTransitionScope?,
     animatedVisibilityScope: AnimatedVisibilityScope?,
 ) = BoxWithConstraints(
@@ -176,10 +173,6 @@ fun StampSaveScreen(
     ) {
         AdjustmentsController(
             items = adjustmentsControllerItems,
-            currentItemState = currentAdjustmentsControllerItemState,
-            onCurrentItemChanged = onCurrentAdjustmentsControllerItemChanged,
-            valueState = adjustmentsControllerValueState,
-            onValueChanged = onAdjustmentsControllerValueChanged,
             modifier = Modifier
                 .fillMaxWidth()
         )
@@ -197,33 +190,41 @@ fun StampSaveScreen(
 @PreviewLightDark
 @Composable
 private fun StampSaveScreenPreview() {
-    val adjustmentsControllerItems =
+    val adjustmentsControllerItems = remember {
+        val brightnessValueState = mutableIntStateOf(0)
+        val contrastValueState = mutableIntStateOf(22)
+        val vibranceValueState = mutableIntStateOf(33)
+
         persistentListOf(
-            AdjustmentControllerItem(
+            AdjustmentsControllerItem.Dial(
                 title = "Brightness",
+                defaultValue = 0,
                 minValue = -100,
                 maxValue = 100,
-                key = "brightness",
+                valueState = brightnessValueState,
+                onValueChanged = brightnessValueState::intValue::set,
+                key = "b",
             ),
-            AdjustmentControllerItem(
+            AdjustmentsControllerItem.Dial(
                 title = "Contrast",
+                defaultValue = 0,
                 minValue = -100,
                 maxValue = 100,
-                key = "contrast",
+                valueState = contrastValueState,
+                onValueChanged = contrastValueState::intValue::set,
+                key = "c",
             ),
-            AdjustmentControllerItem(
-                title = "Saturation",
-                minValue = -100,
-                maxValue = 100,
-                key = "saturation",
-            ),
-            AdjustmentControllerItem(
+            AdjustmentsControllerItem.Dial(
                 title = "Vibrance",
+                defaultValue = 0,
                 minValue = -100,
                 maxValue = 100,
-                key = "vibrance",
-            ),
+                valueState = vibranceValueState,
+                onValueChanged = vibranceValueState::intValue::set,
+                key = "v",
+            )
         )
+    }
 
     val captionState = remember {
         TextFieldState("")
@@ -243,13 +244,6 @@ private fun StampSaveScreenPreview() {
             onImagePreviewSizeChanged = { },
             onSaveAction = { },
             adjustmentsControllerItems = adjustmentsControllerItems,
-            currentAdjustmentsControllerItemState =
-                adjustmentsControllerItems
-                    .first()
-                    .let(::mutableStateOf),
-            onCurrentAdjustmentsControllerItemChanged = {},
-            onAdjustmentsControllerValueChanged = {},
-            adjustmentsControllerValueState = 0.let(::mutableIntStateOf),
             sharedTransitionScope = null,
             animatedVisibilityScope = null,
             modifier = Modifier
