@@ -23,18 +23,20 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 @Composable
 fun Modifier.paperBackground(
     verticalOffset: (() -> Int)? = null,
     drawBackgroundColor: Boolean = false,
+    gridSize: Dp = 20.dp,
 ): Modifier {
     val backgroundColor = LocalColors.current.screenBackground
     val lineColor = LocalColors.current.paperBackgroundLine
 
     return drawWithCache {
-        val gridSize = 20.dp.roundToPx()
+        val gridSizePx = gridSize.roundToPx()
         val gridThickness = 1.dp.toPx()
 
         onDrawWithContent {
@@ -42,12 +44,12 @@ fun Modifier.paperBackground(
                 drawRect(backgroundColor)
             }
 
-            var startY = (0 - gridSize / 2)
+            var startY = (0 - gridSizePx / 2)
             if (verticalOffset != null) {
-                startY += verticalOffset() % gridSize
+                startY += verticalOffset() % gridSizePx
             }
 
-            for (y in (startY..size.height.toInt() step gridSize)) {
+            for (y in (startY..size.height.toInt() step gridSizePx)) {
                 drawLine(
                     color = lineColor,
                     start = Offset(
@@ -61,7 +63,7 @@ fun Modifier.paperBackground(
                     strokeWidth = gridThickness,
                 )
             }
-            for (x in (0..size.width.toInt() step gridSize)) {
+            for (x in (0..size.width.toInt() step gridSizePx)) {
                 drawLine(
                     color = lineColor,
                     start = Offset(

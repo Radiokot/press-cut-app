@@ -58,8 +58,8 @@ import androidx.core.graphics.drawable.toBitmap
 import kotlinx.collections.immutable.ImmutableList
 import kotlinx.collections.immutable.persistentListOf
 import ua.com.radiokot.camerapp.R
-import ua.com.radiokot.camerapp.adjustments.ui.AdjustmentsControllerItem
 import ua.com.radiokot.camerapp.adjustments.ui.AdjustmentsController
+import ua.com.radiokot.camerapp.adjustments.ui.AdjustmentsControllerItem
 import ua.com.radiokot.camerapp.ui.AppTheme
 import ua.com.radiokot.camerapp.ui.LeTextButton
 import ua.com.radiokot.camerapp.ui.LocalColors
@@ -195,18 +195,14 @@ private fun SendStampPosterScreenLayoutContent(
 @Composable
 private fun SendStampPosterScreenPreview() {
     val adjustmentsControllerItems = remember {
-        val themeValueState = mutableIntStateOf(0)
+        val themeValueState = mutableStateOf(true)
         val captionValueState = mutableIntStateOf(0)
 
         persistentListOf(
-            AdjustmentsControllerItem.Dial(
-                title = "Theme",
-                defaultValue = 0,
-                minValue = 0,
-                maxValue = 1,
-                valueState = themeValueState,
-                onValueChanged = themeValueState::intValue::set,
-                key = "t",
+            AdjustmentsControllerItem.Theme(
+                isDarkByDefault = false,
+                isDarkState = themeValueState,
+                onIsDarkChanged = themeValueState::value::set,
             ),
             AdjustmentsControllerItem.Dial(
                 title = "Caption",

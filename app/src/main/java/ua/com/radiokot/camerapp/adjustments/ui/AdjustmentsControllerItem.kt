@@ -20,25 +20,40 @@
 package ua.com.radiokot.camerapp.adjustments.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.IntState
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.State
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import ua.com.radiokot.camerapp.ui.DarkAppColors
+import ua.com.radiokot.camerapp.ui.LightAppColors
 import ua.com.radiokot.camerapp.ui.LocalColors
 import ua.com.radiokot.camerapp.ui.PodkovaFamily
+import ua.com.radiokot.camerapp.ui.paperBackground
 import java.text.DecimalFormat
 import java.text.NumberFormat
 
@@ -135,6 +150,95 @@ interface AdjustmentsControllerItem {
                     positivePrefix = "+"
                     negativePrefix = "-"
                 }
+        }
+    }
+
+    @Stable
+    class Theme(
+        val isDarkByDefault: Boolean,
+        val isDarkState: State<Boolean>,
+        val onIsDarkChanged: (Boolean) -> Unit,
+    ) : AdjustmentsControllerItem {
+        override val title: String =
+            "Theme"
+
+        override val key: Any =
+            "theme"
+
+        override fun resetValue() {
+            onIsDarkChanged(isDarkByDefault)
+        }
+
+        @Composable
+        override fun ValueIndicator() {
+        }
+
+        @Composable
+        override fun ValueController() {
+            Row(
+                horizontalArrangement =
+                    Arrangement.spacedBy(
+                        space = 16.dp,
+                        alignment = Alignment.CenterHorizontally,
+                    ),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(
+                        top = 16.dp,
+                    )
+            ) {
+                val cornerRadius = 8.dp
+
+                (0..1).forEach { i ->
+                    val isDark = i == 1
+
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier
+                            .size(48.dp)
+                            .clip(
+                                shape = RoundedCornerShape(cornerRadius),
+                            )
+                            .border(
+                                width = 2.dp,
+                                color = LocalColors.current.componentStroke,
+                                shape = RoundedCornerShape(cornerRadius),
+                            )
+                            .clickable(
+                                onClick = {
+                                    onIsDarkChanged(isDark)
+                                }
+                            )
+                    ) {
+                        CompositionLocalProvider(
+                            LocalColors provides if (isDark) DarkAppColors else LightAppColors,
+                        ) {
+                            Spacer(
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .paperBackground(
+                                        drawBackgroundColor = true,
+                                        gridSize = 10.dp,
+                                    )
+                            )
+
+                            BasicText(
+                                text = if (isDark) "D" else "L",
+                                style = TextStyle(
+                                    fontFamily = PodkovaFamily,
+                                    color = LocalColors.current.textPrimary,
+                                    fontSize = 22.sp,
+                                    textDecoration =
+                                        if (isDark == isDarkState.value)
+                                            TextDecoration.Underline
+                                        else
+                                            null,
+                                )
+                            )
+                        }
+                    }
+                }
+            }
         }
     }
 }
