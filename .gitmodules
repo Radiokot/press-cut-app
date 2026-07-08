@@ -1,6 +1,9 @@
-[submodule "app/src/main/c/libwebp"]
-	path = app/src/main/c/libwebp
+[submodule "stamp-native/lib/libwebp"]
+	path = stamp-native/lib/libwebp
 	url = https://chromium.googlesource.com/webm/libwebp
 [submodule "app/src/main/c/dynbuf"]
 	path = app/src/main/c/dynbuf
 	url = https://github.com/nil0x42/dynbuf.git
+[submodule "stamp-native/lib/mxml"]
+	path = stamp-native/lib/mxml
+	url = https://github.com/michaelrsweet/mxml.git

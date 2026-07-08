@@ -72,10 +72,8 @@ android {
             } else {
                 signingConfig signingConfigs.debug
             }
-            // F-Droid
-            //noinspection NotShrinkingResources
-            shrinkResources false
             minifyEnabled true
+            shrinkResources true
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
 
@@ -84,6 +82,8 @@ android {
             initWith release
             signingConfig signingConfigs.debug
             minifyEnabled false
+            //noinspection NotShrinkingResources
+            shrinkResources false
         }
     }
 
@@ -92,11 +92,6 @@ android {
             freeCompilerArgs.add("-Xexplicit-backing-fields")
             freeCompilerArgs.add("-XXLanguage:+PropertyParamAnnotationDefaultTargetMode")
         }
-    }
-
-    packagingOptions {
-        exclude "META-INF/versions/**"
-        doNotStrip "**/*.so"
     }
 
     dependenciesInfo {
@@ -113,12 +108,27 @@ android {
     }
 }
 
+androidComponents {
+    onVariants(selector().withBuildType("debug")) { variant ->
+        variant.packaging.jniLibs.keepDebugSymbols.add("**/*.so")
+    }
+
+    onVariants(selector().withBuildType("release")) { variant ->
+        variant.packaging.resources.excludes.add("DebugProbesKt.bin")
+        variant.packaging.resources.excludes.add("META-INF/DEPENDENCIES")
+        variant.packaging.resources.excludes.add("**/LICENSE*")
+        variant.packaging.resources.excludes.add("META-INF/NOTICE*")
+        variant.packaging.resources.excludes.add("META-INF/versions/**")
+        variant.packaging.resources.excludes.add("META-INF/*.version")
+        variant.packaging.resources.excludes.add("**.kotlin_module")
+    }
+}
+
 dependencies {
     implementation "androidx.core:core-ktx:1.18.0"
     implementation "androidx.appcompat:appcompat:1.7.1"
     implementation "org.jetbrains.kotlinx:kotlinx-collections-immutable:0.4.0"
     implementation "org.jetbrains.kotlinx:kotlinx-serialization-json:1.11.0"
-    implementation "com.ashampoo:kim:0.26.2"
     implementation "androidx.core:core-splashscreen:1.2.0"
 
     def activityVersion = "1.13.0"
@@ -126,7 +136,7 @@ dependencies {
     implementation "androidx.activity:activity:$activityVersion"
     implementation "androidx.activity:activity-compose:$activityVersion"
 
-    implementation platform("androidx.compose:compose-bom:2026.05.01")
+    implementation platform("androidx.compose:compose-bom:2026.06.01")
     implementation "androidx.compose.foundation:foundation"
     implementation "androidx.compose.foundation:foundation-layout"
     debugImplementation "androidx.compose.ui:ui-tooling"
@@ -146,7 +156,9 @@ dependencies {
     implementation "io.insert-koin:koin-compose-viewmodel-navigation"
 
     def landscapistVersion = "2.9.8"
-    implementation "com.github.skydoves:landscapist-core:$landscapistVersion"
+    implementation ("com.github.skydoves:landscapist-core:$landscapistVersion") {
+        exclude group: "io.ktor", module: "ktor-client-okhttp"
+    }
     implementation "com.github.skydoves:landscapist-image:$landscapistVersion"
 
     implementation "io.github.oshai:kotlin-logging-jvm:8.0.02"

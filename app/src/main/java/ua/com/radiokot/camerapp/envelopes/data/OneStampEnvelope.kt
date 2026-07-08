@@ -22,7 +22,7 @@
 
 package ua.com.radiokot.camerapp.envelopes.data
 
-import com.ashampoo.kim.model.ImageSize
+import android.util.Size
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
@@ -39,7 +39,6 @@ import ua.com.radiokot.camerapp.stamps.domain.shape.StampShapeOneStampWithoutCor
 import ua.com.radiokot.camerapp.stamps.domain.shape.StampShapeOneStampWithoutCornersLandscape
 import ua.com.radiokot.camerapp.util.Iso8601OffsetDateTimeSerializer
 import java.time.OffsetDateTime
-import kotlin.math.abs
 
 @Serializable
 class OneStampEnvelopeManifest(
@@ -230,7 +229,7 @@ fun OneStampEnvelopeManifest.Stamp.toStamp(
 }
 
 fun OneStampEnvelopeCropInfo(
-    stampSize: ImageSize,
+    stampSize: Size,
     paddingPercent: Double = 0.0,
 ): OneStampEnvelopeManifest.Stamp.CropInfo {
 

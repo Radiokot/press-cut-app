@@ -22,9 +22,6 @@ package ua.com.radiokot.camerapp.stamps.data
 import android.content.ContentResolver
 import android.net.Uri
 import android.provider.DocumentsContract
-import com.ashampoo.kim.format.webp.WebPImageParser
-import com.ashampoo.kim.format.webp.chunk.WebPChunk
-import com.ashampoo.kim.input.ByteArrayByteReader
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.withContext
@@ -46,10 +43,9 @@ class SafFileLocksmith(
     private val stampDirectoryPath: String =
         stampDirectory.absolutePath
 
-    suspend fun unlockAndReadWebpChunks(
+    suspend fun unlockAndRead(
         file: File,
-        onlyMetadataChunks: Boolean,
-    ): List<WebPChunk> = withContext(Dispatchers.IO) {
+    ): ByteArray = withContext(Dispatchers.IO) {
 
         val fileDocumentUri = getFileDocumentUri(file)
 
@@ -59,7 +55,7 @@ class SafFileLocksmith(
                 "unlocked." + file.name
             )
 
-        val webpChunks: List<WebPChunk>
+        val fileBytes: ByteArray
         try {
             log.debug {
                 "unlockAndReadWebpChunks(): copying from the locked file to the unlocked:" +
@@ -69,12 +65,8 @@ class SafFileLocksmith(
             contentResolver
                 .openInputStream(fileDocumentUri)!!
                 .use { safFileInputStream ->
-                    val fileBytes = safFileInputStream.readBytes()
+                    fileBytes = safFileInputStream.readBytes()
                     unlockedFile.writeBytes(fileBytes)
-                    webpChunks = WebPImageParser.readChunks(
-                        byteReader = ByteArrayByteReader(fileBytes),
-                        stopAfterMetadataRead = onlyMetadataChunks,
-                    )
                 }
         } catch (e: Exception) {
             ensureActive()
@@ -110,10 +102,10 @@ class SafFileLocksmith(
             "Failed renaming the unlocked file to the original"
         }
 
-        return@withContext webpChunks
+        return@withContext fileBytes
     }
 
-    suspend fun move(
+    suspend fun unlockAndMove(
         lockedSourceFile: File,
         destinationFile: File,
     ): Unit = withContext(Dispatchers.IO) {
@@ -159,7 +151,7 @@ class SafFileLocksmith(
         }
     }
 
-    suspend fun delete(
+    suspend fun unlockAndDelete(
         file: File,
     ): Unit = withContext(Dispatchers.IO) {
 

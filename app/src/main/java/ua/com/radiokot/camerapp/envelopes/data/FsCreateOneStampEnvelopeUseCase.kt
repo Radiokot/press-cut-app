@@ -21,7 +21,7 @@
 
 package ua.com.radiokot.camerapp.envelopes.data
 
-import com.ashampoo.kim.model.ImageSize
+import android.util.Size
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.ExperimentalSerializationApi
@@ -77,7 +77,7 @@ class FsCreateOneStampEnvelopeUseCase(
                 stampRepository
                     .getStamps()
                     .filter { it.id in stampIds }
-            val imageSizesByStamp = mutableMapOf<Stamp, ImageSize>()
+            val imageSizesByStamp = mutableMapOf<Stamp, Size>()
 
             writeAssets(
                 stamps = stamps,
@@ -103,7 +103,7 @@ class FsCreateOneStampEnvelopeUseCase(
         packageId: String,
         message: String?,
         stamps: List<Stamp>,
-        imageSizesByStamp: MutableMap<Stamp, ImageSize>,
+        imageSizesByStamp: MutableMap<Stamp, Size>,
     ) = withContext(Dispatchers.IO) {
 
         log.debug {
@@ -252,7 +252,7 @@ class FsCreateOneStampEnvelopeUseCase(
 
     private suspend fun ZipOutputStream.writeAssets(
         stamps: List<Stamp>,
-        outImageSizesByStamp: MutableMap<Stamp, ImageSize>,
+        outImageSizesByStamp: MutableMap<Stamp, Size>,
     ): Unit = withContext(Dispatchers.IO) {
 
         log.debug {

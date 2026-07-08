@@ -18,54 +18,34 @@
 */
 
 #include <jni.h>
-#include <time.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <dirent.h>
-#include <sys/stat.h>
-#include <ctype.h>
-#include <time.h>
-#include <pthread.h>
 #include <libgen.h>
 #include <stdbool.h>
-#include "webp/demux.h"
-#include "webp/decode.h"
-#include "ezXML/ezxml.h"
-#include "dynbuf/inc/dynbuf.h"
-
+#include <stamp.h>
 #include <android/log.h>
+#include <dirent.h>
+#include <sys/stat.h>
+#include <stdio.h>
+#include <pthread.h>
+#include <malloc.h>
+#include "dynbuf.h"
 
-#define LOG_TAG "CA:fs_stamp_repository.c"
-#define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
+#define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, "CA:fs_stamp_repository.c", __VA_ARGS__)
+#define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, "CA:fs_stamp_repository.c", __VA_ARGS__)
 
 static void dynbuf_write_stamp_details(
         t_dynbuf *buffer,
-        const char *id,
-        const char *collection_id,
-        const char *caption,
-        const char *taken_at_local,
-        const char *shape
+        const stamp_details *details
 ) {
-    dynbuf_write(buffer, id, (int) strlen(id) + 1);
-    dynbuf_write(buffer, collection_id, (int) strlen(collection_id) + 1);
-    dynbuf_write(buffer, caption, (int) strlen(caption) + 1);
-    dynbuf_write(buffer, taken_at_local, (int) strlen(taken_at_local) + 1);
-    dynbuf_write(buffer, shape, (int) strlen(shape) + 1);
-}
+    dynbuf_write(buffer, details->id, (int) strlen(details->id) + 1);
+    dynbuf_write(buffer, details->collection_id, (int) strlen(details->collection_id) + 1);
 
-static bool is_stamp_file(const char *path) {
-    char *file_name = basename(path);
-    char *extension = strrchr(file_name, '.');
-    if (strcasecmp(extension, ".webp") != 0) {
-        return false;
-    }
-    for (const char *p = file_name; p != extension; ++p) {
-        if (!isdigit((unsigned char) *p)) {
-            return false;
-        }
-    }
-    return true;
+    const char *caption = (details->caption) ? details->caption : "";
+    dynbuf_write(buffer, caption, (int) strlen(caption) + 1);
+
+    dynbuf_write(buffer, details->taken_at_local, (int) strlen(details->taken_at_local) + 1);
+
+    const char *shape = (details->shape) ? details->shape : "";
+    dynbuf_write(buffer, shape, (int) strlen(shape) + 1);
 }
 
 /**
@@ -167,112 +147,15 @@ static void *get_stamps(void *arg) {
         char *stamp_path = (char *) task->stamp_path_buffer->ptr + path_buffer_offset;
         path_buffer_offset += (int) strlen(stamp_path) + 1;
 
-        FILE *file = fopen(stamp_path, "rb");
-        if (!file) {
+        stamp_details *details = get_stamp_details(stamp_path);
+        if (!details) {
+            LOGE("Failed reading stamp details from %s", stamp_path);
             continue;
         }
 
-        fseek(file, 0, SEEK_END);
-        size_t file_size = ftell(file);
-        fseek(file, 0, SEEK_SET);
+        dynbuf_write_stamp_details(task->stamp_buffer, details);
 
-        uint8_t *file_data = (uint8_t *) malloc(file_size);
-        if (!file_data) {
-            fclose(file);
-            continue;
-        }
-
-        fread(file_data, 1, file_size, file);
-        fclose(file);
-
-        char *file_name = basename(stamp_path);
-        char *file_extension = strrchr(file_name, '.');
-        size_t stamp_id_length = strlen(file_name) - strlen(file_extension);
-        char *stamp_id = malloc(stamp_id_length + 1);
-        memcpy(stamp_id, file_name, stamp_id_length);
-        stamp_id[stamp_id_length] = 0;
-        char *stamp_collection_id = basename(dirname(stamp_path));
-        char *stamp_caption = "";
-        char *stamp_taken_at_local = "";
-        char *stamp_shape = "";
-
-        WebPData webp_data = {file_data, file_size};
-        WebPDemuxer *demuxer = WebPDemux(&webp_data);
-        if (!demuxer) {
-            free(file_data);
-            continue;
-        }
-
-        WebPChunkIterator chunk_iter;
-        ezxml_t xmp = NULL;
-        if (WebPDemuxGetChunk(demuxer, "XMP ", 1, &chunk_iter)) {
-            xmp = ezxml_parse_str(
-                    (char *) chunk_iter.chunk.bytes,
-                    chunk_iter.chunk.size
-            );
-
-            ezxml_t description = ezxml_get(
-                    xmp,
-                    "rdf:RDF",
-                    0,
-                    "rdf:Description",
-                    -1
-            );
-
-            if (description != NULL) {
-                const char *shape = ezxml_attr(description, "presscut:shape");
-                if (shape != NULL) {
-                    stamp_shape = (char *) shape;
-                }
-
-                const char *date_time_original = ezxml_attr(description, "exif:DateTimeOriginal");
-                if (date_time_original != NULL) {
-                    stamp_taken_at_local = (char *) date_time_original;
-                }
-
-                ezxml_t caption_xml = ezxml_get(
-                        description,
-                        "dc:title",
-                        0,
-                        "rdf:Alt",
-                        0,
-                        "rdf:li",
-                        -1
-                );
-                if (caption_xml != NULL) {
-                    const char *caption = caption_xml->txt;
-                    if (caption != NULL) {
-                        stamp_caption = (char *) caption;
-                    }
-                }
-            }
-
-            WebPDemuxReleaseChunkIterator(&chunk_iter);
-        } else {
-            long long id_millis = strtoll(stamp_id, NULL, 10);
-            time_t id_time = (time_t) (id_millis / 1000);
-            struct tm local_id_time;
-            localtime_r(&id_time, &local_id_time);
-            char buffer[20];
-            strftime(buffer, sizeof(buffer), "%Y-%m-%dT%H:%M:%S", &local_id_time);
-            stamp_taken_at_local = buffer;
-        }
-
-        dynbuf_write_stamp_details(
-                task->stamp_buffer,
-                stamp_id,
-                stamp_collection_id,
-                stamp_caption,
-                stamp_taken_at_local,
-                stamp_shape
-        );
-
-        free(stamp_id);
-        WebPDemuxDelete(demuxer);
-        if (xmp != NULL) {
-            ezxml_free(xmp);
-        }
-        free(file_data);
+        free_stamp_details(details);
     }
 
     pthread_barrier_wait(task->barrier);
@@ -364,4 +247,75 @@ Java_ua_com_radiokot_camerapp_stamps_data_FsStampRepository_isStampFile(
     }
     (*env)->ReleaseStringUTFChars(env, path, file_path);
     return is_it;
+}
+
+JNIEXPORT jboolean JNICALL
+Java_ua_com_radiokot_camerapp_stamps_data_FsStampRepository_saveStampWithDetails(
+        JNIEnv *env,
+        jobject thiz,
+        jstring file_path_string,
+        jbyteArray webp_bytes,
+        jstring caption_string_optional,
+        jstring taken_at_local_string,
+        jstring shape_string_optional
+) {
+    const char *file_path = (*env)->GetStringUTFChars(env, file_path_string, NULL);
+    const char *caption =
+            caption_string_optional
+                    ? (*env)->GetStringUTFChars(env, caption_string_optional, NULL)
+                    : NULL;
+    const char *taken_at_local = (*env)->GetStringUTFChars(env, taken_at_local_string, NULL);
+    const char *shape =
+            shape_string_optional
+                    ? (*env)->GetStringUTFChars(env, shape_string_optional, NULL)
+                    : NULL;
+
+    WebPData webp_data = {
+            .bytes = (uint8_t *) (*env)->GetByteArrayElements(env, webp_bytes, NULL),
+            .size = (*env)->GetArrayLength(env, webp_bytes),
+    };
+    stamp_details details = {
+            .caption = caption,
+            .taken_at_local = taken_at_local,
+            .shape=shape,
+    };
+    bool is_saved = save_stamp_with_details(
+            webp_data,
+            &details,
+            file_path
+    );
+
+    (*env)->ReleaseStringUTFChars(env, file_path_string, file_path);
+    if (caption) {
+        (*env)->ReleaseStringUTFChars(env, caption_string_optional, caption);
+    }
+    (*env)->ReleaseStringUTFChars(env, taken_at_local_string, taken_at_local);
+    if (shape) {
+        (*env)->ReleaseStringUTFChars(env, shape_string_optional, shape);
+    }
+    (*env)->ReleaseByteArrayElements(env, webp_bytes, (jbyte *) webp_data.bytes, JNI_ABORT);
+
+    return is_saved;
+}
+
+JNIEXPORT jboolean JNICALL
+Java_ua_com_radiokot_camerapp_stamps_data_FsStampRepository_getStampImageSize(
+        JNIEnv *env,
+        jobject thiz,
+        jbyteArray webp_bytes,
+        jintArray result_array
+) {
+    WebPData webp_data = {
+            .bytes = (uint8_t *) (*env)->GetByteArrayElements(env, webp_bytes, NULL),
+            .size = (*env)->GetArrayLength(env, webp_bytes),
+    };
+
+    jint *result = (*env)->GetIntArrayElements(env, result_array, NULL);
+
+    bool is_got = get_stamp_image_size(webp_data, result, result + 1);
+
+    (*env)->ReleaseIntArrayElements(env, result_array, result, 0);
+    (*env)->ReleaseByteArrayElements(env, webp_bytes, (jbyte *) webp_data.bytes, JNI_ABORT);
+
+    return is_got;
 }

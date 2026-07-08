@@ -21,14 +21,6 @@
 
 package ua.com.radiokot.camerapp.stamps.data
 
-import com.ashampoo.kim.format.webp.WebPImageParser
-import com.ashampoo.kim.format.webp.WebPWriter
-import com.ashampoo.kim.input.AndroidInputStreamByteReader
-import com.ashampoo.kim.input.ByteArrayByteReader
-import com.ashampoo.kim.input.use
-import com.ashampoo.kim.output.OutputStreamByteWriter
-import com.ashampoo.xmp.XMPMeta
-import com.ashampoo.xmp.XMPMetaFactory
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -41,10 +33,10 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import ua.com.radiokot.camerapp.stamps.domain.StampCollection
 import ua.com.radiokot.camerapp.stamps.domain.StampCollectionRepository
+import ua.com.radiokot.camerapp.util.getNullTerminatedString
 import ua.com.radiokot.camerapp.util.lazyLogger
 import java.io.File
-import java.io.FileOutputStream
-import java.time.LocalDateTime
+import java.nio.ByteBuffer
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.system.measureTimeMillis
@@ -131,29 +123,10 @@ class FsStampCollectionRepository(
 
         collectionDirectory.mkdirs()
 
-        val xmpMeta = XMPMetaFactory.create().setCollectionDetails(
+        saveCollectionDetailsFile(
+            outputFile = File(collectionDirectory, DETAILS_FILE_NAME),
             name = name,
         )
-        xmpMeta.setDateTimeOriginal(LocalDateTime.now().toString())
-        WebPWriter
-            .writeImage(
-                byteReader = ByteArrayByteReader(
-                    bytes =
-                        DETAILS_FILE_STUB_HEX
-                            .trimIndent()
-                            .replace("\n", "")
-                            .hexToByteArray(
-                                format = HexFormat.UpperCase,
-                            ),
-                ),
-                byteWriter = OutputStreamByteWriter(
-                    outputStream =
-                        File(collectionDirectory, DETAILS_FILE_NAME)
-                            .outputStream(),
-                ),
-                xmp = XMPMetaFactory.serializeToString(xmpMeta),
-                exifBytes = null,
-            )
     }
 
     override suspend fun deleteStampCollection(
@@ -186,7 +159,7 @@ class FsStampCollectionRepository(
                     }
 
                     runCatching {
-                        safFileLocksmith.delete(directory)
+                        safFileLocksmith.unlockAndDelete(directory)
                     }
                 }
             }
@@ -206,41 +179,12 @@ class FsStampCollectionRepository(
         val directory = getStampCollectionDirectory(
             id = collection.id
         )
-        val detailsFile = File(directory, DETAILS_FILE_NAME)
         val nameToSet = newName ?: collection.name
 
-        val webpChunks =
-            if (detailsFile.canRead() && detailsFile.canWrite())
-                AndroidInputStreamByteReader(
-                    inputStream = detailsFile.inputStream(),
-                    contentLength = detailsFile.length(),
-                )
-                    .use(WebPImageParser::readChunks)
-            else
-                safFileLocksmith.unlockAndReadWebpChunks(
-                    file = detailsFile,
-                    onlyMetadataChunks = false,
-                )
-
-        val xmpMeta =
-            WebPImageParser
-                .parseMetadataFromChunks(webpChunks)
-                .xmp
-                ?.let(XMPMetaFactory::parseFromString)
-                ?: XMPMetaFactory.create()
-        xmpMeta.setCollectionDetails(
+        saveCollectionDetailsFile(
+            outputFile = File(directory, DETAILS_FILE_NAME),
             name = nameToSet,
         )
-
-        WebPWriter
-            .writeImage(
-                chunks = webpChunks,
-                byteWriter = OutputStreamByteWriter(
-                    FileOutputStream(detailsFile)
-                ),
-                xmp = XMPMetaFactory.serializeToString(xmpMeta),
-                exifBytes = null,
-            )
 
         val updatedCollection = collection.copy(
             newName = nameToSet,
@@ -251,6 +195,24 @@ class FsStampCollectionRepository(
             sharedFlow.tryEmit(cache)
         }
     }
+
+    private suspend fun saveCollectionDetailsFile(
+        outputFile: File,
+        name: String,
+    ) = withContext(Dispatchers.IO) {
+        if (!saveCollectionDetailsFile(
+                filePathString = outputFile.absolutePath,
+                nameString = name,
+            )
+        ) {
+            error("Failed saving collection details file")
+        }
+    }
+
+    private external fun saveCollectionDetailsFile(
+        filePathString: String,
+        nameString: String,
+    ): Boolean
 
     private suspend fun initCache(): Unit = withContext(Dispatchers.IO) {
 
@@ -300,57 +262,34 @@ class FsStampCollectionRepository(
             )
         }
 
-        val webpChunks =
+        val detailsFileBytes =
             if (detailsFile.canRead() && detailsFile.canWrite())
-                AndroidInputStreamByteReader(
-                    inputStream = detailsFile.inputStream(),
-                    contentLength = detailsFile.length(),
-                )
-                    .use { reader ->
-                        WebPImageParser.readChunks(
-                            byteReader = reader,
-                            stopAfterMetadataRead = true,
-                        )
-                    }
+                detailsFile.readBytes()
             else
-                safFileLocksmith.unlockAndReadWebpChunks(
-                    file = detailsFile,
-                    onlyMetadataChunks = true,
-                )
+                safFileLocksmith.unlockAndRead(detailsFile)
 
-        val xmpMeta =
-            WebPImageParser
-                .parseMetadataFromChunks(webpChunks)
-                .xmp
-                ?.let(XMPMetaFactory::parseFromString)
+        val buffer =
+            getCollectionDetailsBuffer(
+                webpBytes = detailsFileBytes,
+            )
+                ?: error("Failed reading the stamp details")
+
+        val name =
+            buffer
+                .getNullTerminatedString()
+                .takeIf(String::isNotEmpty)
 
         return StampCollection(
             id = directory.nameWithoutExtension,
-            name = xmpMeta?.getTitle() ?: "…",
+            name = name ?: "…",
         )
     }
 
+    private external fun getCollectionDetailsBuffer(
+        webpBytes: ByteArray,
+    ): ByteBuffer?
+
     private companion object {
         private const val DETAILS_FILE_NAME = ".collection.webp"
-        private const val DETAILS_FILE_STUB_HEX = """
-            5249464676010000574542505650384C6A0100002F3FC00F100FF018F04BF51F
-            057CF4E30172B4FD5324A5174DB9811FC2DD1A5232CF9C7E3AC3460A3B8143EA
-            90BACEE01ABAF433550718F9E315FC9FFA7FD82C5788E8FF0430395F7369139A
-            65E7A6AD56574DC88E1E7D7E5DD2DC6CCACAB7D628676659FEEA3AFA7D245BF8
-            CEEEC8E7B1D9871D37F0972766A7FAFA531F4F3E5C54FE9E3C5F535CEF63FEC0
-            899745AD8A9A57D7FD0D774FC6BDDB59D3BEB66614DB6308F76446C7DF733565
-            E9A7FE4F255C9BD18ADC2B55F67D48F7C0DD59659640C2A4AB10B178F8BB6FE1
-            A23FD403AAB6ACB94DBAE3349DEE0B6E635916D06E394DE7FBE09AC4C249BB41
-            C7BF32A87DB258201DFBE1281C2411397C2F786990F21AF792440E49880EFC73
-            A38DC2D91B21E224E50E0B0338CB8F7706618BDC53707CA5E8960ABD147D0276
-            B87B3F8090A8FC2E6AFCB400F7406811814404087702FFD68A0E661518430D50
-            1C7F87448A011280F17704106368FC87F2BF8A80314A1D325A19F26F1902
-        """
     }
-}
-
-private fun XMPMeta.setCollectionDetails(
-    name: String,
-) = apply {
-    setTitle(name)
 }

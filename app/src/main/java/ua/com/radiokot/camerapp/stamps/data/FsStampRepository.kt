@@ -23,16 +23,7 @@ package ua.com.radiokot.camerapp.stamps.data
 
 import android.graphics.Bitmap
 import android.os.Build
-import com.ashampoo.kim.format.webp.WebPImageParser
-import com.ashampoo.kim.format.webp.WebPWriter
-import com.ashampoo.kim.input.AndroidInputStreamByteReader
-import com.ashampoo.kim.input.ByteArrayByteReader
-import com.ashampoo.kim.input.use
-import com.ashampoo.kim.model.ImageSize
-import com.ashampoo.kim.output.ByteArrayByteWriter
-import com.ashampoo.kim.output.OutputStreamByteWriter
-import com.ashampoo.xmp.XMPMeta
-import com.ashampoo.xmp.XMPMetaFactory
+import android.util.Size
 import dalvik.annotation.optimization.FastNative
 import kotlinx.coroutines.CoroutineName
 import kotlinx.coroutines.CoroutineScope
@@ -47,7 +38,6 @@ import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import ua.com.radiokot.camerapp.stamps.data.PressCutXmpNamespace.setStampShape
 import ua.com.radiokot.camerapp.stamps.domain.Stamp
 import ua.com.radiokot.camerapp.stamps.domain.StampRepository
 import ua.com.radiokot.camerapp.stamps.domain.shape.StampShape
@@ -56,7 +46,6 @@ import ua.com.radiokot.camerapp.util.getNullTerminatedString
 import ua.com.radiokot.camerapp.util.lazyLogger
 import java.io.ByteArrayOutputStream
 import java.io.File
-import java.io.FileOutputStream
 import java.io.InputStream
 import java.nio.ByteBuffer
 import java.nio.file.FileSystems
@@ -126,37 +115,27 @@ class FsStampRepository(
 
     suspend fun getStampImageBytesAndSize(
         stamp: Stamp,
-    ): Pair<ByteArray, ImageSize> = withContext(Dispatchers.IO) {
+    ): Pair<ByteArray, Size> = withContext(Dispatchers.IO) {
 
         val file = getStampFile(stamp)
+        val bytes = file.readBytes()
 
-        val webpChunks =
-            AndroidInputStreamByteReader(
-                inputStream = file.inputStream(),
-                contentLength = file.length(),
+        val sizeArray = IntArray(2)
+        if (!getStampImageSize(
+                webpBytes = bytes,
+                resultArray = sizeArray,
             )
-                .use(WebPImageParser::readChunks)
+        ) {
+            error("Failed reading the stamp image size")
+        }
 
-        val size =
-            WebPImageParser
-                .parseMetadataFromChunks(webpChunks)
-                .imageSize!!
-
-        val bytes =
-            ByteArrayByteWriter().use { writer ->
-                WebPWriter.writeImage(
-                    chunks = webpChunks,
-                    byteWriter = writer,
-                    exifBytes = null,
-                    xmp = null,
-                )
-
-                writer.flush()
-                writer.toByteArray()
-            }
-
-        return@withContext Pair(bytes, size)
+        return@withContext Pair(bytes, Size(sizeArray[0], sizeArray[1]))
     }
+
+    private external fun getStampImageSize(
+        webpBytes: ByteArray,
+        resultArray: IntArray,
+    ): Boolean
 
     override suspend fun addStamp(
         collectionId: String,
@@ -223,19 +202,12 @@ class FsStampRepository(
             collectionId = collectionId,
         )
 
-        val xmpMeta = XMPMetaFactory.create().setStampDetails(
+        saveStampWithDetails(
+            outputFile = outputFile,
+            webpBytes = webpBytes,
             caption = caption,
             takenAtLocal = takenAtLocal,
             shape = shape,
-        )
-
-        WebPWriter.writeImage(
-            byteReader = ByteArrayByteReader(webpBytes),
-            byteWriter = OutputStreamByteWriter(
-                FileOutputStream(outputFile)
-            ),
-            xmp = XMPMetaFactory.serializeToString(xmpMeta),
-            exifBytes = null,
         )
 
         if (isCacheInitialized.load()) {
@@ -281,41 +253,19 @@ class FsStampRepository(
             else
                 stamp.caption
 
-        val webpChunks =
+        val webpBytes =
             if (file.canRead() && file.canWrite())
-                AndroidInputStreamByteReader(
-                    inputStream = file.inputStream(),
-                    contentLength = file.length(),
-                )
-                    .use(WebPImageParser::readChunks)
+                file.readBytes()
             else
-                safFileLocksmith
-                    .unlockAndReadWebpChunks(
-                        file = file,
-                        onlyMetadataChunks = false,
-                    )
+                safFileLocksmith.unlockAndRead(file)
 
-        val xmpMeta =
-            WebPImageParser
-                .parseMetadataFromChunks(webpChunks)
-                .xmp
-                ?.let(XMPMetaFactory::parseFromString)
-                ?: XMPMetaFactory.create()
-        xmpMeta.setStampDetails(
+        saveStampWithDetails(
+            outputFile = file,
+            webpBytes = webpBytes,
             caption = captionToSet,
             takenAtLocal = stamp.takenAtLocal,
             shape = stamp.shape,
         )
-
-        WebPWriter
-            .writeImage(
-                chunks = webpChunks,
-                byteWriter = OutputStreamByteWriter(
-                    FileOutputStream(file)
-                ),
-                xmp = XMPMetaFactory.serializeToString(xmpMeta),
-                exifBytes = null,
-            )
 
         val updatedStamp = stamp.copy(
             newCaption = captionToSet,
@@ -326,6 +276,37 @@ class FsStampRepository(
             sharedFlow.emit(cache)
         }
     }
+
+    private suspend fun saveStampWithDetails(
+        outputFile: File,
+        webpBytes: ByteArray,
+        caption: String?,
+        takenAtLocal: LocalDateTime,
+        shape: StampShape,
+    ) = withContext(Dispatchers.IO) {
+        if (!saveStampWithDetails(
+                filePathString = outputFile.absolutePath,
+                webpBytes = webpBytes,
+                captionStringOptional = caption,
+                takenAtLocalString = takenAtLocal.toString(),
+                shapeStringOptional =
+                    if (shape !is StampShapeA)
+                        shape.name
+                    else
+                        null,
+            )
+        ) {
+            error("Failed saving the stamp")
+        }
+    }
+
+    private external fun saveStampWithDetails(
+        filePathString: String,
+        webpBytes: ByteArray,
+        captionStringOptional: String?,
+        takenAtLocalString: String,
+        shapeStringOptional: String?,
+    ): Boolean
 
     override suspend fun deleteStamps(
         collectionId: String,
@@ -349,7 +330,7 @@ class FsStampRepository(
                         if (file.canWrite()) {
                             file.delete()
                         } else {
-                            safFileLocksmith.delete(file)
+                            safFileLocksmith.unlockAndDelete(file)
                         }
                     }
                 }
@@ -425,7 +406,7 @@ class FsStampRepository(
                             StandardCopyOption.ATOMIC_MOVE,
                         )
                     } else {
-                        safFileLocksmith.move(
+                        safFileLocksmith.unlockAndMove(
                             lockedSourceFile = stampSourceFile,
                             destinationFile = stampDestinationFile,
                         )
@@ -557,18 +538,6 @@ class FsStampRepository(
             stampIdCounter
                 .incrementAndFetch()
                 .toString()
-    }
-}
-
-private fun XMPMeta.setStampDetails(
-    caption: String?,
-    takenAtLocal: LocalDateTime,
-    shape: StampShape,
-) = apply {
-    setTitle(caption)
-    setDateTimeOriginal(takenAtLocal.toString())
-    if (shape != StampShapeA) {
-        setStampShape(shape.name)
     }
 }
 
