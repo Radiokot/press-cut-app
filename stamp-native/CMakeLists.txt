@@ -25,6 +25,7 @@ add_custom_command(
 
 # Mini-XML
 file(GLOB_RECURSE mxml_sources CONFIGURE_DEPENDS "lib/mxml/*.c")
+file(COPY "${CMAKE_CURRENT_SOURCE_DIR}/copy/lib/mxml/config.h" DESTINATION "${CMAKE_CURRENT_SOURCE_DIR}/lib/mxml/")
 add_library(mxml STATIC ${mxml_sources})
 target_link_libraries(${PROJECT_NAME} PRIVATE mxml)
 target_include_directories(${PROJECT_NAME} PRIVATE lib/mxml)
