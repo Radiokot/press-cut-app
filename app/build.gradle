@@ -78,9 +78,9 @@ android {
         }
 
         // Fast, with previews and debug logs, not minified.
-        devRelease {
+        dev {
+            isDefault true
             initWith release
-            signingConfig signingConfigs.debug
             minifyEnabled false
             //noinspection NotShrinkingResources
             shrinkResources false
@@ -140,7 +140,7 @@ dependencies {
     implementation "androidx.compose.foundation:foundation"
     implementation "androidx.compose.foundation:foundation-layout"
     debugImplementation "androidx.compose.ui:ui-tooling"
-    devReleaseImplementation "androidx.compose.ui:ui-tooling"
+    devImplementation "androidx.compose.ui:ui-tooling"
     implementation "androidx.compose.ui:ui-tooling-preview"
     implementation "androidx.navigation:navigation-compose:2.9.8"
 

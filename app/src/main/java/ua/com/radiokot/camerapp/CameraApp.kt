@@ -76,7 +76,7 @@ class CameraApp : Application() {
 
         System.setProperty(
             "LOG_LEVEL",
-            if (BuildConfig.DEBUG || BuildConfig.BUILD_TYPE == "devRelease")
+            if (BuildConfig.DEBUG || BuildConfig.BUILD_TYPE == "dev")
                 "TRACE"
             else
                 "INFO"
