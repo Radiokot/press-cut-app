@@ -34,6 +34,7 @@ import kotlinx.coroutines.withContext
 import ua.com.radiokot.camerapp.stamps.domain.StampCollection
 import ua.com.radiokot.camerapp.stamps.domain.StampCollectionRepository
 import ua.com.radiokot.camerapp.util.NativeLibrary
+import ua.com.radiokot.camerapp.util.directByteBufferOf
 import ua.com.radiokot.camerapp.util.getNullTerminatedString
 import ua.com.radiokot.camerapp.util.lazyLogger
 import java.io.File
@@ -263,27 +264,24 @@ class FsStampCollectionRepository(
             )
         }
 
-        val detailsFileBytes =
+        val webpBytes =
             if (detailsFile.canRead() && detailsFile.canWrite())
                 detailsFile.readBytes()
             else
                 safFileLocksmith.unlockAndRead(detailsFile)
 
-        val buffer =
+        val detailsBuffer =
             getCollectionDetailsBuffer(
-                webpBytes =
-                    ByteBuffer
-                        .allocateDirect(detailsFileBytes.size)
-                        .put(detailsFileBytes),
+                webpBytes = directByteBufferOf(webpBytes),
             )
                 ?: error("Failed reading the stamp details")
 
         val name =
-            buffer
+            detailsBuffer
                 .getNullTerminatedString()
                 .takeIf(String::isNotEmpty)
 
-        NativeLibrary.freeDirectByteBuffer(buffer)
+        NativeLibrary.freeDirectByteBuffer(detailsBuffer)
 
         return StampCollection(
             id = directory.nameWithoutExtension,

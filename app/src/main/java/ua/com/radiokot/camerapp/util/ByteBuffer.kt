@@ -35,4 +35,7 @@ fun ByteBuffer.getNullTerminatedString(): String {
     return String(bytes.toByteArray(), 0, bytes.size - 1)
 }
 
+fun directByteBufferOf(bytes: ByteArray): ByteBuffer =
+    ByteBuffer.allocateDirect(bytes.size).put(bytes)
+
 private const val NullTerminator = 0.toByte()

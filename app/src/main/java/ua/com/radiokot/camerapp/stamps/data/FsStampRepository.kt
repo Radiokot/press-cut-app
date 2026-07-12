@@ -43,6 +43,7 @@ import ua.com.radiokot.camerapp.stamps.domain.StampRepository
 import ua.com.radiokot.camerapp.stamps.domain.shape.StampShape
 import ua.com.radiokot.camerapp.stamps.domain.shape.StampShapeA
 import ua.com.radiokot.camerapp.util.NativeLibrary
+import ua.com.radiokot.camerapp.util.directByteBufferOf
 import ua.com.radiokot.camerapp.util.getNullTerminatedString
 import ua.com.radiokot.camerapp.util.lazyLogger
 import java.io.ByteArrayOutputStream
@@ -127,10 +128,7 @@ class FsStampRepository(
 
         val sizeArray = IntArray(2)
         if (!getStampImageSize(
-                webpBytes =
-                    ByteBuffer
-                        .allocateDirect(fileBytes.size)
-                        .put(fileBytes),
+                webpBytes = directByteBufferOf(fileBytes),
                 resultArray = sizeArray,
             )
         ) {
@@ -294,10 +292,7 @@ class FsStampRepository(
     ) = withContext(Dispatchers.IO) {
         if (!saveStampWithDetails(
                 filePathString = outputFile.absolutePath,
-                webpBytes =
-                    ByteBuffer
-                        .allocateDirect(webpBytes.size)
-                        .put(webpBytes),
+                webpBytes = directByteBufferOf(webpBytes),
                 captionStringOptional = caption,
                 takenAtLocalString = takenAtLocal.toString(),
                 shapeStringOptional =
@@ -451,27 +446,27 @@ class FsStampRepository(
         val stampDirectoryAbsolutePath = stampDirectory.absolutePath
 
         val tookMs = measureTimeMillis {
-            val buffer =
+            val detailsBuffer =
                 getStampDetailsBuffer(
                     stampDirectoryPath = stampDirectoryAbsolutePath,
                 )
                     ?: error("Failed reading the stamp details")
 
-            while (buffer.hasRemaining()) {
-                val stampId = buffer.getNullTerminatedString()
-                val stampCollectionId = buffer.getNullTerminatedString()
+            while (detailsBuffer.hasRemaining()) {
+                val stampId = detailsBuffer.getNullTerminatedString()
+                val stampCollectionId = detailsBuffer.getNullTerminatedString()
 
                 val stampCaption =
-                    buffer
+                    detailsBuffer
                         .getNullTerminatedString()
                         .takeIf(String::isNotEmpty)
 
                 val stampTakenAtLocal =
                     LocalDateTime
-                        .parse(buffer.getNullTerminatedString())
+                        .parse(detailsBuffer.getNullTerminatedString())
 
                 val stampShape =
-                    buffer
+                    detailsBuffer
                         .getNullTerminatedString()
                         .takeIf(String::isNotEmpty)
                         ?.let(StampShape::fromName)
@@ -493,7 +488,7 @@ class FsStampRepository(
                 )
             }
 
-            NativeLibrary.freeDirectByteBuffer(buffer)
+            NativeLibrary.freeDirectByteBuffer(detailsBuffer)
         }
 
         log.debug {
