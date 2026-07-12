@@ -165,9 +165,9 @@ class StampsScreenViewModel(
 
         selectedStampIds.update { selectedStampIds ->
             if (stampId in selectedStampIds)
-                selectedStampIds.remove(stampId)
+                selectedStampIds.removing(stampId)
             else
-                selectedStampIds.add(stampId)
+                selectedStampIds.adding(stampId)
         }
     }
 
