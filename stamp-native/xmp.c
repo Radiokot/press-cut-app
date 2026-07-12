@@ -161,7 +161,7 @@ char *get_xmp_with_stamp_metadata(const stamp_xmp_metadata *stamp_xmp_metadata) 
                            "https://github.com/Radiokot/press-cut-app");
         mxmlElementSetAttr(description,
                            "presscut:shape",
-                           "onestamp_square");
+                           stamp_xmp_metadata->shape);
     }
 
     if (stamp_xmp_metadata->caption) {
