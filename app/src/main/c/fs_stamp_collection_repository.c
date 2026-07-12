@@ -21,17 +21,10 @@
 #include <android/log.h>
 #include <stamp_collection.h>
 #include <stdbool.h>
-#include "dynbuf.h"
+#include <malloc.h>
 
 #define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, "CA:fs_stamp_collection_repository.c", __VA_ARGS__)
 #define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, "CA:fs_stamp_collection_repository.c", __VA_ARGS__)
-
-static void dynbuf_write_stamp_collection_metadata(
-        t_dynbuf *buffer,
-        const stamp_collection_xmp_metadata *metadata
-) {
-    dynbuf_write(buffer, metadata->name, (int) strlen(metadata->name) + 1);
-}
 
 JNIEXPORT jboolean JNICALL
 Java_ua_com_radiokot_camerapp_stamps_data_FsStampCollectionRepository_saveCollectionDetailsFile(
@@ -58,24 +51,25 @@ JNIEXPORT jobject JNICALL
 Java_ua_com_radiokot_camerapp_stamps_data_FsStampCollectionRepository_getCollectionDetailsBuffer(
         JNIEnv *env,
         jobject thiz,
-        jbyteArray webp_bytes
+        jobject webp_bytes
 ) {
     WebPData webp_data = {
-            .bytes = (uint8_t *) (*env)->GetByteArrayElements(env, webp_bytes, NULL),
-            .size = (*env)->GetArrayLength(env, webp_bytes),
+            .bytes = (uint8_t *) (*env)->GetDirectBufferAddress(env, webp_bytes),
+            .size = (*env)->GetDirectBufferCapacity(env, webp_bytes),
     };
 
     stamp_collection_xmp_metadata *metadata = get_stamp_collection_metadata(webp_data);
-
-    (*env)->ReleaseByteArrayElements(env, webp_bytes, (jbyte *) webp_data.bytes, JNI_ABORT);
-
     if (!metadata) {
         return NULL;
     }
 
-    t_dynbuf *buffer = dynbuf_new(DYNBUF_DEFAULT_RADIX);
-    dynbuf_write_stamp_collection_metadata(buffer, metadata);
+    size_t buffer_size = strlen(metadata->name) + 1;
+    char *buffer = malloc(buffer_size);
+    if (!buffer) {
+        return NULL;
+    }
+    memcpy(buffer, metadata->name, buffer_size);
     free_stamp_collection_xmp_metadata(metadata);
 
-    return (*env)->NewDirectByteBuffer(env, buffer->ptr, buffer->offset);
+    return (*env)->NewDirectByteBuffer(env, buffer, buffer_size);
 }

@@ -42,6 +42,7 @@ import ua.com.radiokot.camerapp.stamps.domain.Stamp
 import ua.com.radiokot.camerapp.stamps.domain.StampRepository
 import ua.com.radiokot.camerapp.stamps.domain.shape.StampShape
 import ua.com.radiokot.camerapp.stamps.domain.shape.StampShapeA
+import ua.com.radiokot.camerapp.util.NativeLibrary
 import ua.com.radiokot.camerapp.util.getNullTerminatedString
 import ua.com.radiokot.camerapp.util.lazyLogger
 import java.io.ByteArrayOutputStream
@@ -118,22 +119,29 @@ class FsStampRepository(
     ): Pair<ByteArray, Size> = withContext(Dispatchers.IO) {
 
         val file = getStampFile(stamp)
-        val bytes = file.readBytes()
+        val fileBytes =
+            if (file.canRead() && file.canWrite())
+                file.readBytes()
+            else
+                safFileLocksmith.unlockAndRead(file)
 
         val sizeArray = IntArray(2)
         if (!getStampImageSize(
-                webpBytes = bytes,
+                webpBytes =
+                    ByteBuffer
+                        .allocateDirect(fileBytes.size)
+                        .put(fileBytes),
                 resultArray = sizeArray,
             )
         ) {
             error("Failed reading the stamp image size")
         }
 
-        return@withContext Pair(bytes, Size(sizeArray[0], sizeArray[1]))
+        return@withContext Pair(fileBytes, Size(sizeArray[0], sizeArray[1]))
     }
 
     private external fun getStampImageSize(
-        webpBytes: ByteArray,
+        webpBytes: ByteBuffer,
         resultArray: IntArray,
     ): Boolean
 
@@ -286,7 +294,10 @@ class FsStampRepository(
     ) = withContext(Dispatchers.IO) {
         if (!saveStampWithDetails(
                 filePathString = outputFile.absolutePath,
-                webpBytes = webpBytes,
+                webpBytes =
+                    ByteBuffer
+                        .allocateDirect(webpBytes.size)
+                        .put(webpBytes),
                 captionStringOptional = caption,
                 takenAtLocalString = takenAtLocal.toString(),
                 shapeStringOptional =
@@ -302,7 +313,7 @@ class FsStampRepository(
 
     private external fun saveStampWithDetails(
         filePathString: String,
-        webpBytes: ByteArray,
+        webpBytes: ByteBuffer,
         captionStringOptional: String?,
         takenAtLocalString: String,
         shapeStringOptional: String?,
@@ -482,7 +493,7 @@ class FsStampRepository(
                 )
             }
 
-            freeStampDetailsBuffer(buffer)
+            NativeLibrary.freeDirectByteBuffer(buffer)
         }
 
         log.debug {
@@ -497,10 +508,6 @@ class FsStampRepository(
     private external fun getStampDetailsBuffer(
         stampDirectoryPath: String,
     ): ByteBuffer?
-
-    private external fun freeStampDetailsBuffer(
-        buffer: ByteBuffer,
-    )
 
     fun getStampFile(
         stamp: Stamp,

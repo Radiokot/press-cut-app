@@ -17,16 +17,23 @@
    along with Press-Cut. If not, see <http://www.gnu.org/licenses/>.
 */
 
-package ua.com.radiokot.camerapp.util
+#include <jni.h>
+#include <stdlib.h>
 
-import java.nio.ByteBuffer
-
-object NativeLibrary {
-    init {
-        System.loadLibrary("camerapp")
+JNIEXPORT void JNICALL
+Java_ua_com_radiokot_camerapp_util_NativeLibrary_freeDirectByteBuffer(
+        JNIEnv *env,
+        jobject thiz,
+        jobject buffer
+) {
+    if (!buffer) {
+        return;
     }
 
-    fun ensureLoaded() {}
+    void *buffer_memory = (*env)->GetDirectBufferAddress(env, buffer);
+    if (!buffer_memory) {
+        return;
+    }
 
-    external fun freeDirectByteBuffer(buffer: ByteBuffer)
+    free(buffer_memory);
 }

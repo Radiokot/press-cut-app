@@ -33,6 +33,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import ua.com.radiokot.camerapp.stamps.domain.StampCollection
 import ua.com.radiokot.camerapp.stamps.domain.StampCollectionRepository
+import ua.com.radiokot.camerapp.util.NativeLibrary
 import ua.com.radiokot.camerapp.util.getNullTerminatedString
 import ua.com.radiokot.camerapp.util.lazyLogger
 import java.io.File
@@ -270,7 +271,10 @@ class FsStampCollectionRepository(
 
         val buffer =
             getCollectionDetailsBuffer(
-                webpBytes = detailsFileBytes,
+                webpBytes =
+                    ByteBuffer
+                        .allocateDirect(detailsFileBytes.size)
+                        .put(detailsFileBytes),
             )
                 ?: error("Failed reading the stamp details")
 
@@ -279,6 +283,8 @@ class FsStampCollectionRepository(
                 .getNullTerminatedString()
                 .takeIf(String::isNotEmpty)
 
+        NativeLibrary.freeDirectByteBuffer(buffer)
+
         return StampCollection(
             id = directory.nameWithoutExtension,
             name = name ?: "…",
@@ -286,7 +292,7 @@ class FsStampCollectionRepository(
     }
 
     private external fun getCollectionDetailsBuffer(
-        webpBytes: ByteArray,
+        webpBytes: ByteBuffer,
     ): ByteBuffer?
 
     private companion object {

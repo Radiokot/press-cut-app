@@ -261,7 +261,7 @@ Java_ua_com_radiokot_camerapp_stamps_data_FsStampRepository_saveStampWithDetails
         JNIEnv *env,
         jobject thiz,
         jstring file_path_string,
-        jbyteArray webp_bytes,
+        jobject webp_bytes,
         jstring caption_string_optional,
         jstring taken_at_local_string,
         jstring shape_string_optional
@@ -278,8 +278,8 @@ Java_ua_com_radiokot_camerapp_stamps_data_FsStampRepository_saveStampWithDetails
                     : NULL;
 
     WebPData webp_data = {
-            .bytes = (uint8_t *) (*env)->GetByteArrayElements(env, webp_bytes, NULL),
-            .size = (*env)->GetArrayLength(env, webp_bytes),
+            .bytes = (uint8_t *) (*env)->GetDirectBufferAddress(env, webp_bytes),
+            .size = (*env)->GetDirectBufferCapacity(env, webp_bytes),
     };
     stamp_details details = {
             .caption = caption,
@@ -300,7 +300,6 @@ Java_ua_com_radiokot_camerapp_stamps_data_FsStampRepository_saveStampWithDetails
     if (shape) {
         (*env)->ReleaseStringUTFChars(env, shape_string_optional, shape);
     }
-    (*env)->ReleaseByteArrayElements(env, webp_bytes, (jbyte *) webp_data.bytes, JNI_ABORT);
 
     return is_saved;
 }
@@ -309,12 +308,12 @@ JNIEXPORT jboolean JNICALL
 Java_ua_com_radiokot_camerapp_stamps_data_FsStampRepository_getStampImageSize(
         JNIEnv *env,
         jobject thiz,
-        jbyteArray webp_bytes,
+        jobject webp_bytes,
         jintArray result_array
 ) {
     WebPData webp_data = {
-            .bytes = (uint8_t *) (*env)->GetByteArrayElements(env, webp_bytes, NULL),
-            .size = (*env)->GetArrayLength(env, webp_bytes),
+            .bytes = (uint8_t *) (*env)->GetDirectBufferAddress(env, webp_bytes),
+            .size = (*env)->GetDirectBufferCapacity(env, webp_bytes),
     };
 
     jint *result = (*env)->GetIntArrayElements(env, result_array, NULL);
@@ -322,25 +321,6 @@ Java_ua_com_radiokot_camerapp_stamps_data_FsStampRepository_getStampImageSize(
     bool is_got = get_stamp_image_size(webp_data, result, result + 1);
 
     (*env)->ReleaseIntArrayElements(env, result_array, result, 0);
-    (*env)->ReleaseByteArrayElements(env, webp_bytes, (jbyte *) webp_data.bytes, JNI_ABORT);
 
     return is_got;
-}
-
-JNIEXPORT void JNICALL
-Java_ua_com_radiokot_camerapp_stamps_data_FsStampRepository_freeStampDetailsBuffer(
-        JNIEnv *env,
-        jobject thiz,
-        jobject buffer
-) {
-    if (!buffer) {
-        return;
-    }
-
-    void *buffer_memory = (*env)->GetDirectBufferAddress(env, buffer);
-    if (!buffer_memory) {
-        return;
-    }
-
-    free(buffer_memory);
 }

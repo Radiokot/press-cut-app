@@ -14,6 +14,7 @@ add_library(
         SHARED
         fs_stamp_repository.c
         fs_stamp_collection_repository.c
+        direct_byte_buffer.c
         ${dynbuf}
 )
 

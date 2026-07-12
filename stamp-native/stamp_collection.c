@@ -24,7 +24,7 @@ This file is part of the Press-Cut,
 #include "file.h"
 #include "xmp.h"
 
-stamp_collection_xmp_metadata *get_stamp_collection_metadata(WebPData collection_webp) {
+stamp_collection_xmp_metadata *get_stamp_collection_metadata(const WebPData collection_webp) {
     WebPDemuxer *webp_demuxer = WebPDemux(&collection_webp);
     if (!webp_demuxer) {
         fprintf(stderr, "Failed to init WebP demuxer\n");
@@ -32,7 +32,6 @@ stamp_collection_xmp_metadata *get_stamp_collection_metadata(WebPData collection
     }
 
     char *xmp_buffer = get_webp_xmp(collection_webp);
-    WebPDataClear(&collection_webp);
     if (!xmp_buffer) {
         fprintf(stderr, "WebP doesn't contain XMP metadata");
         return NULL;
