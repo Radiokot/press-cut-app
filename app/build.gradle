@@ -65,6 +65,14 @@ android {
     }
 
     buildTypes {
+        debug {
+            if (ciSigningKeystoreFile.exists()) {
+                signingConfig signingConfigs.ci
+            } else {
+                signingConfig signingConfigs.debug
+            }
+        }
+
         release {
             if (ciSigningKeystoreFile.exists()) {
                 signingConfig signingConfigs.ci

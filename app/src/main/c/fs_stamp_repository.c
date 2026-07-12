@@ -195,23 +195,30 @@ Java_ua_com_radiokot_camerapp_stamps_data_FsStampRepository_getStampDetailsBuffe
         return NULL;
     }
     StampCollectionTask worker_tasks[worker_count];
+    pthread_t worker_threads[worker_count];
 
-    for (int workerIndex = 0; workerIndex < worker_count; workerIndex++) {
-        worker_tasks[workerIndex].stamp_path_buffer = stamp_path_buffer;
-        worker_tasks[workerIndex].skip = chunk_size * workerIndex;
-        worker_tasks[workerIndex].process =
-                (workerIndex == worker_count - 1)
+    for (int worker_index = 0; worker_index < worker_count; worker_index++) {
+        worker_tasks[worker_index].stamp_path_buffer = stamp_path_buffer;
+        worker_tasks[worker_index].skip = chunk_size * worker_index;
+        worker_tasks[worker_index].process =
+                (worker_index == worker_count - 1)
                         ? chunk_size + stamp_count % chunk_size
                         : chunk_size;
-        worker_tasks[workerIndex].stamp_buffer = dynbuf_new(DYNBUF_DEFAULT_RADIX);
-        worker_tasks[workerIndex].barrier = &barrier;
-        pthread_t thread;
-        if (pthread_create(&thread, NULL, get_stamps, &worker_tasks[workerIndex]) != 0) {
+        worker_tasks[worker_index].stamp_buffer = dynbuf_new(DYNBUF_DEFAULT_RADIX);
+        worker_tasks[worker_index].barrier = &barrier;
+        if (pthread_create(worker_threads + worker_index,
+                NULL,
+                get_stamps,
+                &worker_tasks[worker_index]
+        ) != 0) {
             return NULL;
         }
     }
 
     pthread_barrier_wait(&barrier);
+    for (int worker_index = 0; worker_index < worker_count; worker_index++) {
+        pthread_join(worker_threads[worker_index], NULL);
+    }
 
     dynbuf_del(&stamp_path_buffer);
 
@@ -318,4 +325,22 @@ Java_ua_com_radiokot_camerapp_stamps_data_FsStampRepository_getStampImageSize(
     (*env)->ReleaseByteArrayElements(env, webp_bytes, (jbyte *) webp_data.bytes, JNI_ABORT);
 
     return is_got;
+}
+
+JNIEXPORT void JNICALL
+Java_ua_com_radiokot_camerapp_stamps_data_FsStampRepository_freeStampDetailsBuffer(
+        JNIEnv *env,
+        jobject thiz,
+        jobject buffer
+) {
+    if (!buffer) {
+        return;
+    }
+
+    void *buffer_memory = (*env)->GetDirectBufferAddress(env, buffer);
+    if (!buffer_memory) {
+        return;
+    }
+
+    free(buffer_memory);
 }

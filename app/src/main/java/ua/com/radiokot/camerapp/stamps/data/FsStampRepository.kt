@@ -481,6 +481,8 @@ class FsStampRepository(
                     shape = stampShape,
                 )
             }
+
+            freeStampDetailsBuffer(buffer)
         }
 
         log.debug {
@@ -495,6 +497,10 @@ class FsStampRepository(
     private external fun getStampDetailsBuffer(
         stampDirectoryPath: String,
     ): ByteBuffer?
+
+    private external fun freeStampDetailsBuffer(
+        buffer: ByteBuffer,
+    )
 
     fun getStampFile(
         stamp: Stamp,
