@@ -19,12 +19,12 @@ android {
     namespace "ua.com.radiokot.camerapp"
 
     //noinspection GradleDependency
-    compileSdkVersion 36
+    compileSdkVersion 37
 
     defaultConfig {
         applicationId "ua.com.radiokot.camerapp"
         minSdk 26
-        targetSdk 36
+        targetSdk 37
 
         versionCode = 11
         versionName = "1.4.1"
@@ -109,8 +109,10 @@ android {
 }
 
 androidComponents {
-    onVariants(selector().withBuildType("debug")) { variant ->
-        variant.packaging.jniLibs.keepDebugSymbols.add("**/*.so")
+    ["debug", "dev"].each { buildType ->
+        onVariants(selector().withBuildType(buildType)) { variant ->
+            variant.packaging.jniLibs.keepDebugSymbols.add("**/*.so")
+        }
     }
 
     onVariants(selector().withBuildType("release")) { variant ->
@@ -156,7 +158,7 @@ dependencies {
     implementation "io.insert-koin:koin-compose-viewmodel-navigation"
 
     def landscapistVersion = "2.9.8"
-    implementation ("com.github.skydoves:landscapist-core:$landscapistVersion") {
+    implementation("com.github.skydoves:landscapist-core:$landscapistVersion") {
         exclude group: "io.ktor", module: "ktor-client-okhttp"
     }
     implementation "com.github.skydoves:landscapist-image:$landscapistVersion"
