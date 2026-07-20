@@ -25,6 +25,7 @@ This file is part of the Press-Cut,
 #include <webp/decode.h>
 #include <ctype.h>
 #include "xmp.h"
+#include "exif.h"
 #include "stamp.h"
 #include "file.h"
 
@@ -178,8 +179,23 @@ bool save_stamp_with_details(const WebPData stamp_webp,
     char *xmp_string = get_xmp_with_stamp_metadata(xmp_metadata);
     free_stamp_xmp_metadata(xmp_metadata);
 
-    const bool is_saved = save_webp_with_xmp(stamp_webp, xmp_string, file_path);
+    size_t exif_size = 0;
+    char *exif_bytes = NULL;
+    if (stamp_details->taken_at_local) {
+        exif_bytes = get_exif_with_stamp_taken_at_local(stamp_details->taken_at_local,
+                                                        &exif_size);
+    }
+
+    const bool is_saved = save_webp_with_metadata(stamp_webp,
+                                                  xmp_string,
+                                                  exif_bytes,
+                                                  exif_size,
+                                                  file_path);
+
     free(xmp_string);
+    if (exif_bytes) {
+        free(exif_bytes);
+    }
 
     return is_saved;
 }

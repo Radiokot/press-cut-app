@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - Stamps now appear in the phone gallery faster
+- New stamps no longer change their date in the phone gallery when moved between collections
 
 ## [1.4.1] - 2026-06-23
 

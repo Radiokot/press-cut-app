@@ -1,6 +1,6 @@
 /* Copyright 2026 Oleg Koretsky
 
-This file is part of the Press-Cut,
+   This file is part of the Press-Cut,
    a digital postage stamp cutter Android app.
 
    Press-Cut is free software: you can redistribute it
@@ -17,21 +17,10 @@ This file is part of the Press-Cut,
    along with Press-Cut. If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef STAMP_NATIVE_FILE_H
-#define STAMP_NATIVE_FILE_H
+#ifndef STAMP_NATIVE_EXIF_H
+#define STAMP_NATIVE_EXIF_H
 
-#include <stdbool.h>
-#include <webp/mux_types.h>
+char *get_exif_with_stamp_taken_at_local(const char *taken_at_local,
+                                         size_t *out_size);
 
-bool read_webp_file(const char *file_path,
-                    WebPData *out);
-
-char *get_webp_xmp(WebPData webp_data);
-
-bool save_webp_with_metadata(WebPData webp_data,
-                             const char *xmp_string,
-                             const char *exif_bytes,
-                             size_t exif_size,
-                             const char *file_path);
-
-#endif //STAMP_NATIVE_FILE_H
+#endif //STAMP_NATIVE_EXIF_H

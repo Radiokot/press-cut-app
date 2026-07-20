@@ -18,6 +18,7 @@ This file is part of the Press-Cut,
 */
 
 #include "xmp.c"
+#include "exif.c"
 #include "file.c"
 #include "stamp.c"
 #include "stamp_collection.c"

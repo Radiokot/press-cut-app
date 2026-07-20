@@ -70,9 +70,11 @@ char *get_webp_xmp(const WebPData webp_data) {
     return xmp_buffer;
 }
 
-bool save_webp_with_xmp(const WebPData webp_data,
-                        const char *xmp_string,
-                        const char *file_path) {
+bool save_webp_with_metadata(const WebPData webp_data,
+                             const char *xmp_string,
+                             const char *exif_bytes,
+                             const size_t exif_size,
+                             const char *file_path) {
     const WebPData xmp_chunk_data = {
         .bytes = (uint8_t *) xmp_string,
         .size = strlen(xmp_string),
@@ -84,20 +86,36 @@ bool save_webp_with_xmp(const WebPData webp_data,
         return false;
     }
 
-    const WebPMuxError set_chunk_error = WebPMuxSetChunk(webp_mux,
-                                                         "XMP ",
-                                                         &xmp_chunk_data,
-                                                         0);
+    WebPMuxError set_chunk_error = WebPMuxSetChunk(webp_mux,
+                                                   "XMP ",
+                                                   &xmp_chunk_data,
+                                                   0);
     if (set_chunk_error != WEBP_MUX_OK) {
         fprintf(stderr, "Failed to set WebP XMP chunk (%d)\n", set_chunk_error);
         WebPMuxDelete(webp_mux);
         return false;
     }
 
+    if (exif_bytes && exif_size != 0) {
+        const WebPData exif_chunk_data = {
+            .bytes = (uint8_t *) exif_bytes,
+            .size = exif_size,
+        };
+        set_chunk_error = WebPMuxSetChunk(webp_mux,
+                                          "EXIF",
+                                          &exif_chunk_data,
+                                          0);
+        if (set_chunk_error != WEBP_MUX_OK) {
+            fprintf(stderr, "Failed to set WebP EXIF chunk (%d)\n", set_chunk_error);
+            WebPMuxDelete(webp_mux);
+            return false;
+        }
+    }
+
     WebPData assembled_webp_data;
     const WebPMuxError assembly_error = WebPMuxAssemble(webp_mux, &assembled_webp_data);
     if (assembly_error != WEBP_MUX_OK) {
-        fprintf(stderr, "Failed to set WebP XMP chunk (%d)\n", set_chunk_error);
+        fprintf(stderr, "Failed to assemble WebP (%d)\n", assembly_error);
         WebPMuxDelete(webp_mux);
         WebPDataClear(&assembled_webp_data);
         return false;

@@ -76,7 +76,11 @@ bool save_stamp_collection_with_metadata(const stamp_collection_xmp_metadata *me
 
     char *xmp_string = get_xmp_with_stamp_collection_metadata(metadata);
 
-    const bool is_saved = save_webp_with_xmp(collection_webp_data, xmp_string, file_path);
+    const bool is_saved = save_webp_with_metadata(collection_webp_data,
+                                                  xmp_string,
+                                                  NULL,
+                                                  0,
+                                                  file_path);
     free(xmp_string);
 
     return is_saved;
