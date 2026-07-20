@@ -35,7 +35,9 @@ import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onCompletion
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import ua.com.radiokot.camerapp.stamps.domain.Stamp
@@ -55,7 +57,6 @@ import java.nio.file.Files
 import java.nio.file.StandardCopyOption
 import java.time.LocalDateTime
 import java.util.Optional
-import java.util.concurrent.ConcurrentHashMap
 import kotlin.concurrent.atomics.AtomicBoolean
 import kotlin.concurrent.atomics.AtomicLong
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
@@ -67,12 +68,13 @@ import kotlin.system.measureTimeMillis
 class FsStampRepository(
     private val stampDirectory: File,
     private val safFileLocksmith: SafFileLocksmith,
+    private val scanFilesWithMediaScanner: ScanFilesWithMediaScanner,
 ) : StampRepository {
 
     private val log by lazyLogger("FsStampRepo")
 
     private val coroutineScope =
-        CoroutineScope(SupervisorJob() + Dispatchers.IO + CoroutineName("FsStampCollectionRepo"))
+        CoroutineScope(SupervisorJob() + Dispatchers.IO + CoroutineName("FsStampRepo"))
 
     init {
         require(stampDirectory.exists()) {
@@ -216,6 +218,10 @@ class FsStampRepository(
             shape = shape,
         )
 
+        scanFilesWithMediaScanner(
+            pathsWithMimeType = listOf(outputFile.absolutePath to STAMP_FILE_CONTENT_TYPE),
+        )
+
         if (isCacheInitialized.load()) {
             cache += Stamp(
                 id = id,
@@ -325,12 +331,16 @@ class FsStampRepository(
                         "\nstamps=${stampIds.size}"
             }
 
+            val toScanWithMediaScanner = mutableListOf<Pair<String, String>>()
+
             stampIds.forEach { stampId ->
                 launch {
                     val file = getStampFile(
                         id = stampId,
                         collectionId = collectionId,
                     )
+
+                    toScanWithMediaScanner += file.absolutePath to STAMP_FILE_CONTENT_TYPE
 
                     if (file.exists()) {
                         if (file.canWrite()) {
@@ -341,6 +351,10 @@ class FsStampRepository(
                     }
                 }
             }
+
+            scanFilesWithMediaScanner(
+                pathsWithMimeType = toScanWithMediaScanner,
+            )
         }
 
         if (isCacheInitialized.load()) {
@@ -375,13 +389,10 @@ class FsStampRepository(
         stampIds: Collection<String>,
     ): Flow<Pair<Int, Int>> {
 
-        //                        Hi Revolut 👋
-        val movedStampPathsById = ConcurrentHashMap<String, String>(mutableMapOf())
+        val movedStampPathsById = mutableMapOf<String, Pair<String, String>>()
 
         return channelFlow {
-            val progressChannel = this.channel
-
-            progressChannel.send(0 to stampIds.size)
+            val movedStampsChannel = this.channel
 
             log.debug {
                 "moveStampsBetweenCollections(): moving the files async:" +
@@ -397,6 +408,8 @@ class FsStampRepository(
                             id = stampId,
                             collectionId = sourceCollectionId,
                         )
+                    val stampSourcePath =
+                        FileSystems.getDefault().getPath(stampSourceFile.path)
                     val stampDestinationFile =
                         getStampFile(
                             id = stampId,
@@ -407,7 +420,7 @@ class FsStampRepository(
 
                     if (stampSourceFile.canWrite()) {
                         Files.move(
-                            FileSystems.getDefault().getPath(stampSourceFile.path),
+                            stampSourcePath,
                             stampDestinationPath,
                             StandardCopyOption.ATOMIC_MOVE,
                         )
@@ -417,27 +430,54 @@ class FsStampRepository(
                             destinationFile = stampDestinationFile,
                         )
                     }
-                    movedStampPathsById[stampId] = stampDestinationPath.absolutePathString()
-                    progressChannel.send(movedStampPathsById.size to stampIds.size)
+
+                    movedStampsChannel.send(
+                        Triple(
+                            stampId,
+                            stampSourcePath.absolutePathString(),
+                            stampDestinationPath.absolutePathString(),
+                        )
+                    )
                 }
             }
         }
+            .map { (stampId, sourcePath, destinationPath) ->
+                movedStampPathsById[stampId] = sourcePath to destinationPath
+                movedStampPathsById.size to stampIds.size
+            }
+            .onStart {
+                emit(0 to stampIds.size)
+            }
             .onCompletion {
                 if (isCacheInitialized.load()) {
                     cache.indices.forEach { i ->
                         val stamp = cache[i]
-                        if (movedStampPathsById.containsKey(stamp.id)) {
-                            cache[i] = stamp.copy(
-                                newCollectionId = destinationCollectionId,
-                                newImageUri =
-                                    movedStampPathsById
-                                        .getValue(stamp.id)
-                                        .toImageUri(),
-                            )
+
+                        if (!movedStampPathsById.containsKey(stamp.id)) {
+                            return@forEach
                         }
+
+                        val (_, destinationPath) = movedStampPathsById.getValue(stamp.id)
+
+                        cache[i] = stamp.copy(
+                            newCollectionId = destinationCollectionId,
+                            newImageUri = destinationPath.toImageUri(),
+                        )
                     }
                     sharedFlow.emit(cache)
                 }
+
+                scanFilesWithMediaScanner(
+                    pathsWithMimeType =
+                        movedStampPathsById
+                            .values
+                            .flatMapTo(mutableListOf()) { (sourcePath, destinationPath) ->
+                                sequenceOf(
+                                    sourcePath to STAMP_FILE_CONTENT_TYPE,
+                                    destinationPath to STAMP_FILE_CONTENT_TYPE,
+                                )
+                            },
+                )
             }
             .flowOn(Dispatchers.IO)
     }
@@ -540,6 +580,7 @@ class FsStampRepository(
 
     companion object {
         const val WEBP_EXTENSION = "webp"
+        const val STAMP_FILE_CONTENT_TYPE = "image/webp"
         private val stampIdCounter = AtomicLong(System.currentTimeMillis())
 
         fun newStampId(): String =

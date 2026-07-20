@@ -62,7 +62,7 @@ class StampFileContentProvider :
     override fun getType(
         uri: Uri,
     ): String =
-        STAMP_FILE_CONTENT_TYPE
+        FsStampRepository.STAMP_FILE_CONTENT_TYPE
 
     override fun query(
         uri: Uri,
@@ -100,7 +100,6 @@ class StampFileContentProvider :
 
     companion object {
         const val AUTHORITY = BuildConfig.stampFileContentProviderAuthority
-        const val STAMP_FILE_CONTENT_TYPE = "image/webp"
 
         private val stampsByUri = mutableMapOf<Uri, Stamp>()
 

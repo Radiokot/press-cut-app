@@ -19,21 +19,27 @@
 
 package ua.com.radiokot.camerapp.stamps.data
 
-import android.content.Intent
-import ua.com.radiokot.camerapp.stamps.domain.CreateSendStampIntentUseCase
-import ua.com.radiokot.camerapp.stamps.domain.Stamp
+import android.content.Context
+import android.media.MediaScannerConnection
 
-class CpCreateSendStampIntentUseCase : CreateSendStampIntentUseCase {
+class ScanFilesWithMediaScanner(
+    private val context: Context,
+) {
+    operator fun invoke(
+        pathsWithMimeType: Collection<Pair<String, String?>>,
+    ) {
+        val pathsArray = Array<String?>(pathsWithMimeType.size) { null }
+        val mimeTypesArray = Array<String?>(pathsWithMimeType.size) { null }
+        pathsWithMimeType.forEachIndexed { i, (path, mimeType) ->
+            pathsArray[i] = path
+            mimeTypesArray[i] = mimeType
+        }
 
-    override fun invoke(
-        stamp: Stamp,
-    ): Intent {
-        val uri = StampFileContentProvider.provide(stamp)
-
-        return Intent(Intent.ACTION_SEND)
-            .setDataAndType(uri, FsStampRepository.STAMP_FILE_CONTENT_TYPE)
-            .putExtra(Intent.EXTRA_STREAM, uri)
-            .putExtra(Intent.EXTRA_TEXT, stamp.caption)
-            .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        MediaScannerConnection.scanFile(
+            context,
+            pathsArray,
+            mimeTypesArray,
+            null
+        )
     }
 }

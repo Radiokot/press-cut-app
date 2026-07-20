@@ -31,6 +31,7 @@ import ua.com.radiokot.camerapp.stamps.data.FsAddGiftStampsToPrimaryCollectionUs
 import ua.com.radiokot.camerapp.stamps.data.FsStampCollectionRepository
 import ua.com.radiokot.camerapp.stamps.data.FsStampRepository
 import ua.com.radiokot.camerapp.stamps.data.SafFileLocksmith
+import ua.com.radiokot.camerapp.stamps.data.ScanFilesWithMediaScanner
 import ua.com.radiokot.camerapp.stamps.domain.AddGiftStampsToPrimaryCollectionUseCase
 import ua.com.radiokot.camerapp.stamps.domain.CreateSendStampIntentUseCase
 import ua.com.radiokot.camerapp.stamps.domain.EnsurePrimaryStampCollectionUseCase
@@ -77,9 +78,16 @@ val stampsModule = module {
     }
 
     single {
+        ScanFilesWithMediaScanner(
+            context = androidApplication(),
+        )
+    }
+
+    single {
         FsStampRepository(
             stampDirectory = get(named(DIRECTORY_STAMPS)),
             safFileLocksmith = get(),
+            scanFilesWithMediaScanner = get(),
         )
     } bind StampRepository::class
 
