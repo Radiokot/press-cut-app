@@ -1,0 +1,3 @@
+Changed:
+- Stamps now appear in the phone gallery faster
+- New stamps no longer change their date in the phone gallery when moved between collections

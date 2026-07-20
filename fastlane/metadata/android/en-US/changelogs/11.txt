@@ -1,5 +1,0 @@
-Fixed:
-- Crashing on Android 9 and older when no permissions are granted
-
-Changed:
-- Made the floating messages prettier
