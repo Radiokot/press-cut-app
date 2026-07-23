@@ -4,7 +4,7 @@ With this Android app you can cut digital postage stamps from what your camera s
 For free and without limits.
 
 <p>
-<img src="fastlane/metadata/android/en-US/images/phoneScreenshots/1.jpg" width=160 />
+<img src="repository-assets/cut.gif" width=160 />
 <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/2.jpg" width=160 />
 <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/3.jpg" width=160 />
 <img src="fastlane/metadata/android/en-US/images/phoneScreenshots/4.jpg" width=160 />
