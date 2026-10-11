@@ -40,6 +40,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.retain.retain
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
@@ -154,7 +155,7 @@ private fun SharedTransitionScope.StampCutNavHost(
     val confirmDiscardChangesContract = remember(navController) {
         ConfirmDiscardChangesContract(navController)
     }
-    var stampImageBitmapToSave by remember {
+    var stampImageBitmapToSave by retain {
         mutableStateOf<Bitmap?>(null)
     }
     val paperBackgroundWithColorModifier =
