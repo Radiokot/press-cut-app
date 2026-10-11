@@ -1,6 +1,0 @@
-Fixed:
-- Stamp image blink while being opened or closed
-- Missing shadows on posters on Android older than 9
-
-Changed:
-- Stamp date now contains the month name

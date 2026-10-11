@@ -1,0 +1,3 @@
+Fixed:
+- Unintended close of a stamp collection on fast scrolling
+- Being hard to start scrolling the image adjustment dial
