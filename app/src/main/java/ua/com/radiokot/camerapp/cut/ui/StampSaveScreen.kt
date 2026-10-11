@@ -175,7 +175,12 @@ fun StampSaveScreen(
             text = "Save",
             onClick = onSaveAction,
             modifier = Modifier
-                .padding(24.dp)
+                .padding(
+                    start = 24.dp,
+                    end = 24.dp,
+                    top = 0.dp,
+                    bottom = 24.dp,
+                )
                 .fillMaxWidth()
         )
     }

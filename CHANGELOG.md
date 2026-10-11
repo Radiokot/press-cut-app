@@ -10,6 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Unintended close of a stamp collection on fast scrolling
+- Being hard to start scrolling the image adjustment dial
 
 ## [1.5.2] - 2026-09-02
 

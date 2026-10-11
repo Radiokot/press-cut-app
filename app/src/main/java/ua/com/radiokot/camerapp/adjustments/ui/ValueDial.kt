@@ -26,6 +26,7 @@ import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.LazyRow
@@ -129,7 +130,10 @@ fun ValueDial(
         overscrollEffect = null,
         contentPadding =
             PaddingValues(
-                horizontal = (maxWidth - 2.dp) / 2,
+                start = (maxWidth - 2.dp) / 2,
+                end = (maxWidth - 2.dp) / 2,
+                top = 8.dp,
+                bottom = 24.dp,
             ),
         verticalAlignment = Alignment.Bottom,
         horizontalArrangement = Arrangement.spacedBy(spacingDp),
@@ -164,6 +168,9 @@ fun ValueDial(
 
     Spacer(
         modifier = Modifier
+            .padding(
+                bottom = 24.dp,
+            )
             .size(
                 height = 16.dp,
                 width = 2.dp,

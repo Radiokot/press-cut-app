@@ -118,9 +118,6 @@ interface AdjustmentsControllerItem {
                 maxValue = maxValue,
                 valueState = valueState,
                 modifier = Modifier
-                    .padding(
-                        top = 8.dp
-                    )
                     .fillMaxWidth()
             )
         }

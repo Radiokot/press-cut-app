@@ -21,6 +21,7 @@ package ua.com.radiokot.camerapp.adjustments.ui
 
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -48,6 +49,7 @@ import androidx.compose.runtime.retain.retain
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -90,7 +92,7 @@ fun AdjustmentsController(
                 .fillMaxWidth()
         )
 
-        ItemSelector2(
+        ItemSelector(
             items = items,
             currentItemIndexState = currentItemIndexState,
             onCurrentItemIndexChanged = currentItemIndexState::value::set,
@@ -108,7 +110,7 @@ fun AdjustmentsController(
 }
 
 @Composable
-private fun ItemSelector2(
+private fun ItemSelector(
     modifier: Modifier = Modifier,
     items: List<AdjustmentsControllerItem>,
     currentItemIndexState: IntState,
