@@ -65,7 +65,7 @@ bool is_stamp_file(const char *path) {
     char *path_dup = strdup(path);
     const char *file_name = basename(path_dup);
     const char *file_extension = strrchr(file_name, '.');
-    if (strcasecmp(file_extension, ".webp") != 0) {
+    if (!file_extension || strcasecmp(file_extension, ".webp") != 0) {
         free(path_dup);
         return false;
     }
