@@ -359,7 +359,9 @@ class FsStampRepository(
         }
 
         if (isCacheInitialized.load()) {
-            cache.removeAll { it.id in stampIds }
+            cache.removeAll {
+                it.id in stampIds && it.collectionId == collectionId
+            }
             sharedFlow.emit(cache)
         }
     }
