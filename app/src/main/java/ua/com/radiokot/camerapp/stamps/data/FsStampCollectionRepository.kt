@@ -293,7 +293,7 @@ class FsStampCollectionRepository(
         webpBytes: ByteBuffer,
     ): ByteBuffer?
 
-    private companion object {
-        private const val DETAILS_FILE_NAME = ".collection.webp"
+    companion object {
+        const val DETAILS_FILE_NAME = ".collection.webp"
     }
 }

@@ -553,6 +553,7 @@ class FsStampRepositoryTest {
         assertEquals(stampFile, file)
     }
 
+    @Test
     fun getStampsFlow_onStampAddOrDelete_emits() = runBlocking {
         getGiftStamp("1778232389641.webp")
             .copyTo(File(defaultCollectionDirectory, "1778232389641.webp"))
