@@ -27,7 +27,11 @@ import android.graphics.Color
 import android.net.Uri
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.take
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
@@ -47,15 +51,17 @@ import ua.com.radiokot.camerapp.stamps.domain.shape.StampShapeA
 import ua.com.radiokot.camerapp.stamps.domain.shape.StampShapeOneStampSmall
 import ua.com.radiokot.camerapp.stamps.domain.shape.StampShapeOneStampWithoutCornersLandscape
 import java.io.File
+import java.nio.file.NoSuchFileException
 import java.time.LocalDateTime
 import java.util.Optional
 import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.Duration.Companion.seconds
 
 @RunWith(AndroidJUnit4::class)
 class FsStampRepositoryTest {
 
     @get:Rule
-    val globalTimeout: Timeout = Timeout.seconds(120)
+    val timeout: Timeout = Timeout.seconds(5)
 
     @get:Rule
     val temporaryFolder: TemporaryFolder = TemporaryFolder()
@@ -65,6 +71,10 @@ class FsStampRepositoryTest {
     private lateinit var subject: FsStampRepository
     private val defaultCollectionId = "0"
     private lateinit var defaultCollectionDirectory: File
+    private val sourceCollectionId = "1"
+    private lateinit var sourceCollectionDirectory: File
+    private val destinationCollectionId = "2"
+    private lateinit var destinationCollectionDirectory: File
 
     @Before
     fun setUp() {
@@ -72,6 +82,10 @@ class FsStampRepositoryTest {
         stampDirectory = temporaryFolder.newFolder()
         defaultCollectionDirectory = File(stampDirectory, defaultCollectionId)
         defaultCollectionDirectory.mkdirs()
+        sourceCollectionDirectory = File(stampDirectory, sourceCollectionId)
+        sourceCollectionDirectory.mkdirs()
+        destinationCollectionDirectory = File(stampDirectory, destinationCollectionId)
+        destinationCollectionDirectory.mkdirs()
 
         subject = newRepository()
     }
@@ -526,6 +540,557 @@ class FsStampRepositoryTest {
 
         assertEquals(stampsToKeep, subject.getStamps())
         assertTrue(stampFileToKeep.exists())
+    }
+
+    @Test
+    fun getStampFile_returnsCorrectFile() = runBlocking {
+        val stampFile = File(defaultCollectionDirectory, "1778232389641.webp")
+        getGiftStamp("1778232389641.webp").copyTo(stampFile)
+        val stamp = subject.getStamps().single()
+
+        val file = subject.getStampFile(stamp)
+
+        assertEquals(stampFile, file)
+    }
+
+    fun getStampsFlow_onStampAddOrDelete_emits() = runBlocking {
+        getGiftStamp("1778232389641.webp")
+            .copyTo(File(defaultCollectionDirectory, "1778232389641.webp"))
+        val emissions = mutableListOf<List<Stamp>>()
+
+        coroutineScope {
+            launch {
+                subject
+                    .getStampsFlow()
+                    .take(3)
+                    .collect { emissions += it.toList() }
+            }
+            launch {
+                delay(1.seconds)
+                subject.addStamp(
+                    collectionId = defaultCollectionId,
+                    webpBytes = getGiftStamp("1778247890443.webp").readBytes(),
+                    caption = CAPTION,
+                    takenAtLocal = TAKEN_AT,
+                    shape = StampShapeOneStampSmall,
+                )
+                delay(1.seconds)
+                subject.deleteStamps(
+                    collectionId = defaultCollectionId,
+                    stampIds = listOf("1778232389641"),
+                )
+            }
+        }
+
+        assertEquals(1, emissions[0].distinct().size)
+        assertEquals(
+            "Must emit a list with the newly added stamp",
+            2,
+            emissions[1].distinct().size
+        )
+        assertEquals(
+            "Must emit a list with the remaining stamp",
+            1,
+            emissions[2].distinct().size
+        )
+    }
+
+    @Test
+    fun getStampsFlow_onStampUpdate_emits() = runBlocking {
+        getGiftStamp("1778232389641.webp")
+            .copyTo(File(defaultCollectionDirectory, "1778232389641.webp"))
+        val emissions = mutableListOf<List<Stamp>>()
+
+        coroutineScope {
+            launch {
+                subject
+                    .getStampsFlow()
+                    .take(2)
+                    .collect { emissions += it.toList() }
+            }
+            launch {
+                delay(1.seconds)
+                val stamp = subject.getStamps().single()
+                subject.updateStamp(
+                    stamp = stamp,
+                    newCaption = Optional.of("New $CAPTION"),
+                )
+            }
+        }
+
+        assertEquals(1, emissions[0].distinct().size)
+        assertEquals(
+            "Stamp list after update must be equal as stamps are equal by ID",
+            emissions[0],
+            emissions[1]
+        )
+        assertEquals(
+            "The stamp in the second emission must be updated",
+            "New $CAPTION",
+            emissions[1].single().caption
+        )
+    }
+
+    @Test
+    fun newStampId_returnsUniqueIncreasingNumericIds() = runBlocking {
+        val ids = Array(200) { FsStampRepository.newStampId() }
+
+        assertEquals(ids.size, ids.distinct().size)
+        assertTrue(
+            "Stamp IDs must be numeric, otherwise the files are not recognized as stamps",
+            ids.all { it.isNotEmpty() && it.all(Char::isDigit) }
+        )
+        assertEquals(
+            "Stamp IDs must only grow",
+            ids.map(String::toLong).sorted(),
+            ids.map(String::toLong)
+        )
+    }
+
+    @Test
+    fun moveStampsBetweenCollections_byIds_movesFilesAndKeepsOthers() = runBlocking {
+        val stampFileToMove1 = File(sourceCollectionDirectory, "1778232389641.webp")
+        getGiftStamp("1778232389641.webp").copyTo(stampFileToMove1)
+        val stampFileToMove2 = File(sourceCollectionDirectory, "1778247890443.webp")
+        getGiftStamp("1778247890443.webp").copyTo(stampFileToMove2)
+        val stampFileToKeep = File(sourceCollectionDirectory, "1778521786065.webp")
+        getGiftStamp("1778521786065.webp").copyTo(stampFileToKeep)
+
+        val bytesToMove1 = stampFileToMove1.readBytes()
+        val bytesToMove2 = stampFileToMove2.readBytes()
+        val bytesToKeep = stampFileToKeep.readBytes()
+
+        subject
+            .moveStampsBetweenCollections(
+                sourceCollectionId = sourceCollectionId,
+                destinationCollectionId = destinationCollectionId,
+                stampIds = listOf("1778232389641", "1778247890443"),
+            )
+            .toList()
+
+        assertFalse(
+            "The moved stamp file must not remain in the source collection",
+            stampFileToMove1.exists()
+        )
+        assertFalse(
+            "The moved stamp file must not remain in the source collection",
+            stampFileToMove2.exists()
+        )
+        assertArrayEquals(
+            bytesToMove1,
+            File(destinationCollectionDirectory, "1778232389641.webp").readBytes()
+        )
+        assertArrayEquals(
+            bytesToMove2,
+            File(destinationCollectionDirectory, "1778247890443.webp").readBytes()
+        )
+        assertTrue(
+            "The stamp not mentioned in the move must stay in the source collection",
+            stampFileToKeep.exists()
+        )
+        assertArrayEquals(bytesToKeep, stampFileToKeep.readBytes())
+        assertFalse(
+            "The stamp not mentioned in the move must not appear in the destination collection",
+            File(destinationCollectionDirectory, "1778521786065.webp").exists()
+        )
+    }
+
+    @Test
+    fun moveStampsBetweenCollections_byIds_emitsProgressFromZeroToTotal() = runBlocking {
+        getGiftStamp("1778232389641.webp")
+            .copyTo(File(sourceCollectionDirectory, "1778232389641.webp"))
+        getGiftStamp("1778247890443.webp")
+            .copyTo(File(sourceCollectionDirectory, "1778247890443.webp"))
+
+        val emissions = subject
+            .moveStampsBetweenCollections(
+                sourceCollectionId = sourceCollectionId,
+                destinationCollectionId = destinationCollectionId,
+                stampIds = listOf("1778232389641", "1778247890443"),
+            )
+            .toList()
+
+        assertEquals(
+            "Must emit the initial zero progress, then the progress after each moved stamp",
+            listOf(0 to 2, 1 to 2, 2 to 2),
+            emissions
+        )
+    }
+
+    @Test
+    fun moveStampsBetweenCollections_byIds_emptyList_emitsOnlyInitialProgress() = runBlocking {
+        val stampFile = File(sourceCollectionDirectory, "1778232389641.webp")
+        getGiftStamp("1778232389641.webp").copyTo(stampFile)
+
+        val emissions = subject
+            .moveStampsBetweenCollections(
+                sourceCollectionId = sourceCollectionId,
+                destinationCollectionId = destinationCollectionId,
+                stampIds = emptyList(),
+            )
+            .toList()
+
+        assertEquals(listOf(0 to 0), emissions)
+        assertTrue(stampFile.exists())
+        assertEquals(0, destinationCollectionDirectory.listFiles()!!.size)
+    }
+
+    @Test
+    fun moveStampsBetweenCollections_byIds_updatesCache() = runBlocking {
+        val idToMove = "1778232389641"
+        val idToKeep = "1778247890443"
+        getGiftStamp("$idToMove.webp")
+            .copyTo(File(sourceCollectionDirectory, "$idToMove.webp"))
+        getGiftStamp("$idToKeep.webp")
+            .copyTo(File(sourceCollectionDirectory, "$idToKeep.webp"))
+
+        // Initialize the cache.
+        assertEquals(2, subject.getStamps().size)
+
+        subject
+            .moveStampsBetweenCollections(
+                sourceCollectionId = sourceCollectionId,
+                destinationCollectionId = destinationCollectionId,
+                stampIds = listOf(idToMove),
+            )
+            .toList()
+
+        val stamps = subject.getStamps()
+        assertEquals(
+            "The number of stamps must not change",
+            2,
+            stamps.size
+        )
+
+        val movedStamp = stamps.single { it.id == idToMove }
+        assertEquals(destinationCollectionId, movedStamp.collectionId)
+        assertEquals(
+            "The moved stamp must point to the new file",
+            "file://${File(destinationCollectionDirectory, "$idToMove.webp").absolutePath}",
+            movedStamp.imageUri
+        )
+
+        val keptStamp = stamps.single { it.id == idToKeep }
+        assertEquals(sourceCollectionId, keptStamp.collectionId)
+        assertEquals(
+            "The kept stamp must still point to its file",
+            "file://${File(sourceCollectionDirectory, "$idToKeep.webp").absolutePath}",
+            keptStamp.imageUri
+        )
+    }
+
+    @Test
+    fun moveStampsBetweenCollections_byIds_cacheNotInitialized_movesFilesAndLoadsMovedStamps() =
+        runBlocking {
+            val id = "1778232389641"
+            getGiftStamp("$id.webp")
+                .copyTo(File(sourceCollectionDirectory, "$id.webp"))
+
+            // No stamps are read before the move, so the cache is not initialized.
+            subject
+                .moveStampsBetweenCollections(
+                    sourceCollectionId = sourceCollectionId,
+                    destinationCollectionId = destinationCollectionId,
+                    stampIds = listOf(id),
+                )
+                .toList()
+
+            val stamp = subject.getStamps().single()
+
+            assertEquals(id, stamp.id)
+            assertEquals(destinationCollectionId, stamp.collectionId)
+            assertTrue(File(destinationCollectionDirectory, "$id.webp").exists())
+            assertFalse(File(sourceCollectionDirectory, "$id.webp").exists())
+        }
+
+    @Test
+    fun moveStampsBetweenCollections_byIds_isPersisted() = runBlocking {
+        val id = "1778232389641"
+        getGiftStamp("$id.webp")
+            .copyTo(File(sourceCollectionDirectory, "$id.webp"))
+
+        // Initialize the cache.
+        subject.getStamps()
+
+        subject
+            .moveStampsBetweenCollections(
+                sourceCollectionId = sourceCollectionId,
+                destinationCollectionId = destinationCollectionId,
+                stampIds = listOf(id),
+            )
+            .toList()
+
+        val stampFromDisk = newRepository().getStamps().single()
+
+        assertEquals(id, stampFromDisk.id)
+        assertEquals(destinationCollectionId, stampFromDisk.collectionId)
+    }
+
+    @Test
+    fun moveStampsBetweenCollections_byIds_keepsStampDetailsAndImage() = runBlocking {
+        subject.addStamp(
+            collectionId = sourceCollectionId,
+            webpBytes = getGiftStamp("1778232389641.webp").readBytes(),
+            caption = CAPTION,
+            takenAtLocal = TAKEN_AT,
+            shape = StampShapeOneStampSmall,
+        )
+        val stamp = subject.getStamps().single()
+        val (bytesBefore, sizeBefore) = subject.getStampImageBytesAndSize(stamp)
+
+        subject
+            .moveStampsBetweenCollections(
+                sourceCollectionId = sourceCollectionId,
+                destinationCollectionId = destinationCollectionId,
+                stampIds = listOf(stamp.id),
+            )
+            .toList()
+
+        val fromDisk = newRepository().getStamp(stamp.id)!!
+
+        assertEquals(destinationCollectionId, fromDisk.collectionId)
+        assertEquals(CAPTION, fromDisk.caption)
+        assertEquals(TAKEN_AT, fromDisk.takenAtLocal)
+        assertEquals(StampShapeOneStampSmall, fromDisk.shape)
+
+        val (bytesAfter, sizeAfter) = subject.getStampImageBytesAndSize(fromDisk)
+
+        assertEquals(sizeBefore, sizeAfter)
+        assertArrayEquals(
+            "Stamp image must not be changed by moving",
+            bytesBefore,
+            bytesAfter
+        )
+    }
+
+    @Test
+    fun moveStampsBetweenCollections_byIds_doesNotAffectOtherCollections() = runBlocking {
+        val thirdCollectionId = "3"
+        val thirdCollectionDirectory = File(stampDirectory, thirdCollectionId)
+        thirdCollectionDirectory.mkdirs()
+
+        val stampFileToMove = File(sourceCollectionDirectory, "1778232389641.webp")
+        getGiftStamp("1778232389641.webp").copyTo(stampFileToMove)
+        val stampFileInThirdCollection = File(thirdCollectionDirectory, "1778521786065.webp")
+        getGiftStamp("1778521786065.webp").copyTo(stampFileInThirdCollection)
+
+        subject
+            .moveStampsBetweenCollections(
+                sourceCollectionId = sourceCollectionId,
+                destinationCollectionId = destinationCollectionId,
+                stampIds = listOf("1778232389641"),
+            )
+            .toList()
+
+        assertTrue(
+            "The stamp of the third collection must stay where it is",
+            stampFileInThirdCollection.exists()
+        )
+
+        val stamps = newRepository().getStamps().sortedBy(Stamp::id)
+
+        assertEquals(2, stamps.size)
+        assertEquals(destinationCollectionId, stamps[0].collectionId)
+        assertEquals(thirdCollectionId, stamps[1].collectionId)
+    }
+
+    @Test(expected = NoSuchFileException::class)
+    fun moveStampsBetweenCollections_byIds_missingDestinationDirectory_throws() = runBlocking {
+        getGiftStamp("1778232389641.webp")
+            .copyTo(File(sourceCollectionDirectory, "1778232389641.webp"))
+
+        subject
+            .moveStampsBetweenCollections(
+                sourceCollectionId = sourceCollectionId,
+                destinationCollectionId = "no-such-collection",
+                stampIds = listOf("1778232389641"),
+            )
+            .toList()
+
+        fail("The stamp must not be moved to a missing collection")
+    }
+
+    @Test
+    fun moveStampsBetweenCollections_all_movesEveryStampOfSourceCollection() = runBlocking {
+        val stampFile1 = File(sourceCollectionDirectory, "1778232389641.webp")
+        getGiftStamp("1778232389641.webp").copyTo(stampFile1)
+        val stampFile2 = File(sourceCollectionDirectory, "1778247890443.webp")
+        getGiftStamp("1778247890443.webp").copyTo(stampFile2)
+        val stampFile3 = File(sourceCollectionDirectory, "1778521786065.webp")
+        getGiftStamp("1778521786065.webp").copyTo(stampFile3)
+
+        val bytes1 = stampFile1.readBytes()
+        val bytes2 = stampFile2.readBytes()
+        val bytes3 = stampFile3.readBytes()
+
+        subject
+            .moveStampsBetweenCollections(
+                sourceCollectionId = sourceCollectionId,
+                destinationCollectionId = destinationCollectionId,
+            )
+            .toList()
+
+        assertEquals(
+            "All the stamps must be moved out of the source collection",
+            0,
+            sourceCollectionDirectory.listFiles()!!.size
+        )
+        assertArrayEquals(
+            bytes1,
+            File(destinationCollectionDirectory, "1778232389641.webp").readBytes()
+        )
+        assertArrayEquals(
+            bytes2,
+            File(destinationCollectionDirectory, "1778247890443.webp").readBytes()
+        )
+        assertArrayEquals(
+            bytes3,
+            File(destinationCollectionDirectory, "1778521786065.webp").readBytes()
+        )
+
+        val stamps = newRepository().getStamps()
+
+        assertEquals(3, stamps.size)
+        assertTrue(
+            "All the stamps must belong to the destination collection",
+            stamps.all { it.collectionId == destinationCollectionId }
+        )
+    }
+
+    @Test
+    fun moveStampsBetweenCollections_all_emitsProgressFromZeroToTotal() = runBlocking {
+        getGiftStamp("1778232389641.webp")
+            .copyTo(File(sourceCollectionDirectory, "1778232389641.webp"))
+        getGiftStamp("1778247890443.webp")
+            .copyTo(File(sourceCollectionDirectory, "1778247890443.webp"))
+        getGiftStamp("1778521786065.webp")
+            .copyTo(File(sourceCollectionDirectory, "1778521786065.webp"))
+
+        val emissions = subject
+            .moveStampsBetweenCollections(
+                sourceCollectionId = sourceCollectionId,
+                destinationCollectionId = destinationCollectionId,
+            )
+            .toList()
+
+        assertEquals(
+            "Must emit the initial zero progress, then the progress after each moved stamp",
+            listOf(0 to 3, 1 to 3, 2 to 3, 3 to 3),
+            emissions
+        )
+    }
+
+    @Test
+    fun moveStampsBetweenCollections_all_silentlySkipsInvalidFiles() = runBlocking {
+        getGiftStamp("1778247890443.webp")
+            .copyTo(File(sourceCollectionDirectory, "1778247890443.webp"))
+
+        val invalidPngFile = File(sourceCollectionDirectory, "12345.png")
+        invalidPngFile.writeBytes(ByteArray(10))
+        val readmeFile = File(sourceCollectionDirectory, "README")
+        readmeFile.writeText("Do not actually move me")
+        val noMediaFile = File(sourceCollectionDirectory, ".nomedia")
+        noMediaFile.createNewFile()
+
+        val emissions = subject
+            .moveStampsBetweenCollections(
+                sourceCollectionId = sourceCollectionId,
+                destinationCollectionId = destinationCollectionId,
+            )
+            .toList()
+
+        assertEquals(
+            "Only 1 valid stamp must be moved",
+            listOf(0 to 1, 1 to 1),
+            emissions
+        )
+        assertTrue(File(destinationCollectionDirectory, "1778247890443.webp").exists())
+        assertTrue(invalidPngFile.exists())
+        assertTrue(readmeFile.exists())
+        assertTrue(noMediaFile.exists())
+        assertEquals(
+            "Only the valid stamp must appear in the destination collection",
+            1,
+            destinationCollectionDirectory.listFiles()!!.size
+        )
+    }
+
+    @Test
+    fun moveStampsBetweenCollections_all_emptySourceCollection_emitsOnlyInitialProgress() =
+        runBlocking {
+            val emissions = subject
+                .moveStampsBetweenCollections(
+                    sourceCollectionId = sourceCollectionId,
+                    destinationCollectionId = destinationCollectionId,
+                )
+                .toList()
+
+            assertEquals(listOf(0 to 0), emissions)
+            assertEquals(0, destinationCollectionDirectory.listFiles()!!.size)
+        }
+
+    @Test
+    fun moveStampsBetweenCollections_all_missingSourceCollection_succeedsChangingNothing() =
+        runBlocking {
+            val stampFileToKeep = File(destinationCollectionDirectory, "1778521786065.webp")
+            getGiftStamp("1778521786065.webp").copyTo(stampFileToKeep)
+
+            val emissions = subject
+                .moveStampsBetweenCollections(
+                    sourceCollectionId = "no-such-collection",
+                    destinationCollectionId = destinationCollectionId,
+                )
+                .toList()
+
+            assertEquals(listOf(0 to 0), emissions)
+            assertTrue(stampFileToKeep.exists())
+            assertEquals(1, subject.getStamps().size)
+        }
+
+    @Test
+    fun getStampsFlow_onStampsMove_emits() = runBlocking {
+        val id = "1778232389641"
+        getGiftStamp("$id.webp")
+            .copyTo(File(sourceCollectionDirectory, "$id.webp"))
+
+        val emissions = mutableListOf<List<Stamp>>()
+
+        coroutineScope {
+            launch {
+                subject
+                    .getStampsFlow()
+                    .take(2)
+                    .collect { emissions += it.toList() }
+            }
+
+            launch {
+                delay(1.seconds)
+
+                subject
+                    .moveStampsBetweenCollections(
+                        sourceCollectionId = sourceCollectionId,
+                        destinationCollectionId = destinationCollectionId,
+                        stampIds = listOf(id),
+                    )
+                    .toList()
+            }
+        }
+
+        assertEquals(
+            "The stamp in the first emission must be in the source collection",
+            sourceCollectionId,
+            emissions[0].single().collectionId
+        )
+        assertEquals(
+            "Stamp list after move must be equal as stamps are equal by ID",
+            emissions[0],
+            emissions[1]
+        )
+        assertEquals(
+            "The stamp in the second emission must be moved to the destination collection",
+            destinationCollectionId,
+            emissions[1].single().collectionId
+        )
     }
 
     private fun newRepository(
