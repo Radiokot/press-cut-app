@@ -26,17 +26,6 @@ import android.graphics.Matrix
 import android.graphics.Paint
 import android.graphics.RectF
 import android.graphics.Shader
-import android.os.Handler
-import android.os.Looper
-import android.view.PixelCopy
-import android.view.Surface
-import androidx.camera.core.ImageCapture
-import androidx.camera.core.Preview
-import androidx.camera.core.SurfaceRequest
-import androidx.camera.core.UseCaseGroup
-import androidx.camera.core.resolutionselector.ResolutionSelector
-import androidx.camera.core.resolutionselector.ResolutionStrategy
-import androidx.camera.core.takePicture
 import androidx.compose.runtime.Immutable
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
@@ -49,17 +38,16 @@ import androidx.core.graphics.createBitmap
 import androidx.core.graphics.times
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
-import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.callbackFlow
-import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.onCompletion
+import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import ua.com.radiokot.camerapp.cut.domain.StampCutCameraImageSource
+import ua.com.radiokot.camerapp.cut.domain.StampCutImageSource
 import ua.com.radiokot.camerapp.stamps.domain.shape.StampShapeA
 import ua.com.radiokot.camerapp.util.eventSharedFlow
 import ua.com.radiokot.camerapp.util.lazyLogger
@@ -71,38 +59,10 @@ class StampCutScreenViewModel : ViewModel() {
 
     private val log by lazyLogger("StampCutScreenVM")
 
-    private val previewUseCase =
-        Preview.Builder().build()
-
-    @SuppressLint("UnsafeOptInUsageError")
-    private val captureUseCase =
-        ImageCapture.Builder()
-            .setCaptureMode(ImageCapture.CAPTURE_MODE_ZERO_SHUTTER_LAG)
-            .setTargetRotation(Surface.ROTATION_0)
-            .setResolutionSelector(
-                ResolutionSelector.Builder()
-                    .setResolutionStrategy(
-                        ResolutionStrategy(
-                            android.util.Size(1920, 1920),
-                            ResolutionStrategy.FALLBACK_RULE_CLOSEST_HIGHER_THEN_LOWER,
-                        )
-                    )
-                    .build()
-            )
-            .build()
-
-    val useCaseGroup =
-        UseCaseGroup.Builder()
-            .addUseCase(previewUseCase)
-            .addUseCase(captureUseCase)
-            .build()
-
-    val surfaceRequest: StateFlow<SurfaceRequest?> =
-        callbackFlow {
-            previewUseCase.setSurfaceProvider(::trySend)
-            awaitClose { previewUseCase.surfaceProvider = null }
-        }
-            .stateIn(viewModelScope, SharingStarted.Lazily, null)
+    val imageSource: StampCutImageSource =
+        StampCutCameraImageSource(
+            coroutineScope = viewModelScope,
+        )
 
     private val cutBitmap: MutableStateFlow<Bitmap?> = MutableStateFlow(null)
     val cutImage: StateFlow<ImageBitmap?> =
@@ -150,74 +110,27 @@ class StampCutScreenViewModel : ViewModel() {
     private suspend fun doCut(
         visibleViewfinderRect: RectF,
         visibleFrameRect: RectF,
-    ) = withContext(Dispatchers.Default) {
-
-        // Get low quality cut from the preview first,
-        // for immediate visual effect.
-
-        val previewResolutionInfo = previewUseCase.resolutionInfo!!
-        val previewImageBitmap =
-            createBitmap(
-                width =
-                    if (previewResolutionInfo.rotationDegrees == 0
-                        || previewResolutionInfo.rotationDegrees == 180
-                    )
-                        previewResolutionInfo.resolution.width
-                    else
-                        previewResolutionInfo.resolution.height,
-                height =
-                    if (previewResolutionInfo.rotationDegrees == 0
-                        || previewResolutionInfo.rotationDegrees == 180
-                    )
-                        previewResolutionInfo.resolution.height
-                    else
-                        previewResolutionInfo.resolution.width,
-            )
-        withContext(Dispatchers.IO) {
-            PixelCopy.request(
-                surfaceRequest.value!!.deferrableSurface.surface.get()!!,
-                previewImageBitmap,
-                {
-                    cutBitmap.value = frameImage(
-                        image = previewImageBitmap,
+    ) {
+        imageSource
+            .capture()
+            .onEach { capturedBitmap ->
+                println("OOLEG meow ${capturedBitmap.width}x${capturedBitmap.height}")
+                cutBitmap.value =
+                    frameImage(
+                        image = capturedBitmap,
                         visibleViewfinderRect = visibleViewfinderRect,
                         visibleFrameRect = visibleFrameRect,
                     )
-                    previewImageBitmap.recycle()
-                },
-                Handler(Looper.getMainLooper()),
-            )
-        }
-
-        // Then make the actual cut from a high-res capture,
-        // that takes some time.
-
-        val captureImageProxy = captureUseCase.takePicture()
-        val captureImageBitmap = captureImageProxy.toBitmap()
-        val rotatedCaptureImageBitmap = Bitmap.createBitmap(
-            captureImageBitmap,
-            0, 0,
-            captureImageProxy.width,
-            captureImageProxy.height,
-            Matrix().apply {
-                setRotate(captureImageProxy.imageInfo.rotationDegrees.toFloat())
-            },
-            true
-        )
-
-        events.emit(
-            Event.DidCut(
-                stampImageBitmap = frameImage(
-                    image = rotatedCaptureImageBitmap,
-                    visibleViewfinderRect = visibleViewfinderRect,
-                    visibleFrameRect = visibleFrameRect,
-                ),
-            )
-        )
-
-        captureImageProxy.close()
-        captureImageBitmap.recycle()
-        rotatedCaptureImageBitmap.recycle()
+                capturedBitmap.recycle()
+            }
+            .onCompletion {
+                events.emit(
+                    Event.DidCut(
+                        stampImageBitmap = cutBitmap.value!!,
+                    )
+                )
+            }
+            .collect()
     }
 
     fun onScreenDisposed() {

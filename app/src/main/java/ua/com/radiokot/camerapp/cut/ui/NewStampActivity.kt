@@ -51,6 +51,7 @@ import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 import ua.com.radiokot.camerapp.adjustments.ui.ImageAdjustmentsControllerViewModel
+import ua.com.radiokot.camerapp.cut.domain.StampCutCameraImageSource
 import ua.com.radiokot.camerapp.discardchanges.ui.ConfirmDiscardChangesContract
 import ua.com.radiokot.camerapp.discardchanges.ui.confirmDiscardChangesDestination
 import ua.com.radiokot.camerapp.intro.ui.PermissionsRoute
@@ -193,14 +194,15 @@ private fun SharedTransitionScope.StampCutNavHost(
             route = CutDestination,
         ) {
             val viewModel: StampCutScreenViewModel = koinViewModel()
-            val surfaceRequest by viewModel.surfaceRequest.collectAsState()
+            val cameraImageSource = viewModel.imageSource as StampCutCameraImageSource
+            val surfaceRequest by cameraImageSource.surfaceRequest.collectAsState()
             val cutImage by viewModel.cutImage.collectAsState()
 
             CompositionLocalProvider(
                 LocalColors provides LightAppColors
             ) {
                 StampCutScreen(
-                    useCaseGroup = viewModel.useCaseGroup,
+                    useCaseGroup = cameraImageSource.useCaseGroup,
                     surfaceRequest = surfaceRequest,
                     cutImage = cutImage,
                     onCutAction = viewModel::onCutAction,
