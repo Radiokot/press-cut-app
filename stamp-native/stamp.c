@@ -62,20 +62,17 @@ void free_stamp_details(const stamp_details *details) {
 }
 
 bool is_stamp_file(const char *path) {
-    char *path_dup = strdup(path);
-    const char *file_name = basename(path_dup);
+    const char *file_name = strrchr(path, '/');
+    file_name = file_name ? file_name + 1 : path;
     const char *file_extension = strrchr(file_name, '.');
     if (!file_extension || strcasecmp(file_extension, ".webp") != 0) {
-        free(path_dup);
         return false;
     }
     for (const char *c = file_name; c != file_extension; c++) {
-        if (!isdigit(*c)) {
-            free(path_dup);
+        if (!isdigit((unsigned char) *c)) {
             return false;
         }
     }
-    free(path_dup);
     return true;
 }
 
