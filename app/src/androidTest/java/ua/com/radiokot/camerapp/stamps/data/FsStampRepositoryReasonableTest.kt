@@ -28,12 +28,24 @@ import android.net.Uri
 import android.util.Size
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.platform.app.InstrumentationRegistry
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.flow.toList
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeoutOrNull
 import org.junit.Assert.assertArrayEquals
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertThrows
 import org.junit.Assert.assertTrue
+import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -47,6 +59,8 @@ import java.io.ByteArrayInputStream
 import java.io.File
 import java.time.Duration
 import java.time.LocalDateTime
+import java.util.Optional
+import kotlin.time.Duration.Companion.milliseconds
 
 @RunWith(AndroidJUnit4::class)
 class FsStampRepositoryReasonableTest {
@@ -67,6 +81,10 @@ class FsStampRepositoryReasonableTest {
     private lateinit var destinationCollectionDirectory: File
 
     private lateinit var subject: FsStampRepository
+
+    private val giftWebpBytes: ByteArray by lazy {
+        getGiftStamp("1778232389641.webp").readBytes()
+    }
 
     @Before
     fun setUp() {
@@ -355,6 +373,403 @@ class FsStampRepositoryReasonableTest {
         )
     }
 
+    @Test
+    fun updated_stamp_caption_is_emitted_right_after_the_update(
+
+    ) = runBlocking {
+
+        seedStamps(defaultCollectionId, "To update", "Bystander")
+        val stampToUpdate = findStampByCaption("To update")
+
+        withStampsFlowEmissions { emissions ->
+            emissions.awaitEmission()
+
+            subject.updateStamp(
+                stamp = stampToUpdate,
+                newCaption = Optional.of(NEW_CAPTION),
+            )
+
+            val emitted = emissions.awaitEmission { stamps ->
+                stamps.any { it.caption == NEW_CAPTION }
+            }
+            assertEquals(
+                "The updated stamp must be neither duplicated nor lost",
+                2,
+                emitted.size
+            )
+            assertEquals(
+                stampToUpdate.id,
+                emitted.single { it.caption == NEW_CAPTION }.id
+            )
+            assertEquals(
+                "Other stamps must stay as they were",
+                "Bystander",
+                emitted.single { it.id != stampToUpdate.id }.caption
+            )
+        }
+    }
+
+    @Test
+    fun updated_stamp_caption_is_persisted_with_other_details_intact(
+
+    ) = runBlocking {
+
+        seedStamps(defaultCollectionId, "To update")
+        val stamp = findStampByCaption("To update")
+        val (bytesBeforeUpdate, sizeBeforeUpdate) = subject.getStampImageBytesAndSize(stamp)
+
+        subject.updateStamp(
+            stamp = stamp,
+            newCaption = Optional.of(NEW_CAPTION),
+        )
+        subject = newRepository()
+        val retrieved = subject.getStamps().single()
+        val (retrievedBytes, retrievedSize) = subject.getStampImageBytesAndSize(retrieved)
+
+        assertEquals(NEW_CAPTION, retrieved.caption)
+        assertEquals(stamp.id, retrieved.id)
+        assertEquals(stamp.collectionId, retrieved.collectionId)
+        assertEquals(stamp.imageUri, retrieved.imageUri)
+        assertEquals(stamp.takenAtLocal, retrieved.takenAtLocal)
+        assertEquals(stamp.shape, retrieved.shape)
+        assertEquals(
+            "The image must not be affected by the update",
+            sizeBeforeUpdate,
+            retrievedSize
+        )
+        assertTrue(
+            BitmapFactory.decodeByteArray(retrievedBytes, 0, retrievedBytes.size)
+                .sameAs(
+                    BitmapFactory.decodeByteArray(bytesBeforeUpdate, 0, bytesBeforeUpdate.size)
+                )
+        )
+    }
+
+    @Test
+    fun stamp_caption_can_be_removed_by_update_with_empty_optional(
+
+    ) = runBlocking {
+
+        seedStamps(defaultCollectionId, "To clear")
+        val stamp = findStampByCaption("To clear")
+
+        withStampsFlowEmissions { emissions ->
+            emissions.awaitEmission()
+
+            subject.updateStamp(
+                stamp = stamp,
+                newCaption = Optional.empty(),
+            )
+
+            val emitted = emissions.awaitEmission { stamps ->
+                stamps.single().caption == null
+            }
+            assertEquals(stamp.id, emitted.single().id)
+        }
+
+        subject = newRepository()
+        assertNull(
+            "The removed caption must be persisted",
+            subject.getStamps().single().caption
+        )
+    }
+
+    @Test
+    fun stamp_caption_is_kept_when_update_has_no_new_caption(
+
+    ) = runBlocking {
+
+        seedStamps(defaultCollectionId, "Keep me")
+        val stamp = findStampByCaption("Keep me")
+
+        subject.updateStamp(
+            stamp = stamp,
+            newCaption = null,
+        )
+        assertEquals("Keep me", subject.getStamps().single().caption)
+
+        subject = newRepository()
+        assertEquals("Keep me", subject.getStamps().single().caption)
+    }
+
+    @Test
+    fun deleted_stamps_are_emitted_right_after_the_deletion(
+
+    ) = runBlocking {
+
+        seedStamps(defaultCollectionId, "Keep", "Delete 1", "Delete 2")
+        seedStamps(sourceCollectionId, "Other collection")
+        val stampsToDelete = listOf(
+            findStampByCaption("Delete 1"),
+            findStampByCaption("Delete 2"),
+        )
+
+        withStampsFlowEmissions { emissions ->
+            val initial = emissions.awaitEmission()
+            assertEquals(4, initial.size)
+
+            subject.deleteStamps(
+                collectionId = defaultCollectionId,
+                stampIds = stampsToDelete.map(Stamp::id),
+            )
+
+            val emitted = emissions.awaitEmission { stamps -> stamps.size == 2 }
+            assertEquals(
+                "Only the deleted stamps must be gone",
+                setOf("Keep", "Other collection"),
+                emitted.map(Stamp::caption).toSet()
+            )
+        }
+    }
+
+    @Test
+    fun deleted_stamps_are_removed_from_the_file_system_and_stay_deleted(
+
+    ) = runBlocking {
+
+        seedStamps(defaultCollectionId, "Keep", "Delete 1", "Delete 2")
+        seedStamps(sourceCollectionId, "Other collection")
+        val keptStamps =
+            listOf(findStampByCaption("Keep"), findStampByCaption("Other collection"))
+        val deletedStamps =
+            listOf(findStampByCaption("Delete 1"), findStampByCaption("Delete 2"))
+        val deletedStampFiles = deletedStamps.map { subject.getStampFile(it) }
+        assertTrue(deletedStampFiles.all(File::exists))
+
+        subject.deleteStamps(
+            collectionId = defaultCollectionId,
+            stampIds = deletedStamps.map(Stamp::id),
+        )
+
+        awaitCondition("The files of the deleted stamps must be removed") {
+            deletedStampFiles.none(File::exists)
+        }
+        subject = newRepository()
+        val retrieved = subject.getStamps()
+        assertEquals(
+            "The deleted stamps must not come back after the repository is recreated",
+            setOf("Keep", "Other collection"),
+            retrieved.map(Stamp::caption).toSet()
+        )
+        assertTrue(
+            "The files of the other stamps must be untouched",
+            keptStamps.all { subject.getStampFile(it).exists() }
+        )
+    }
+
+    @Test
+    fun moved_stamps_are_emitted_with_the_destination_collection_right_after_the_move(
+
+    ) = runBlocking {
+
+        seedStamps(sourceCollectionId, "Moved 1", "Moved 2", "Stays")
+        seedStamps(destinationCollectionId, "Already here")
+        val stampsToMove = listOf(findStampByCaption("Moved 1"), findStampByCaption("Moved 2"))
+
+        val emitted = withStampsFlowEmissions { emissions ->
+            emissions.awaitEmission()
+
+            subject.moveStampsBetweenCollections(
+                sourceCollectionId = sourceCollectionId,
+                destinationCollectionId = destinationCollectionId,
+                stampIds = stampsToMove.map(Stamp::id),
+            ).collect()
+
+            emissions.awaitEmission { stamps ->
+                stamps
+                    .filter { it.caption?.startsWith("Moved") == true }
+                    .all { it.collectionId == destinationCollectionId }
+            }
+        }
+
+        assertEquals(4, emitted.size)
+        assertEquals(
+            setOf("Moved 1", "Moved 2", "Already here"),
+            emitted
+                .filter { it.collectionId == destinationCollectionId }
+                .map(Stamp::caption)
+                .toSet()
+        )
+        assertEquals(
+            "The stamp that was not asked to move must stay in the source collection",
+            listOf("Stays"),
+            emitted
+                .filter { it.collectionId == sourceCollectionId }
+                .map(Stamp::caption)
+        )
+        assertEquals(
+            "The emitted stamps must be the same as the ones retrieved from the disk, " +
+                    "including the image URI pointing to the new location",
+            newRepository().getStamps().associateBy(Stamp::id),
+            emitted.associateBy(Stamp::id)
+        )
+    }
+
+    @Test
+    fun moved_stamps_are_persisted_in_the_destination_collection_directory(
+
+    ) = runBlocking {
+
+        seedStamps(sourceCollectionId, "Moved 1", "Moved 2", "Stays")
+        val stampsToMove = listOf(findStampByCaption("Moved 1"), findStampByCaption("Moved 2"))
+        val stayingStamp = findStampByCaption("Stays")
+        val bytesBeforeMove = stampsToMove.associate {
+            it.id to subject.getStampImageBytesAndSize(it).first
+        }
+
+        subject.moveStampsBetweenCollections(
+            sourceCollectionId = sourceCollectionId,
+            destinationCollectionId = destinationCollectionId,
+            stampIds = stampsToMove.map(Stamp::id),
+        ).collect()
+
+        assertEquals(
+            "The stamp files must be in the destination collection directory",
+            stampsToMove.map(Stamp::id).toSet(),
+            stampFilesIn(destinationCollectionDirectory).map(File::nameWithoutExtension).toSet()
+        )
+        assertEquals(
+            "The stamp files must be gone from the source collection directory, " +
+                    "except for the one that was not moved",
+            listOf(stayingStamp.id),
+            stampFilesIn(sourceCollectionDirectory).map(File::nameWithoutExtension)
+        )
+
+        subject = newRepository()
+        val retrieved = subject.getStamps().associateBy(Stamp::id)
+        stampsToMove.forEach { stampBeforeMove ->
+            val retrievedStamp = retrieved.getValue(stampBeforeMove.id)
+
+            assertEquals(destinationCollectionId, retrievedStamp.collectionId)
+            assertEquals(stampBeforeMove.caption, retrievedStamp.caption)
+            assertEquals(stampBeforeMove.takenAtLocal, retrievedStamp.takenAtLocal)
+            assertEquals(stampBeforeMove.shape, retrievedStamp.shape)
+            assertArrayEquals(
+                "The stamp content must not change when moving",
+                bytesBeforeMove.getValue(stampBeforeMove.id),
+                subject.getStampImageBytesAndSize(retrievedStamp).first
+            )
+        }
+        assertEquals(sourceCollectionId, retrieved.getValue(stayingStamp.id).collectionId)
+    }
+
+    @Test
+    fun moving_stamps_emits_progress_from_zero_to_the_total_count(
+
+    ) = runBlocking {
+
+        seedStamps(sourceCollectionId, "Moved 1", "Moved 2", "Moved 3", "Stays")
+        val stampsToMove = listOf("Moved 1", "Moved 2", "Moved 3").map { findStampByCaption(it) }
+
+        val progress = subject.moveStampsBetweenCollections(
+            sourceCollectionId = sourceCollectionId,
+            destinationCollectionId = destinationCollectionId,
+            stampIds = stampsToMove.map(Stamp::id),
+        )
+            .onEach { (moved, _) ->
+                assertTrue(
+                    "The progress must not outrun the stamps that were actually moved",
+                    stampFilesIn(destinationCollectionDirectory).size >= moved
+                )
+            }
+            .toList()
+
+        assertEquals(
+            "Progress must start with nothing moved, grow one stamp at a time " +
+                    "and finish with everything moved",
+            listOf(0 to 3, 1 to 3, 2 to 3, 3 to 3),
+            progress
+        )
+    }
+
+    @Test
+    fun moving_the_whole_collection_moves_every_stamp_and_emits_progress(
+
+    ) = runBlocking {
+
+        seedStamps(sourceCollectionId, "First", "Second", "Third")
+        seedStamps(destinationCollectionId, "Already here")
+
+        val progress = subject.moveStampsBetweenCollections(
+            sourceCollectionId = sourceCollectionId,
+            destinationCollectionId = destinationCollectionId,
+        ).toList()
+
+        assertEquals(
+            listOf(0 to 3, 1 to 3, 2 to 3, 3 to 3),
+            progress
+        )
+        assertTrue(
+            "No stamps must be left in the source collection directory",
+            stampFilesIn(sourceCollectionDirectory).isEmpty()
+        )
+
+        subject = newRepository()
+        val retrieved = subject.getStamps()
+        assertTrue(
+            "Source collection must be empty after the move",
+            retrieved.none { it.collectionId == sourceCollectionId }
+        )
+        assertEquals(
+            setOf("First", "Second", "Third", "Already here"),
+            retrieved
+                .filter { it.collectionId == destinationCollectionId }
+                .map(Stamp::caption)
+                .toSet()
+        )
+    }
+
+    @Test
+    fun moving_the_whole_collection_is_emitted_right_after_the_move(
+
+    ) = runBlocking {
+
+        seedStamps(sourceCollectionId, "First", "Second")
+        seedStamps(defaultCollectionId, "Bystander")
+        findStampByCaption("Bystander")
+
+        withStampsFlowEmissions { emissions ->
+            emissions.awaitEmission()
+
+            subject.moveStampsBetweenCollections(
+                sourceCollectionId = sourceCollectionId,
+                destinationCollectionId = destinationCollectionId,
+            ).collect()
+
+            val emitted = emissions.awaitEmission { stamps ->
+                stamps.none { it.collectionId == sourceCollectionId }
+            }
+            assertEquals(
+                setOf("First", "Second"),
+                emitted
+                    .filter { it.collectionId == destinationCollectionId }
+                    .map(Stamp::caption)
+                    .toSet()
+            )
+            assertEquals(
+                "Stamps of other collections must not be affected",
+                "Bystander",
+                emitted.single { it.collectionId == defaultCollectionId }.caption
+            )
+        }
+    }
+
+    @Test
+    fun moving_an_empty_collection_emits_only_zero_progress(
+
+    ) = runBlocking {
+
+        val progress = subject.moveStampsBetweenCollections(
+            sourceCollectionId = sourceCollectionId,
+            destinationCollectionId = destinationCollectionId,
+        ).toList()
+
+        assertEquals(listOf(0 to 0), progress)
+        assertTrue(stampFilesIn(destinationCollectionDirectory).isEmpty())
+    }
+
+    // endregion
+
     private fun newRepository(
         directory: File = stampDirectory,
     ) = FsStampRepository(
@@ -377,8 +792,84 @@ class FsStampRepositoryReasonableTest {
         return tempFile
     }
 
+    /**
+     * Adds stamps to the collection, each with its caption.
+     * The captions must be unique within the test, as they are used
+     * to find the stamps with [findStampByCaption].
+     */
+    private suspend fun seedStamps(
+        collectionId: String,
+        vararg captions: String,
+    ) {
+        captions.forEach { caption ->
+            subject.addStamp(
+                collectionId = collectionId,
+                webpBytes = giftWebpBytes,
+                caption = caption,
+                takenAtLocal = TAKEN_AT,
+                shape = StampShapeOneStampWithoutCornersLandscape,
+            )
+        }
+    }
+
+    private suspend fun findStampByCaption(caption: String): Stamp =
+        subject.getStamps().single { it.caption == caption }
+
+    private fun stampFilesIn(directory: File): List<File> =
+        directory
+            .listFiles { file -> file.extension == FsStampRepository.WEBP_EXTENSION }
+            ?.toList()
+            ?: emptyList()
+
+    private suspend fun <T> withStampsFlowEmissions(
+        block: suspend (emissions: Channel<List<Stamp>>) -> T,
+    ): T = coroutineScope {
+        val emissions = Channel<List<Stamp>>(Channel.UNLIMITED)
+        val collectingJob = launch(Dispatchers.IO) {
+            subject.getStampsFlow().collect { emissions.send(it.toList()) }
+        }
+
+        try {
+            block(emissions)
+        } finally {
+            collectingJob.cancel()
+        }
+    }
+
+    private suspend fun Channel<List<Stamp>>.awaitEmission(
+        predicate: (List<Stamp>) -> Boolean = { true },
+    ): List<Stamp> =
+        withTimeoutOrNull(AWAIT_TIMEOUT) {
+            var emission = receive()
+            while (!predicate(emission)) {
+                emission = receive()
+            }
+            emission
+        }
+            ?: run {
+                fail("The expected stamp list was not emitted in time")
+                throw IllegalStateException()
+            }
+
+    private suspend fun awaitCondition(
+        failureMessage: String,
+        condition: () -> Boolean,
+    ) {
+        val isSatisfied = withTimeoutOrNull(AWAIT_TIMEOUT) {
+            while (!condition()) {
+                delay(20.milliseconds)
+            }
+            true
+        }
+
+        assertTrue(failureMessage, isSatisfied == true)
+        assertFalse(failureMessage, isSatisfied == null)
+    }
+
     companion object {
         const val CAPTION = "WebP caption 🤭 Зачем вы это читаете?"
+        const val NEW_CAPTION = "THE CAPTION 🖋 is updated"
+        val AWAIT_TIMEOUT = 3_000L.milliseconds
         val TAKEN_AT: LocalDateTime =
             LocalDateTime.of(2026, 10, 31, 14, 14, 14)
     }
