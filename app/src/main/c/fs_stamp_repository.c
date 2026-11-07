@@ -132,7 +132,6 @@ typedef struct {
     int skip;
     int process;
     t_dynbuf *stamp_buffer;
-    pthread_barrier_t *barrier;
 } StampCollectionTask;
 
 static void *get_stamps(void *arg) {
@@ -157,8 +156,6 @@ static void *get_stamps(void *arg) {
 
         free_stamp_details(details);
     }
-
-    pthread_barrier_wait(task->barrier);
 
     return NULL;
 }
@@ -189,11 +186,6 @@ Java_ua_com_radiokot_camerapp_stamps_data_FsStampRepository_getStampDetailsBuffe
         chunk_size = stamp_count;
         worker_count = 1;
     }
-    pthread_barrier_t barrier;
-    if (pthread_barrier_init(&barrier, NULL, worker_count + 1) != 0) {
-        dynbuf_del(&stamp_path_buffer);
-        return NULL;
-    }
     StampCollectionTask worker_tasks[worker_count];
     pthread_t worker_threads[worker_count];
 
@@ -205,7 +197,6 @@ Java_ua_com_radiokot_camerapp_stamps_data_FsStampRepository_getStampDetailsBuffe
                         ? chunk_size + ((chunk_size) ? stamp_count % chunk_size : 0)
                         : chunk_size;
         worker_tasks[worker_index].stamp_buffer = dynbuf_new(DYNBUF_DEFAULT_RADIX);
-        worker_tasks[worker_index].barrier = &barrier;
         if (pthread_create(worker_threads + worker_index,
                 NULL,
                 get_stamps,
@@ -215,7 +206,6 @@ Java_ua_com_radiokot_camerapp_stamps_data_FsStampRepository_getStampDetailsBuffe
         }
     }
 
-    pthread_barrier_wait(&barrier);
     for (int worker_index = 0; worker_index < worker_count; worker_index++) {
         pthread_join(worker_threads[worker_index], NULL);
     }
