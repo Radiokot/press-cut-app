@@ -202,7 +202,7 @@ Java_ua_com_radiokot_camerapp_stamps_data_FsStampRepository_getStampDetailsBuffe
         worker_tasks[worker_index].skip = chunk_size * worker_index;
         worker_tasks[worker_index].process =
                 (worker_index == worker_count - 1)
-                        ? chunk_size + stamp_count % chunk_size
+                        ? chunk_size + ((chunk_size) ? stamp_count % chunk_size : 0)
                         : chunk_size;
         worker_tasks[worker_index].stamp_buffer = dynbuf_new(DYNBUF_DEFAULT_RADIX);
         worker_tasks[worker_index].barrier = &barrier;
