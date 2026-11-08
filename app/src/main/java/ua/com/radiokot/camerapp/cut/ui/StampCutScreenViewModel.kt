@@ -19,7 +19,6 @@
 
 package ua.com.radiokot.camerapp.cut.ui
 
-import android.annotation.SuppressLint
 import android.graphics.Bitmap
 import android.graphics.BitmapShader
 import android.graphics.Matrix
@@ -42,8 +41,8 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.collect
-import kotlinx.coroutines.flow.onCompletion
+import kotlinx.coroutines.flow.lastOrNull
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import ua.com.radiokot.camerapp.cut.domain.StampCutCameraImageSource
@@ -105,32 +104,35 @@ class StampCutScreenViewModel : ViewModel() {
         }
     }
 
-
-    @SuppressLint("RestrictedApi")
     private suspend fun doCut(
         visibleViewfinderRect: RectF,
         visibleFrameRect: RectF,
     ) {
-        imageSource
-            .capture()
-            .onEach { capturedBitmap ->
-                println("OOLEG meow ${capturedBitmap.width}x${capturedBitmap.height}")
-                cutBitmap.value =
+        val stampImageBitmap =
+            imageSource
+                .capture()
+                .map { capturedBitmap ->
                     frameImage(
                         image = capturedBitmap,
                         visibleViewfinderRect = visibleViewfinderRect,
                         visibleFrameRect = visibleFrameRect,
-                    )
-                capturedBitmap.recycle()
+                    ).also { capturedBitmap.recycle() }
+                }
+                .onEach(cutBitmap::value::set)
+                .lastOrNull()
+
+        if (stampImageBitmap == null) {
+            log.warn {
+                "doCut(): did cut but there was no image"
             }
-            .onCompletion {
-                events.emit(
-                    Event.DidCut(
-                        stampImageBitmap = cutBitmap.value!!,
-                    )
-                )
-            }
-            .collect()
+            return
+        }
+
+        events.emit(
+            Event.DidCut(
+                stampImageBitmap = stampImageBitmap,
+            )
+        )
     }
 
     fun onScreenDisposed() {
