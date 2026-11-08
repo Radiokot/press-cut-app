@@ -201,7 +201,7 @@ private fun SharedTransitionScope.StampCutNavHost(
             CompositionLocalProvider(
                 LocalColors provides LightAppColors
             ) {
-                StampCutScreen(
+                StampCutFromCameraScreen(
                     useCaseGroup = cameraImageSource.useCaseGroup,
                     surfaceRequest = surfaceRequest,
                     cutImage = cutImage,

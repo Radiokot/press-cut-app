@@ -39,10 +39,13 @@ import androidx.compose.animation.core.EaseOutQuad
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.BoxWithConstraintsScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.requiredSize
@@ -50,6 +53,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.State
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
@@ -67,6 +71,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.changedToUpIgnoreConsumed
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.LayoutCoordinates
 import androidx.compose.ui.layout.boundsInParent
@@ -78,6 +83,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.toSize
+import androidx.compose.ui.util.fastFirstOrNull
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
@@ -91,11 +97,11 @@ import ua.com.radiokot.camerapp.util.optionalSharedElement
 import java.util.concurrent.TimeUnit
 import kotlin.math.min
 import kotlin.random.Random
-import kotlin.system.measureTimeMillis
 import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
-fun StampCutScreen(
+fun StampCutFromCameraScreen(
+    modifier: Modifier = Modifier,
     useCaseGroup: UseCaseGroup,
     surfaceRequest: SurfaceRequest?,
     cutImage: ImageBitmap?,
@@ -105,13 +111,11 @@ fun StampCutScreen(
     ) -> Unit,
     sharedTransitionScope: SharedTransitionScope?,
     animatedVisibilityScope: AnimatedVisibilityScope?,
-    modifier: Modifier = Modifier,
-) = BoxWithConstraints(
-    contentAlignment = Alignment.Center,
-    modifier = modifier
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    val coroutineScope = rememberCoroutineScope()
+
     var camera by remember {
         mutableStateOf<Camera?>(null)
     }
@@ -124,6 +128,162 @@ fun StampCutScreen(
             )
         }
     }
+    DisposableEffect(Unit) {
+        onDispose { processCameraProvider?.unbindAll() }
+    }
+
+    val focusIndicatorAlpha = remember {
+        Animatable(0f)
+    }
+
+    StampCutScreenScaffold(
+        modifier = modifier,
+        cutImage = cutImage,
+        onCutAction = onCutAction,
+        sharedTransitionScope = sharedTransitionScope,
+        animatedVisibilityScope = animatedVisibilityScope,
+        imageSource = { imageSourceModifier, frameLayoutCoordinatesState ->
+            if (surfaceRequest == null) {
+                return@StampCutScreenScaffold
+            }
+
+            val coordinateTransformer = remember(::MutableCoordinateTransformer)
+            val meteringFactory = remember(surfaceRequest) {
+                SurfaceOrientedMeteringPointFactory(
+                    surfaceRequest.resolution.width.toFloat(),
+                    surfaceRequest.resolution.height.toFloat()
+                )
+            }
+
+            val focusAtCenter = remember(coordinateTransformer) {
+                fun() {
+                    val camera = camera
+                        ?: return
+                    val frameLayoutCoordinates = frameLayoutCoordinatesState.value
+                        ?: return
+
+                    val centerPoint =
+                        coordinateTransformer
+                            .transformMatrix
+                            .map(
+                                frameLayoutCoordinates
+                                    .boundsInParent()
+                                    .center
+                            )
+                    val meteringPoint = meteringFactory.createPoint(
+                        centerPoint.x,
+                        centerPoint.y
+                    )
+
+                    camera.cameraControl.startFocusAndMetering(
+                        FocusMeteringAction.Builder(meteringPoint)
+                            .setAutoCancelDuration(3, TimeUnit.SECONDS)
+                            .build()
+                    )
+                    coroutineScope.launch {
+                        focusIndicatorAlpha.animateTo(
+                            targetValue = 1f,
+                        )
+                        focusIndicatorAlpha.animateTo(
+                            targetValue = 0f,
+                            animationSpec = tween(800),
+                        )
+                    }
+                }
+            }
+
+            CameraXViewfinder(
+                surfaceRequest = surfaceRequest,
+                coordinateTransformer = coordinateTransformer,
+                modifier = imageSourceModifier
+                    // Tap to focus at center.
+                    .pointerInput(
+                        focusAtCenter,
+                    ) {
+                        detectTapGestures {
+                            focusAtCenter()
+                        }
+                    }
+                    .drawWithCache {
+                        // Focus indicator.
+                        val lineHalfLength = 32.dp.toPx()
+                        val frameCenter =
+                            frameLayoutCoordinatesState
+                                .value
+                                ?.boundsInParent()
+                                ?.center
+                                ?: size.center
+                        val verticalLineWStart = frameCenter + Offset(0f, -lineHalfLength)
+                        val verticalLineWEnd = frameCenter + Offset(0f, lineHalfLength)
+                        val verticalLineBStart = frameCenter + Offset(1f, -lineHalfLength)
+                        val verticalLineBEnd = frameCenter + Offset(1f, lineHalfLength)
+                        val horizontalLineWStart = frameCenter + Offset(-lineHalfLength, 0f)
+                        val horizontalLineWEnd = frameCenter + Offset(lineHalfLength, 0f)
+                        val horizontalLineBStart = frameCenter + Offset(-lineHalfLength, 1f)
+                        val horizontalLineBEnd = frameCenter + Offset(lineHalfLength, 1f)
+
+                        onDrawWithContent {
+                            drawContent()
+
+                            val colorA = Color.White.copy(
+                                alpha = focusIndicatorAlpha.value,
+                            )
+                            val colorB = Color.Black.copy(
+                                alpha = focusIndicatorAlpha.value,
+                            )
+
+                            drawLine(
+                                color = colorA,
+                                strokeWidth = 1f,
+                                start = verticalLineWStart,
+                                end = verticalLineWEnd,
+                            )
+                            drawLine(
+                                color = colorB,
+                                strokeWidth = 1f,
+                                start = verticalLineBStart,
+                                end = verticalLineBEnd,
+                            )
+                            drawLine(
+                                color = colorA,
+                                strokeWidth = 1f,
+                                start = horizontalLineWStart,
+                                end = horizontalLineWEnd,
+                            )
+                            drawLine(
+                                color = colorB,
+                                strokeWidth = 1f,
+                                start = horizontalLineBStart,
+                                end = horizontalLineBEnd,
+                            )
+                        }
+                    }
+            )
+        }
+    )
+}
+
+@Composable
+private fun StampCutScreenScaffold(
+    modifier: Modifier = Modifier,
+    cutImage: ImageBitmap?,
+    onCutAction: (
+        viewfinderSize: Size,
+        cutFrameRect: Rect,
+    ) -> Unit,
+    sharedTransitionScope: SharedTransitionScope?,
+    animatedVisibilityScope: AnimatedVisibilityScope?,
+    imageSource: @Composable BoxWithConstraintsScope.(
+        modifier: Modifier,
+        frameLayoutCoordinatesState: State<LayoutCoordinates?>,
+    ) -> Unit,
+) = BoxWithConstraints(
+    contentAlignment = Alignment.Center,
+    modifier = modifier
+) {
+    val context = LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+
     val soundPool: SoundPool? = remember {
         runCatching {
             SoundPool.Builder()
@@ -137,153 +297,11 @@ fun StampCutScreen(
                 .build()
         }.getOrNull()
     }
-
     DisposableEffect(Unit) {
-        onDispose {
-            processCameraProvider?.unbindAll()
-            soundPool?.release()
-        }
+        onDispose { soundPool?.release() }
     }
 
-    var frameLayoutCoordinates by remember {
-        mutableStateOf<LayoutCoordinates?>(null)
-    }
     val cutterInteractionSource = remember(::MutableInteractionSource)
-    val focusIndicatorAlpha = remember {
-        Animatable(0f)
-    }
-
-    if (surfaceRequest != null) {
-        val coordinateTransformer = remember(::MutableCoordinateTransformer)
-        val meteringFactory = remember(surfaceRequest) {
-            SurfaceOrientedMeteringPointFactory(
-                surfaceRequest.resolution.width.toFloat(),
-                surfaceRequest.resolution.height.toFloat()
-            )
-        }
-        val coroutineScope = rememberCoroutineScope()
-
-        val focusAtCenter = remember(coordinateTransformer) {
-            fun() {
-                val camera = camera
-                    ?: return
-                val frameLayoutCoordinates = frameLayoutCoordinates
-                    ?: return
-
-                val centerPoint =
-                    coordinateTransformer
-                        .transformMatrix
-                        .map(
-                            frameLayoutCoordinates
-                                .boundsInParent()
-                                .center
-                        )
-                val meteringPoint = meteringFactory.createPoint(
-                    centerPoint.x,
-                    centerPoint.y
-                )
-
-                camera.cameraControl.startFocusAndMetering(
-                    FocusMeteringAction.Builder(meteringPoint)
-                        .setAutoCancelDuration(3, TimeUnit.SECONDS)
-                        .build()
-                )
-                coroutineScope.launch {
-                    focusIndicatorAlpha.animateTo(
-                        targetValue = 1f,
-                    )
-                    focusIndicatorAlpha.animateTo(
-                        targetValue = 0f,
-                        animationSpec = tween(800),
-                    )
-                }
-            }
-        }
-
-        val playCutSound: (() -> Unit)? = remember(soundPool) {
-            if (soundPool == null) {
-                return@remember null
-            }
-
-            val cutSoundId =
-                soundPool.load(context, R.raw.cut, 1)
-
-            fun() {
-                soundPool.play(
-                    cutSoundId,
-                    1f,
-                    1f,
-                    1,
-                    0,
-                    1f,
-                )
-            }
-        }
-
-        val cut = remember(onCutAction) {
-            fun() {
-                val frameLayoutCoordinates = frameLayoutCoordinates
-                    ?: return
-
-                val viewfinderSize =
-                    frameLayoutCoordinates
-                        .parentLayoutCoordinates!!
-                        .size
-                        .toSize()
-                val frameRect = frameLayoutCoordinates.boundsInParent()
-
-                onCutAction(viewfinderSize, frameRect)
-            }
-        }
-
-        CameraXViewfinder(
-            surfaceRequest = surfaceRequest,
-            coordinateTransformer = coordinateTransformer,
-            modifier = Modifier
-                .fillMaxSize()
-                .pointerInput(
-                    focusAtCenter,
-                    cut,
-                ) {
-                    detectTapGestures(
-                        // Long press – cut, tap – focus.
-                        // The cutter doesn't move until the long press is registered.
-                        onPress = { pressPosition ->
-                            val pressInteraction = PressInteraction.Press(pressPosition)
-                            val longPress = coroutineScope.launch {
-                                delay(viewConfiguration.longPressTimeoutMillis.milliseconds)
-                                cutterInteractionSource.emit(pressInteraction)
-                                if (playCutSound != null) {
-                                    withContext(Dispatchers.IO) {
-                                        playCutSound()
-                                    }
-                                }
-                                delay(50.milliseconds)
-                                cut()
-                                cutterInteractionSource.emit(
-                                    PressInteraction.Cancel(
-                                        pressInteraction
-                                    )
-                                )
-                            }
-                            val releasedInMs = measureTimeMillis {
-                                tryAwaitRelease()
-                            }
-                            if (releasedInMs < viewConfiguration.longPressTimeoutMillis) {
-                                focusAtCenter()
-                                longPress.cancel()
-                                cutterInteractionSource.emit(
-                                    PressInteraction.Cancel(
-                                        pressInteraction
-                                    )
-                                )
-                            }
-                        },
-                    )
-                }
-        )
-    }
-
     var cutterSize = DpSize(
         width = UiStampShapeA.size.width * 2.5f,
         height = UiStampShapeA.size.height * 2.8f,
@@ -298,8 +316,105 @@ fun StampCutScreen(
         maxHeight * cutterToScreenSizeRatio / cutterSize.height,
     )
     cutterSize *= cutterSizeScale
-    val frameSize = UiStampShapeA.size * 1.5f * cutterSizeScale
 
+    val frameSize = UiStampShapeA.size * 1.5f * cutterSizeScale
+    val frameLayoutCoordinatesState = remember {
+        mutableStateOf<LayoutCoordinates?>(null)
+    }
+
+    val playCutSound: (() -> Unit)? = remember(soundPool) {
+        if (soundPool == null) {
+            return@remember null
+        }
+
+        val cutSoundId =
+            soundPool.load(context, R.raw.cut, 1)
+
+        fun() {
+            soundPool.play(
+                cutSoundId,
+                1f,
+                1f,
+                1,
+                0,
+                1f,
+            )
+        }
+    }
+
+    val cut = remember(onCutAction) {
+        fun() {
+            val frameLayoutCoordinates = frameLayoutCoordinatesState.value
+                ?: return
+
+            val viewfinderSize =
+                frameLayoutCoordinates
+                    .parentLayoutCoordinates!!
+                    .size
+                    .toSize()
+            val frameRect = frameLayoutCoordinates.boundsInParent()
+
+            onCutAction(viewfinderSize, frameRect)
+        }
+    }
+
+    imageSource(
+        Modifier
+            .testTag("imageSource")
+            .fillMaxSize()
+            // Cut on long press.
+            .pointerInput(
+                cut,
+            ) {
+                // Have to detect long press this way
+                // because image source consumes down first.
+                awaitEachGesture {
+                    val down = awaitFirstDown(
+                        requireUnconsumed = false,
+                    )
+
+                    val didLongPress = withTimeoutOrNull(viewConfiguration.longPressTimeoutMillis) {
+                        while (true) {
+                            val event = awaitPointerEvent()
+                            val change = event.changes.fastFirstOrNull { it.id == down.id }
+                                ?: return@withTimeoutOrNull false
+                            if (change.changedToUpIgnoreConsumed()) {
+                                return@withTimeoutOrNull false
+                            }
+                            if ((change.position - down.position).getDistance() > viewConfiguration.touchSlop) {
+                                return@withTimeoutOrNull false
+                            }
+                        }
+                        @Suppress("UNREACHABLE_CODE") true
+                    } == null
+
+                    if (!didLongPress) {
+                        return@awaitEachGesture
+                    }
+
+                    // Animate and do the cut.
+                    coroutineScope.launch {
+                        val pressInteraction = PressInteraction.Press(down.position)
+                        cutterInteractionSource.emit(pressInteraction)
+                        if (playCutSound != null) {
+                            withContext(Dispatchers.IO) {
+                                playCutSound()
+                            }
+                        }
+                        delay(50.milliseconds)
+                        cut()
+                        cutterInteractionSource.emit(
+                            PressInteraction.Cancel(
+                                pressInteraction
+                            )
+                        )
+                    }
+                }
+            },
+        frameLayoutCoordinatesState,
+    )
+
+    // TODO this doesn't work if it is not centered.
     Spacer(
         modifier = Modifier
             .testTag("frame")
@@ -311,52 +426,7 @@ fun StampCutScreen(
 
                 background(Color.Black)
             }
-            .onPlaced { layoutCoordinates ->
-                frameLayoutCoordinates = layoutCoordinates
-            }
-            .graphicsLayer {
-                alpha = focusIndicatorAlpha.value
-            }
-            .drawWithCache {
-                // Focus indicator.
-
-                val lineHalfLength = 32.dp.toPx()
-                val verticalLineWStart = size.center + Offset(0f, -lineHalfLength)
-                val verticalLineWEnd = size.center + Offset(0f, lineHalfLength)
-                val verticalLineBStart = size.center + Offset(1f, -lineHalfLength)
-                val verticalLineBEnd = size.center + Offset(1f, lineHalfLength)
-                val horizontalLineWStart = size.center + Offset(-lineHalfLength, 0f)
-                val horizontalLineWEnd = size.center + Offset(lineHalfLength, 0f)
-                val horizontalLineBStart = size.center + Offset(-lineHalfLength, 1f)
-                val horizontalLineBEnd = size.center + Offset(lineHalfLength, 1f)
-
-                onDrawBehind {
-                    drawLine(
-                        color = Color.White,
-                        strokeWidth = 1f,
-                        start = verticalLineWStart,
-                        end = verticalLineWEnd,
-                    )
-                    drawLine(
-                        color = Color.Black,
-                        strokeWidth = 1f,
-                        start = verticalLineBStart,
-                        end = verticalLineBEnd,
-                    )
-                    drawLine(
-                        color = Color.White,
-                        strokeWidth = 1f,
-                        start = horizontalLineWStart,
-                        end = horizontalLineWEnd,
-                    )
-                    drawLine(
-                        color = Color.Black,
-                        strokeWidth = 1f,
-                        start = horizontalLineBStart,
-                        end = horizontalLineBEnd,
-                    )
-                }
-            }
+            .onPlaced(frameLayoutCoordinatesState::value::set)
     )
 
     StampCutter(
@@ -456,16 +526,17 @@ fun StampCutScreen(
 
 @Preview
 @Composable
-private fun StampCutScreenPreview(
+private fun StampCutScreenScaffoldPreview(
 
 ) {
-    StampCutScreen(
-        useCaseGroup = remember { UseCaseGroup.Builder().build() },
-        surfaceRequest = null,
+    StampCutScreenScaffold(
         cutImage = null,
         onCutAction = { _, _ -> },
         sharedTransitionScope = null,
         animatedVisibilityScope = null,
+        imageSource = { modifier, _ ->
+            Spacer(modifier.background(Color.Yellow))
+        },
         modifier = Modifier
             .fillMaxSize()
     )
