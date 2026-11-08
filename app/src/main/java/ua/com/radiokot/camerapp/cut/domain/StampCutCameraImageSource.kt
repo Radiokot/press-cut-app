@@ -46,14 +46,16 @@ import kotlinx.coroutines.flow.channelFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import ua.com.radiokot.camerapp.util.lazyLogger
 import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
 
 class StampCutCameraImageSource(
     coroutineScope: CoroutineScope,
 ) : StampCutImageSource {
+
+    private val log by lazyLogger("StampCutCameraImageSource")
     private val previewUseCase =
         Preview.Builder().build()
 
@@ -89,14 +91,18 @@ class StampCutCameraImageSource(
 
     @OptIn(ExperimentalAtomicApi::class)
     @SuppressLint("RestrictedApi")
-    override fun capture(): Flow<Bitmap> = channelFlow {
+    override fun capture(
+
+    ): Flow<Bitmap> = channelFlow {
+
         coroutineScope {
             var hqSentAt = Long.MAX_VALUE
 
             // Get low quality capture from the preview first,
             // for immediate visual effect.
             launch(Dispatchers.Default) {
-                val previewCapture = getPreviewCapture()
+                val previewCapture = getPreviewCaptureOrNull()
+                    ?: return@launch
                 if (System.currentTimeMillis() < hqSentAt) {
                     channel.send(previewCapture)
                 }
@@ -114,7 +120,9 @@ class StampCutCameraImageSource(
 
     @Suppress("SuspendCoroutineLacksCancellationGuarantees")
     @SuppressLint("RestrictedApi")
-    private suspend fun getPreviewCapture(): Bitmap = suspendCoroutine { continuation ->
+    private suspend fun getPreviewCaptureOrNull(
+
+    ): Bitmap? = suspendCoroutine { continuation ->
 
         val previewResolutionInfo = previewUseCase.resolutionInfo!!
         val resultBitmap =
@@ -138,20 +146,24 @@ class StampCutCameraImageSource(
         PixelCopy.request(
             surfaceRequest.value!!.deferrableSurface.surface.get()!!,
             resultBitmap,
-            { resultCode ->
-                if (resultCode == PixelCopy.SUCCESS) {
+            { copyResult ->
+                if (copyResult == PixelCopy.SUCCESS) {
                     continuation.resume(resultBitmap)
                 } else {
-                    continuation.resumeWithException(
-                        RuntimeException("PixelCopy failed: $resultCode")
-                    )
+                    log.warn {
+                        "getPreviewCapture(): PixelCopy failed:" +
+                                "\ncopyResult=$copyResult"
+                    }
+                    continuation.resume(null)
                 }
             },
             Handler(Looper.getMainLooper()),
         )
     }
 
-    private suspend fun getHighQualityCapture() = withContext(Dispatchers.Default) {
+    private suspend fun getHighQualityCapture(
+
+    ) = withContext(Dispatchers.Default) {
 
         val captureImageProxy = captureUseCase.takePicture()
         val captureImageBitmap = captureImageProxy.toBitmap()
