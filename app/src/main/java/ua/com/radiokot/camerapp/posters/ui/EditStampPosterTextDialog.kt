@@ -20,6 +20,7 @@
 package ua.com.radiokot.camerapp.posters.ui
 
 import android.content.res.Configuration
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -49,11 +50,6 @@ import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ColorFilter
-import androidx.compose.ui.input.key.Key
-import androidx.compose.ui.input.key.KeyEventType
-import androidx.compose.ui.input.key.key
-import androidx.compose.ui.input.key.onPreInterceptKeyBeforeSoftKeyboard
-import androidx.compose.ui.input.key.type
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
@@ -197,6 +193,10 @@ private fun FieldWithBackground(
     val fontScale = LocalDensity.current.fontScale
     val textScrollState = rememberScrollState()
 
+    BackHandler(
+        onBack = onBackPressed,
+    )
+
     LeField(
         hint = "A text",
         inputState = inputState,
@@ -208,15 +208,6 @@ private fun FieldWithBackground(
             .padding(
                 horizontal = 24.dp,
             )
-            // Handle Back when the keyboard is shown.
-            .onPreInterceptKeyBeforeSoftKeyboard { keyEvent ->
-                if (keyEvent.key == Key.Back && keyEvent.type == KeyEventType.KeyDown) {
-                    onBackPressed()
-                    true
-                } else {
-                    false
-                }
-            }
             .run {
                 val currentBackground = appearance.background
                     ?: return@run this
