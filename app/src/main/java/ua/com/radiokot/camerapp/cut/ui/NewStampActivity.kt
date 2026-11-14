@@ -69,7 +69,13 @@ class NewStampActivity : ComponentActivity() {
 
     private val log by lazyLogger("NewStampActivity")
 
-    private val permissionsScreenViewModel: PermissionsScreenViewModel by viewModel()
+    private val permissionsScreenViewModel: PermissionsScreenViewModel by viewModel {
+        parametersOf(
+            PermissionsScreenViewModel.Parameters(
+                isCameraRequiredNow = true,
+            )
+        )
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
@@ -169,7 +175,9 @@ private fun SharedTransitionScope.StampCutNavHost(
         navController = navController,
         startDestination =
             if (startWithPermissions)
-                PermissionsRoute
+                PermissionsRoute(
+                    isCameraRequiredNow = true,
+                )
             else
                 CutDestination,
         enterTransition = { fadeIn() },

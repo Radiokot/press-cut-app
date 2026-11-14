@@ -34,7 +34,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.painter.Painter
@@ -44,9 +43,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.PreviewLightDark
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.persistentListOf
-import kotlinx.collections.immutable.toImmutableSet
+import kotlinx.collections.immutable.ImmutableSet
+import kotlinx.collections.immutable.persistentSetOf
 import ua.com.radiokot.camerapp.R
 import ua.com.radiokot.camerapp.ui.AppTheme
 import ua.com.radiokot.camerapp.ui.LeTextButton
@@ -60,7 +58,7 @@ import ua.com.radiokot.camerapp.util.doNothing
 @Composable
 fun PermissionsScreen(
     modifier: Modifier = Modifier,
-    permissions: ImmutableList<String>,
+    permissions: ImmutableSet<String>,
     isDocumentTreeAccessRequired: Boolean,
     onGrantAction: () -> Unit,
 ) = Column(
@@ -68,10 +66,6 @@ fun PermissionsScreen(
         .barsAndCutoutPadding()
         .padding(24.dp),
 ) {
-    val permissionSet = remember(permissions) {
-        permissions.toImmutableSet()
-    }
-
     BasicText(
         text = "Press-Cut needs a few permissions to run",
         style = TextStyle(
@@ -99,7 +93,7 @@ fun PermissionsScreen(
                 overscrollEffect = null,
             )
     ) {
-        if (Manifest.permission.CAMERA in permissionSet) {
+        if (Manifest.permission.CAMERA in permissions) {
             PermissionItem(
                 icon = painterResource(R.drawable.viewfinder_by_gregor_cresnar_from_noun_project),
                 name = "Camera",
@@ -107,8 +101,8 @@ fun PermissionsScreen(
             )
         }
 
-        if (Manifest.permission.WRITE_EXTERNAL_STORAGE in permissionSet
-            || Manifest.permission.READ_EXTERNAL_STORAGE in permissionSet
+        if (Manifest.permission.WRITE_EXTERNAL_STORAGE in permissions
+            || Manifest.permission.READ_EXTERNAL_STORAGE in permissions
         ) {
             Spacer(
                 modifier = Modifier
@@ -124,7 +118,7 @@ fun PermissionsScreen(
             )
         }
 
-        if (Manifest.permission.READ_MEDIA_IMAGES in permissionSet) {
+        if (Manifest.permission.READ_MEDIA_IMAGES in permissions) {
             Spacer(
                 modifier = Modifier
                     .height(24.dp)
@@ -222,7 +216,7 @@ private fun PermissionsScreenPreview() {
 
         PermissionsScreen(
             permissions =
-                persistentListOf(
+                persistentSetOf(
                     Manifest.permission.CAMERA,
                     Manifest.permission.READ_EXTERNAL_STORAGE,
                     Manifest.permission.WRITE_EXTERNAL_STORAGE,
