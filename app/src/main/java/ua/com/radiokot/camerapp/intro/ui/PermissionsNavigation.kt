@@ -84,7 +84,7 @@ fun NavGraphBuilder.permissionsDestination(
             when (event) {
                 is PermissionsScreenViewModel.Event.RequestPermissions -> {
                     permissionsRequestLauncher.launch(
-                        viewModel.requestedPermissions.toTypedArray()
+                        event.toRequest.toTypedArray()
                     )
                 }
 

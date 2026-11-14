@@ -28,6 +28,7 @@ import android.os.Build
 import android.provider.DocumentsContract
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.AndroidViewModel
+import kotlinx.collections.immutable.ImmutableSet
 import kotlinx.collections.immutable.PersistentSet
 import kotlinx.collections.immutable.toPersistentSet
 import kotlinx.coroutines.flow.SharedFlow
@@ -68,7 +69,9 @@ class PermissionsScreenViewModel(
     }
 
     val requestedPermissions: PersistentSet<String> =
-        (optionalPermissions + requiredPermissions).toPersistentSet()
+        (optionalPermissions + requiredPermissions)
+            .filterNot(::isPermissionGranted)
+            .toPersistentSet()
 
     val requiredDocumentTreeAccessUri: Uri =
         DocumentsContract.buildTreeDocumentUri(
@@ -92,10 +95,14 @@ class PermissionsScreenViewModel(
 
     fun onGrantAction() {
         log.debug {
-            "onGrantAction(): emitting RequestRequiredPermissions"
+            "onGrantAction(): emitting RequestPermissions"
         }
 
-        events.tryEmit(Event.RequestPermissions)
+        events.tryEmit(
+            Event.RequestPermissions(
+                toRequest = (optionalPermissions + requiredPermissions).toPersistentSet()
+            )
+        )
     }
 
     fun onPermissionRequestResult(
@@ -197,7 +204,9 @@ class PermissionsScreenViewModel(
         application.checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED
 
     sealed interface Event {
-        object RequestPermissions : Event
+        class RequestPermissions(
+            val toRequest: ImmutableSet<String>,
+        ) : Event
 
         class RequestDocumentTreeAccess(
             val initialUri: Uri,
