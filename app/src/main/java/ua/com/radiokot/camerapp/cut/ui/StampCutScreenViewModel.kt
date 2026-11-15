@@ -141,7 +141,6 @@ class StampCutScreenViewModel : ViewModel() {
         }
 
         cutJob?.cancel()
-        cutBitmap.value?.recycle()
         cutBitmap.value = null
     }
 
