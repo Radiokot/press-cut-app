@@ -95,7 +95,7 @@ class NewStampActivity : ComponentActivity() {
                 intent.getStringExtra(COLLECTION_ID_EXTRA),
             showToastOnSave =
                 intent.getBooleanExtra(SHOW_TOAST_ON_SAVE_EXTRA, true),
-            imageUri =
+            receivedImageUri =
                 if (intent.action == Intent.ACTION_SEND && intent.type?.startsWith("image/") == true)
                     @Suppress("DEPRECATION")
                     intent.getParcelableExtra(Intent.EXTRA_STREAM)

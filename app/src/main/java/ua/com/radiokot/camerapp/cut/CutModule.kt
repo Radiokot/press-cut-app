@@ -19,18 +19,22 @@
 
 package ua.com.radiokot.camerapp.cut
 
+import org.koin.android.ext.koin.androidApplication
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
 import ua.com.radiokot.camerapp.cut.ui.NewStampViewModel
 import ua.com.radiokot.camerapp.cut.ui.StampCutScreenViewModel
 import ua.com.radiokot.camerapp.cut.ui.StampSaveScreenViewModel
+import java.io.File
 
 val cutModule = module {
 
     viewModel {
         NewStampViewModel(
-//            parameters = getOrNull()
-//                ?: error("No parameters provided for NewStampViewModel")
+            contentResolver = androidApplication().contentResolver,
+            receivedImageCacheDirectory =
+                File(androidApplication().cacheDir, "received"),
+            imageFileDecoder = get(),
         )
     }
 

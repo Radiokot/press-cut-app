@@ -19,16 +19,28 @@
 
 package ua.com.radiokot.camerapp.cut.ui
 
+import android.content.ContentResolver
 import android.graphics.Bitmap
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.runBlocking
+import okio.buffer
+import okio.sink
+import okio.source
+import ua.com.radiokot.camerapp.cut.domain.StampCutBitmapImageSource
 import ua.com.radiokot.camerapp.cut.domain.StampCutCameraImageSource
 import ua.com.radiokot.camerapp.cut.domain.StampCutImageSource
 import ua.com.radiokot.camerapp.stamps.domain.StampCollection
+import ua.com.radiokot.camerapp.util.ImageFileDecoder
 import ua.com.radiokot.camerapp.util.lazyLogger
+import java.io.File
 
-class NewStampViewModel : ViewModel() {
+class NewStampViewModel(
+    private val contentResolver: ContentResolver,
+    private val receivedImageCacheDirectory: File,
+    private val imageFileDecoder: ImageFileDecoder,
+) : ViewModel() {
 
     private val log by lazyLogger("NewStampVM")
 
@@ -45,7 +57,7 @@ class NewStampViewModel : ViewModel() {
     fun initOnce(
         collectionId: String?,
         showToastOnSave: Boolean,
-        imageUri: Uri?,
+        receivedImageUri: Uri?,
     ) {
         if (isInitialized) {
             return
@@ -53,18 +65,92 @@ class NewStampViewModel : ViewModel() {
 
         this.collectionId = collectionId ?: StampCollection.PRIMARY_ID
         this.showToastOnSave = showToastOnSave
-        // TODO Create a bitmap source when image URI is present
-        this.imageSource = StampCutCameraImageSource(
-            coroutineScope = viewModelScope,
-        )
+
+        this.imageSource =
+            receivedImageUri
+                ?.let(::createBitmapImageSourceOrNull)
+                ?: createCameraImageSource()
 
         log.debug {
             "initOnce(): initialized:" +
                     "\ncollectionId=$collectionId" +
                     "\nshowToastOnSave=$showToastOnSave" +
-                    "\nimageUri=$imageUri"
+                    "\nimageUri=$receivedImageUri"
         }
 
         isInitialized = true
+    }
+
+    private fun createCameraImageSource(
+
+    ) = StampCutCameraImageSource(
+        coroutineScope = viewModelScope,
+    )
+
+    private fun createBitmapImageSourceOrNull(
+        imageUri: Uri,
+    ): StampCutBitmapImageSource? = runBlocking {
+
+        if (!receivedImageCacheDirectory.exists()) {
+            if (!receivedImageCacheDirectory.mkdirs()) {
+                log.error {
+                    "createBitmapImageSourceOrNull(): failed to create cache directory:" +
+                            "\nreceivedImageCacheDirectory=$receivedImageCacheDirectory"
+                }
+            }
+            return@runBlocking null
+        }
+
+        val imageInputStream = try {
+            contentResolver.openInputStream(imageUri)!!
+        } catch (e: Exception) {
+            log.error(e) {
+                "createBitmapImageSourceOrNull(): failed to open image input stream:" +
+                        "\nimageUri=$imageUri"
+            }
+            return@runBlocking null
+        }
+
+        val cachedImageFile = File(receivedImageCacheDirectory, "image")
+        try {
+            cachedImageFile
+                .sink()
+                .buffer()
+                .use { cachedImageFileSink ->
+                    imageInputStream
+                        .source()
+                        .buffer()
+                        .use(cachedImageFileSink::writeAll)
+                }
+        } catch (e: Exception) {
+            log.error(e) {
+                "createBitmapImageSourceOrNull(): failed to copy image to cache:" +
+                        "\nimageUri=$imageUri" +
+                        "\nreceivedImageCacheDirectory=$receivedImageCacheDirectory"
+            }
+            return@runBlocking null
+        } finally {
+            imageInputStream.close()
+        }
+
+        val baseImageBitmap = try {
+            imageFileDecoder.invoke(
+                filePath = cachedImageFile.absolutePath,
+                targetWidth = StampCutBitmapImageSource.SCENE_SIZE.toInt(),
+                targetHeight = StampCutBitmapImageSource.SCENE_SIZE.toInt(),
+            )
+        } catch (e: Exception) {
+            log.error(e) {
+                "createBitmapImageSourceOrNull(): failed to decode image:" +
+                        "\nimageUri=$imageUri" +
+                        "\ncachedImageFile=$cachedImageFile"
+            }
+            cachedImageFile.delete()
+            return@runBlocking null
+        }
+
+        return@runBlocking StampCutBitmapImageSource(
+            bitmap = baseImageBitmap,
+        )
     }
 }
