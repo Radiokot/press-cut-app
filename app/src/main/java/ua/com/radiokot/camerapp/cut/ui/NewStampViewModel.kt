@@ -48,11 +48,17 @@ class NewStampViewModel(
 
     lateinit var collectionId: String
         private set
+
     var showToastOnSave: Boolean = true
         private set
+
     lateinit var imageSource: StampCutImageSource
         private set
+
     var stampImageBitmap: Bitmap? = null
+
+    val isCameraRequired: Boolean
+        get() = imageSource is StampCutCameraImageSource
 
     fun initOnce(
         collectionId: String?,

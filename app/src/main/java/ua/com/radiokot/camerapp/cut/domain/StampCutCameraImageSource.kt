@@ -33,6 +33,7 @@ import androidx.camera.core.UseCaseGroup
 import androidx.camera.core.resolutionselector.ResolutionSelector
 import androidx.camera.core.resolutionselector.ResolutionStrategy
 import androidx.camera.core.takePicture
+import androidx.compose.runtime.Stable
 import androidx.core.graphics.createBitmap
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -51,6 +52,7 @@ import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
+@Stable
 class StampCutCameraImageSource(
     coroutineScope: CoroutineScope,
 ) : StampCutImageSource {

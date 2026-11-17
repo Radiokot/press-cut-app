@@ -20,6 +20,7 @@
 package ua.com.radiokot.camerapp.cut.domain
 
 import android.graphics.Bitmap
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableFloatStateOf
@@ -44,6 +45,7 @@ import kotlin.math.max
  * The image is placed in a square scene of size [SCENE_SIZE].
  * The image can be panned ([imageCenter]), rotated ([imageRotationDegrees]) and scaled ([imageScale]).
  */
+@Stable
 class StampCutBitmapImageSource(
     val bitmap: Bitmap,
 ) : StampCutImageSource {

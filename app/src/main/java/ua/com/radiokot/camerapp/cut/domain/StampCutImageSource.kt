@@ -20,8 +20,10 @@
 package ua.com.radiokot.camerapp.cut.domain
 
 import android.graphics.Bitmap
+import androidx.compose.runtime.Stable
 import kotlinx.coroutines.flow.Flow
 
+@Stable
 sealed interface StampCutImageSource {
 
     /**

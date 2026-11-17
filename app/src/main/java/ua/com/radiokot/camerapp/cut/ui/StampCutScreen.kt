@@ -26,8 +26,6 @@ import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.FocusMeteringAction
 import androidx.camera.core.SurfaceOrientedMeteringPointFactory
-import androidx.camera.core.SurfaceRequest
-import androidx.camera.core.UseCaseGroup
 import androidx.camera.lifecycle.ProcessCameraProvider
 import androidx.camera.lifecycle.awaitInstance
 import androidx.camera.viewfinder.compose.MutableCoordinateTransformer
@@ -54,6 +52,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.produceState
@@ -91,6 +90,9 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import ua.com.radiokot.camerapp.R
+import ua.com.radiokot.camerapp.cut.domain.StampCutBitmapImageSource
+import ua.com.radiokot.camerapp.cut.domain.StampCutCameraImageSource
+import ua.com.radiokot.camerapp.cut.domain.StampCutImageSource
 import ua.com.radiokot.camerapp.stamps.ui.StampCutter
 import ua.com.radiokot.camerapp.stamps.ui.UiStampShapeA
 import ua.com.radiokot.camerapp.util.optionalSharedElement
@@ -100,10 +102,9 @@ import kotlin.random.Random
 import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
-fun StampCutFromCameraScreen(
+private fun StampCutFromCameraScreen(
     modifier: Modifier = Modifier,
-    useCaseGroup: UseCaseGroup,
-    surfaceRequest: SurfaceRequest?,
+    imageSource: StampCutCameraImageSource,
     cutImage: ImageBitmap?,
     onCutAction: (
         viewfinderSize: Size,
@@ -115,6 +116,8 @@ fun StampCutFromCameraScreen(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val coroutineScope = rememberCoroutineScope()
+    val useCaseGroup = imageSource.useCaseGroup
+    val surfaceRequest by imageSource.surfaceRequest.collectAsState()
 
     var camera by remember {
         mutableStateOf<Camera?>(null)
@@ -143,9 +146,8 @@ fun StampCutFromCameraScreen(
         sharedTransitionScope = sharedTransitionScope,
         animatedVisibilityScope = animatedVisibilityScope,
         imageSource = { imageSourceModifier, frameLayoutCoordinatesState ->
-            if (surfaceRequest == null) {
-                return@StampCutScreenScaffold
-            }
+            val surfaceRequest = surfaceRequest
+                ?: return@StampCutScreenScaffold
 
             val coordinateTransformer = remember(::MutableCoordinateTransformer)
             val meteringFactory = remember(surfaceRequest) {
@@ -261,6 +263,70 @@ fun StampCutFromCameraScreen(
             )
         }
     )
+}
+
+@Composable
+private fun StampCutFromImageScreen(
+    modifier: Modifier = Modifier,
+    imageSource: StampCutBitmapImageSource,
+    cutImage: ImageBitmap?,
+    onCutAction: (
+        viewfinderSize: Size,
+        cutFrameRect: Rect,
+    ) -> Unit,
+    sharedTransitionScope: SharedTransitionScope?,
+    animatedVisibilityScope: AnimatedVisibilityScope?,
+) {
+    StampCutScreenScaffold(
+        modifier = modifier,
+        cutImage = cutImage,
+        onCutAction = onCutAction,
+        sharedTransitionScope = sharedTransitionScope,
+        animatedVisibilityScope = animatedVisibilityScope,
+        imageSource = { imageSourceModifier, _ ->
+            Image(
+                bitmap = imageSource.image,
+                contentDescription = null,
+                modifier = imageSourceModifier,
+            )
+        }
+    )
+}
+
+@Composable
+fun StampCutScreen(
+    modifier: Modifier = Modifier,
+    imageSource: StampCutImageSource,
+    cutImage: ImageBitmap?,
+    onCutAction: (
+        viewfinderSize: Size,
+        cutFrameRect: Rect,
+    ) -> Unit,
+    sharedTransitionScope: SharedTransitionScope?,
+    animatedVisibilityScope: AnimatedVisibilityScope?,
+) = when (imageSource) {
+
+    is StampCutBitmapImageSource -> {
+        StampCutFromImageScreen(
+            imageSource = imageSource,
+            cutImage = cutImage,
+            onCutAction = onCutAction,
+            sharedTransitionScope = sharedTransitionScope,
+            animatedVisibilityScope = animatedVisibilityScope,
+            modifier = modifier
+        )
+    }
+
+    is StampCutCameraImageSource -> {
+        StampCutFromCameraScreen(
+            imageSource = imageSource,
+            cutImage = cutImage,
+            onCutAction = onCutAction,
+            sharedTransitionScope = sharedTransitionScope,
+            animatedVisibilityScope = animatedVisibilityScope,
+            modifier = modifier
+        )
+    }
 }
 
 @Composable
