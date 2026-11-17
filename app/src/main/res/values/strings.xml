@@ -24,4 +24,5 @@
         <item quantity="one">%1$d stamp</item>
         <item quantity="other">%1$d stamps</item>
     </plurals>
+    <string name="cut_a_stamp_shortcut">Cut a stamp</string>
 </resources>

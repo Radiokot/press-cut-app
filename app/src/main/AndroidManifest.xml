@@ -47,7 +47,15 @@
             android:screenOrientation="sensorPortrait"
             android:theme="@style/NewStampStartingTheme"
             android:windowSoftInputMode="adjustNothing"
-            tools:ignore="DiscouragedApi,LockedOrientationActivity" />
+            tools:ignore="DiscouragedApi,LockedOrientationActivity">
+            <intent-filter android:label="@string/cut_a_stamp_shortcut">
+                <action android:name="android.intent.action.SEND" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+
+                <data android:mimeType="image/*" />
+            </intent-filter>
+        </activity>
 
         <activity
             android:name=".about.ui.HtmlActivity"

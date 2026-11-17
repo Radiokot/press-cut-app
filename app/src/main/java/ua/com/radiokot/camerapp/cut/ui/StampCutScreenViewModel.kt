@@ -45,7 +45,6 @@ import kotlinx.coroutines.flow.lastOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
-import ua.com.radiokot.camerapp.cut.domain.StampCutCameraImageSource
 import ua.com.radiokot.camerapp.cut.domain.StampCutImageSource
 import ua.com.radiokot.camerapp.stamps.domain.shape.StampShapeA
 import ua.com.radiokot.camerapp.util.eventSharedFlow
@@ -54,14 +53,14 @@ import ua.com.radiokot.camerapp.util.map
 import kotlin.math.min
 
 @Immutable
-class StampCutScreenViewModel : ViewModel() {
+class StampCutScreenViewModel(
+    private val sharedViewModel: NewStampViewModel,
+) : ViewModel() {
 
     private val log by lazyLogger("StampCutScreenVM")
 
     val imageSource: StampCutImageSource =
-        StampCutCameraImageSource(
-            coroutineScope = viewModelScope,
-        )
+        sharedViewModel.imageSource
 
     private val cutBitmap: MutableStateFlow<Bitmap?> = MutableStateFlow(null)
     val cutImage: StateFlow<ImageBitmap?> =
@@ -85,8 +84,8 @@ class StampCutScreenViewModel : ViewModel() {
 
         log.debug {
             "onCutAction(): starting the cut sequence:" +
-                    "\nvisibleViewfinderSize: $visibleViewfinderSize" +
-                    "\nvisibleFrameRect: $visibleFrameRect"
+                    "\nvisibleViewfinderSize=$visibleViewfinderSize" +
+                    "\nvisibleFrameRect=$visibleFrameRect"
         }
 
         cutJob = viewModelScope.launch {
@@ -128,11 +127,9 @@ class StampCutScreenViewModel : ViewModel() {
             return
         }
 
-        events.emit(
-            Event.DidCut(
-                stampImageBitmap = stampImageBitmap,
-            )
-        )
+        sharedViewModel.stampImageBitmap = stampImageBitmap
+
+        events.emit(Event.ProceedToSave)
     }
 
     fun onScreenDisposed() {
@@ -199,8 +196,6 @@ class StampCutScreenViewModel : ViewModel() {
     }
 
     sealed interface Event {
-        class DidCut(
-            val stampImageBitmap: Bitmap,
-        ) : Event
+        object ProceedToSave : Event
     }
 }

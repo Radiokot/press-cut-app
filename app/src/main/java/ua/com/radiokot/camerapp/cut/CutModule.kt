@@ -21,23 +21,30 @@ package ua.com.radiokot.camerapp.cut
 
 import org.koin.core.module.dsl.viewModel
 import org.koin.dsl.module
-import ua.com.radiokot.camerapp.adjustments.ui.ImageAdjustmentsControllerViewModel
+import ua.com.radiokot.camerapp.cut.ui.NewStampViewModel
 import ua.com.radiokot.camerapp.cut.ui.StampCutScreenViewModel
 import ua.com.radiokot.camerapp.cut.ui.StampSaveScreenViewModel
 
 val cutModule = module {
 
     viewModel {
-        StampCutScreenViewModel()
+        NewStampViewModel(
+//            parameters = getOrNull()
+//                ?: error("No parameters provided for NewStampViewModel")
+        )
+    }
+
+    viewModel {
+        StampCutScreenViewModel(
+            sharedViewModel = get(),
+        )
     }
 
     viewModel {
         StampSaveScreenViewModel(
             stampRepository = get(),
             imageAdjustmentsControllerViewModel = get(),
-            parameters =
-                getOrNull()
-                    ?: error("No parameters provided for StampSaveScreenViewModel"),
+            sharedViewModel = get(),
         )
     }
 }
