@@ -35,6 +35,7 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.EaseInQuad
 import androidx.compose.animation.core.EaseOutQuad
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
@@ -69,6 +70,7 @@ import androidx.compose.ui.geometry.center
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.scale
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.changedToUpIgnoreConsumed
 import androidx.compose.ui.input.pointer.pointerInput
@@ -97,6 +99,7 @@ import ua.com.radiokot.camerapp.stamps.ui.StampCutter
 import ua.com.radiokot.camerapp.stamps.ui.UiStampShapeA
 import ua.com.radiokot.camerapp.util.optionalSharedElement
 import java.util.concurrent.TimeUnit
+import kotlin.math.max
 import kotlin.math.min
 import kotlin.random.Random
 import kotlin.time.Duration.Companion.milliseconds
@@ -284,11 +287,28 @@ private fun StampCutFromImageScreen(
         sharedTransitionScope = sharedTransitionScope,
         animatedVisibilityScope = animatedVisibilityScope,
         imageSource = { imageSourceModifier, _ ->
-            Image(
-                bitmap = imageSource.image,
-                contentDescription = null,
-                modifier = imageSourceModifier,
-            )
+            Canvas(
+                modifier = imageSourceModifier
+            ) {
+                // Scale the source to fill from center.
+                val sceneSize = StampCutBitmapImageSource.SCENE_SIZE * density
+                val canvasScale = max(
+                    size.width / sceneSize,
+                    size.height / sceneSize,
+                )
+                drawContext.canvas.scale(
+                    sx = canvasScale,
+                    sy = canvasScale,
+                    pivotX = center.x,
+                    pivotY = center.y,
+                )
+                drawContext.canvas.translate(
+                    dx = (size.width - sceneSize) / 2f,
+                    dy = (size.height - sceneSize) / 2f,
+                )
+
+                imageSource.draw(this)
+            }
         }
     )
 }

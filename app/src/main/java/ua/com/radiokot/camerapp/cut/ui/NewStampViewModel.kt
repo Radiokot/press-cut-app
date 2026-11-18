@@ -142,8 +142,8 @@ class NewStampViewModel(
         val baseImageBitmap = try {
             imageFileDecoder.invoke(
                 filePath = cachedImageFile.absolutePath,
-                targetWidth = StampCutBitmapImageSource.SCENE_SIZE.toInt(),
-                targetHeight = StampCutBitmapImageSource.SCENE_SIZE.toInt(),
+                maxWidth = StampCutBitmapImageSource.SCENE_SIZE.toInt(),
+                maxHeight = StampCutBitmapImageSource.SCENE_SIZE.toInt(),
             )
         } catch (e: Exception) {
             log.error(e) {

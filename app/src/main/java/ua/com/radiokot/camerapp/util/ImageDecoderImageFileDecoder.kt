@@ -14,12 +14,23 @@ class ImageDecoderImageFileDecoder : ImageFileDecoder {
         filePath: String,
         targetWidth: Int?,
         targetHeight: Int?,
+        maxWidth: Int?,
+        maxHeight: Int?,
     ): Bitmap {
         val source = ImageDecoder.createSource(File(filePath))
-        return ImageDecoder.decodeBitmap(source) { decoder, _, _ ->
+        return ImageDecoder.decodeBitmap(source) { decoder, imageInfo, _ ->
             decoder.allocator = ImageDecoder.ALLOCATOR_HARDWARE
             if (targetWidth != null && targetHeight != null) {
                 decoder.setTargetSize(targetWidth, targetHeight)
+            } else if (maxWidth != null && maxHeight != null) {
+                decoder.setTargetSampleSize(
+                    calculateBitmapSampleSize(
+                        originalWidth = imageInfo.size.width,
+                        originalHeight = imageInfo.size.height,
+                        maxWidth = maxWidth,
+                        maxHeight = maxHeight,
+                    )
+                )
             }
         }
     }

@@ -2,7 +2,7 @@ package ua.com.radiokot.camerapp.util
 
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import kotlin.math.max
+import kotlin.math.min
 
 class BitmapFactoryImageFileDecoder : ImageFileDecoder {
 
@@ -10,6 +10,8 @@ class BitmapFactoryImageFileDecoder : ImageFileDecoder {
         filePath: String,
         targetWidth: Int?,
         targetHeight: Int?,
+        maxWidth: Int?,
+        maxHeight: Int?
     ): Bitmap {
         val boundsOptions = BitmapFactory.Options().apply {
             inJustDecodeBounds = true
@@ -23,11 +25,17 @@ class BitmapFactoryImageFileDecoder : ImageFileDecoder {
             error("Failed to decode image dimensions")
         }
 
-        val sampleSize = calculateSampleSize(
+        val sampleSize = calculateBitmapSampleSize(
             originalWidth = originalWidth,
             originalHeight = originalHeight,
-            targetWidth = targetWidth ?: originalWidth,
-            targetHeight = targetHeight ?: originalHeight,
+            maxWidth = min(
+                targetWidth ?: originalWidth,
+                maxWidth ?: originalWidth,
+            ),
+            maxHeight = min(
+                targetHeight ?: originalHeight,
+                maxHeight ?: originalHeight,
+            ),
         )
 
         val decodeOptions = BitmapFactory.Options().apply {
@@ -36,23 +44,5 @@ class BitmapFactoryImageFileDecoder : ImageFileDecoder {
         }
 
         return BitmapFactory.decodeFile(filePath, decodeOptions)
-    }
-
-    private fun calculateSampleSize(
-        originalWidth: Int,
-        originalHeight: Int,
-        targetWidth: Int,
-        targetHeight: Int,
-    ): Int {
-        var sampleSize = 1
-
-        while (
-            originalWidth / (sampleSize * 2) >= targetWidth &&
-            originalHeight / (sampleSize * 2) >= targetHeight
-        ) {
-            sampleSize *= 2
-        }
-
-        return max(1, sampleSize)
     }
 }
