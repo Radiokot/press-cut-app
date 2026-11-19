@@ -71,7 +71,6 @@ import androidx.compose.ui.geometry.center
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.scale
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.changedToUpIgnoreConsumed
 import androidx.compose.ui.input.pointer.pointerInput
@@ -94,14 +93,13 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import ua.com.radiokot.camerapp.R
-import ua.com.radiokot.camerapp.cut.domain.StampCutBitmapImageSource
-import ua.com.radiokot.camerapp.cut.domain.StampCutCameraImageSource
-import ua.com.radiokot.camerapp.cut.domain.StampCutImageSource
+import ua.com.radiokot.camerapp.cut.render.StampCutBitmapImageRenderer
+import ua.com.radiokot.camerapp.cut.render.StampCutCameraImageRenderer
+import ua.com.radiokot.camerapp.cut.render.StampCutImageRenderer
 import ua.com.radiokot.camerapp.stamps.ui.StampCutter
 import ua.com.radiokot.camerapp.stamps.ui.UiStampShapeA
 import ua.com.radiokot.camerapp.util.optionalSharedElement
 import java.util.concurrent.TimeUnit
-import kotlin.math.max
 import kotlin.math.min
 import kotlin.random.Random
 import kotlin.time.Duration.Companion.milliseconds
@@ -109,7 +107,7 @@ import kotlin.time.Duration.Companion.milliseconds
 @Composable
 private fun StampCutFromCameraScreen(
     modifier: Modifier = Modifier,
-    imageSource: StampCutCameraImageSource,
+    cameraImageRenderer: StampCutCameraImageRenderer,
     cutImage: ImageBitmap?,
     onCutAction: (
         viewfinderSize: Size,
@@ -121,8 +119,8 @@ private fun StampCutFromCameraScreen(
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
     val coroutineScope = rememberCoroutineScope()
-    val useCaseGroup = imageSource.useCaseGroup
-    val surfaceRequest by imageSource.surfaceRequest.collectAsState()
+    val useCaseGroup = cameraImageRenderer.useCaseGroup
+    val surfaceRequest by cameraImageRenderer.surfaceRequest.collectAsState()
 
     var camera by remember {
         mutableStateOf<Camera?>(null)
@@ -150,7 +148,7 @@ private fun StampCutFromCameraScreen(
         onCutAction = onCutAction,
         sharedTransitionScope = sharedTransitionScope,
         animatedVisibilityScope = animatedVisibilityScope,
-        imageSource = { imageSourceModifier, frameLayoutCoordinatesState ->
+        renderedImage = { renderedModifier, frameLayoutCoordinatesState ->
             val surfaceRequest = surfaceRequest
                 ?: return@StampCutScreenScaffold
 
@@ -202,7 +200,7 @@ private fun StampCutFromCameraScreen(
             CameraXViewfinder(
                 surfaceRequest = surfaceRequest,
                 coordinateTransformer = coordinateTransformer,
-                modifier = imageSourceModifier
+                modifier = renderedModifier
                     // Tap to focus at center.
                     .pointerInput(
                         focusAtCenter,
@@ -271,9 +269,9 @@ private fun StampCutFromCameraScreen(
 }
 
 @Composable
-private fun StampCutFromImageScreen(
+private fun StampCutFromBitmapScreen(
     modifier: Modifier = Modifier,
-    imageSource: StampCutBitmapImageSource,
+    bitmapImageRenderer: StampCutBitmapImageRenderer,
     cutImage: ImageBitmap?,
     onCutAction: (
         viewfinderSize: Size,
@@ -288,44 +286,25 @@ private fun StampCutFromImageScreen(
         onCutAction = onCutAction,
         sharedTransitionScope = sharedTransitionScope,
         animatedVisibilityScope = animatedVisibilityScope,
-        imageSource = { imageSourceModifier, _ ->
+        renderedImage = { renderedModifier, _ ->
             Canvas(
-                modifier = imageSourceModifier
-                    .pointerInput(imageSource) {
-
+                onDraw = bitmapImageRenderer::draw,
+                modifier = renderedModifier
+                    .pointerInput(bitmapImageRenderer) {
                         detectTransformGestures { _, pan, zoom, rotation ->
 
-                            imageSource.imageCenter += pan
+                            bitmapImageRenderer.imageCenter += pan
 
-                            imageSource.imageScale =
-                                (imageSource.imageScale * zoom)
+                            bitmapImageRenderer.imageScale =
+                                (bitmapImageRenderer.imageScale * zoom)
                                     .fastCoerceIn(0.1f, 10f)
 
-                            imageSource.imageRotationDegrees =
-                                (imageSource.imageRotationDegrees + rotation)
+                            bitmapImageRenderer.imageRotationDegrees =
+                                (bitmapImageRenderer.imageRotationDegrees + rotation)
                                     .mod(360f)
                         }
                     }
-            ) {
-                // Scale the source to fill from center.
-                val sceneSize = StampCutBitmapImageSource.SCENE_SIZE * density
-                val canvasScale = max(
-                    size.width / sceneSize,
-                    size.height / sceneSize,
-                )
-                drawContext.canvas.scale(
-                    sx = canvasScale,
-                    sy = canvasScale,
-                    pivotX = center.x,
-                    pivotY = center.y,
-                )
-                drawContext.canvas.translate(
-                    dx = (size.width - sceneSize) / 2f,
-                    dy = (size.height - sceneSize) / 2f,
-                )
-
-                imageSource.draw(this)
-            }
+            )
         }
     )
 }
@@ -333,7 +312,7 @@ private fun StampCutFromImageScreen(
 @Composable
 fun StampCutScreen(
     modifier: Modifier = Modifier,
-    imageSource: StampCutImageSource,
+    imageRenderer: StampCutImageRenderer,
     cutImage: ImageBitmap?,
     onCutAction: (
         viewfinderSize: Size,
@@ -341,11 +320,11 @@ fun StampCutScreen(
     ) -> Unit,
     sharedTransitionScope: SharedTransitionScope?,
     animatedVisibilityScope: AnimatedVisibilityScope?,
-) = when (imageSource) {
+) = when (imageRenderer) {
 
-    is StampCutBitmapImageSource -> {
-        StampCutFromImageScreen(
-            imageSource = imageSource,
+    is StampCutBitmapImageRenderer -> {
+        StampCutFromBitmapScreen(
+            bitmapImageRenderer = imageRenderer,
             cutImage = cutImage,
             onCutAction = onCutAction,
             sharedTransitionScope = sharedTransitionScope,
@@ -354,9 +333,9 @@ fun StampCutScreen(
         )
     }
 
-    is StampCutCameraImageSource -> {
+    is StampCutCameraImageRenderer -> {
         StampCutFromCameraScreen(
-            imageSource = imageSource,
+            cameraImageRenderer = imageRenderer,
             cutImage = cutImage,
             onCutAction = onCutAction,
             sharedTransitionScope = sharedTransitionScope,
@@ -376,7 +355,7 @@ private fun StampCutScreenScaffold(
     ) -> Unit,
     sharedTransitionScope: SharedTransitionScope?,
     animatedVisibilityScope: AnimatedVisibilityScope?,
-    imageSource: @Composable BoxWithConstraintsScope.(
+    renderedImage: @Composable BoxWithConstraintsScope.(
         modifier: Modifier,
         frameLayoutCoordinatesState: State<LayoutCoordinates?>,
     ) -> Unit,
@@ -461,9 +440,9 @@ private fun StampCutScreenScaffold(
         }
     }
 
-    imageSource(
+    renderedImage(
         Modifier
-            .testTag("imageSource")
+            .testTag("renderedImage")
             .fillMaxSize()
             // Cut on long press.
             .pointerInput(
@@ -637,7 +616,7 @@ private fun StampCutScreenScaffoldPreview(
         onCutAction = { _, _ -> },
         sharedTransitionScope = null,
         animatedVisibilityScope = null,
-        imageSource = { modifier, _ ->
+        renderedImage = { modifier, _ ->
             Spacer(modifier.background(Color.Yellow))
         },
         modifier = Modifier

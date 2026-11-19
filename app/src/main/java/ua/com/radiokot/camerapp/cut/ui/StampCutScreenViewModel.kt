@@ -45,7 +45,7 @@ import kotlinx.coroutines.flow.lastOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
-import ua.com.radiokot.camerapp.cut.domain.StampCutImageSource
+import ua.com.radiokot.camerapp.cut.render.StampCutImageRenderer
 import ua.com.radiokot.camerapp.stamps.domain.shape.StampShapeA
 import ua.com.radiokot.camerapp.util.eventSharedFlow
 import ua.com.radiokot.camerapp.util.lazyLogger
@@ -59,8 +59,8 @@ class StampCutScreenViewModel(
 
     private val log by lazyLogger("StampCutScreenVM")
 
-    val imageSource: StampCutImageSource =
-        sharedViewModel.imageSource
+    val imageRenderer: StampCutImageRenderer =
+        sharedViewModel.imageRenderer
 
     private val cutBitmap: MutableStateFlow<Bitmap?> = MutableStateFlow(null)
     val cutImage: StateFlow<ImageBitmap?> =
@@ -108,7 +108,7 @@ class StampCutScreenViewModel(
         visibleFrameRect: RectF,
     ) {
         val stampImageBitmap =
-            imageSource
+            imageRenderer
                 .capture()
                 .map { capturedBitmap ->
                     frameImage(

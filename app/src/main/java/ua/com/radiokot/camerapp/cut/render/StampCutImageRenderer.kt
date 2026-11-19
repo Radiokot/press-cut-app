@@ -17,17 +17,17 @@
    along with Press-Cut. If not, see <http://www.gnu.org/licenses/>.
 */
 
-package ua.com.radiokot.camerapp.cut.domain
+package ua.com.radiokot.camerapp.cut.render
 
 import android.graphics.Bitmap
 import androidx.compose.runtime.Stable
 import kotlinx.coroutines.flow.Flow
 
 @Stable
-sealed interface StampCutImageSource {
+sealed interface StampCutImageRenderer {
 
     /**
-     * Captures a photo from this source.
+     * Captures a high quality shot from this renderer.
      *
      * @return a flow of captured frames:
      * could be a low-quality one and then a high-quality one,

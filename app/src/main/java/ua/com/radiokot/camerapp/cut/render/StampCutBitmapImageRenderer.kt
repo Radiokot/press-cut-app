@@ -17,7 +17,7 @@
    along with Press-Cut. If not, see <http://www.gnu.org/licenses/>.
 */
 
-package ua.com.radiokot.camerapp.cut.domain
+package ua.com.radiokot.camerapp.cut.render
 
 import android.graphics.Bitmap
 import androidx.compose.runtime.Stable
@@ -31,25 +31,23 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.geometry.center
 import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.rotate
+import androidx.compose.ui.graphics.scale
 import androidx.compose.ui.unit.round
 import androidx.compose.ui.unit.roundToIntSize
 import kotlinx.coroutines.flow.Flow
 import kotlin.math.max
 
 /**
- * An image source for a stamp cut based on image bitmap.
+ * A renderer of a freely transformed image.
  * The image is placed in a square scene of size [SCENE_SIZE].
  * The image can be panned ([imageCenter]), rotated ([imageRotationDegrees]) and scaled ([imageScale]).
  */
 @Stable
-class StampCutBitmapImageSource(
-    val bitmap: Bitmap,
-) : StampCutImageSource {
-
-    val image: ImageBitmap = bitmap.asImageBitmap()
+class StampCutBitmapImageRenderer(
+    private val previewImage: ImageBitmap,
+) : StampCutImageRenderer {
 
     /**
      * Position of the image center in the square scene of size [SCENE_SIZE].
@@ -67,8 +65,8 @@ class StampCutBitmapImageSource(
     var imageScale: Float by mutableFloatStateOf(
         // Initially scale to fill.
         max(
-            SCENE_SIZE / image.width,
-            SCENE_SIZE / image.height,
+            SCENE_SIZE / previewImage.width,
+            SCENE_SIZE / previewImage.height,
         )
     )
 
@@ -82,8 +80,8 @@ class StampCutBitmapImageSource(
      */
     val imageRect: Rect by derivedStateOf {
         val imageSize = Size(
-            width = image.width * imageScale,
-            height = image.height * imageScale,
+            width = previewImage.width * imageScale,
+            height = previewImage.height * imageScale,
         )
         Rect(
             offset = imageCenter - imageSize.center,
@@ -95,24 +93,43 @@ class StampCutBitmapImageSource(
         TODO("Not yet implemented")
     }
 
-    fun draw(drawScope: DrawScope) {
-        val center = imageCenter * drawScope.density
-        val size = imageRect.size * drawScope.density
-        val topLeft = imageRect.topLeft * drawScope.density
+    fun draw(
+        drawScope: DrawScope,
+    ) = with(drawScope) {
+        // Scale the source to fill from center.
+        val sceneSize = SCENE_SIZE * density
+        val canvasScale = max(
+            size.width / sceneSize,
+            size.height / sceneSize,
+        )
+        drawContext.canvas.scale(
+            sx = canvasScale,
+            sy = canvasScale,
+            pivotX = center.x,
+            pivotY = center.y,
+        )
+        drawContext.canvas.translate(
+            dx = (size.width - sceneSize) / 2f,
+            dy = (size.height - sceneSize) / 2f,
+        )
 
-        drawScope.drawContext.canvas.rotate(
+        val center = imageCenter * density
+        val size = imageRect.size * density
+        val topLeft = imageRect.topLeft * density
+
+        drawContext.canvas.rotate(
             degrees = imageRotationDegrees,
             pivotX = center.x,
             pivotY = center.y,
         )
 
-        drawScope.drawImage(
-            image = image,
+        drawImage(
+            image = previewImage,
             dstOffset = topLeft.round(),
             dstSize = size.roundToIntSize(),
         )
 
-        drawScope.drawContext.canvas.rotate(
+        drawContext.canvas.rotate(
             degrees = -imageRotationDegrees,
             pivotX = center.x,
             pivotY = center.y,

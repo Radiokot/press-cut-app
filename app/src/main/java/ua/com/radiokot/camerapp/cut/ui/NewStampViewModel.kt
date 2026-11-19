@@ -22,15 +22,16 @@ package ua.com.radiokot.camerapp.cut.ui
 import android.content.ContentResolver
 import android.graphics.Bitmap
 import android.net.Uri
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.runBlocking
 import okio.buffer
 import okio.sink
 import okio.source
-import ua.com.radiokot.camerapp.cut.domain.StampCutBitmapImageSource
-import ua.com.radiokot.camerapp.cut.domain.StampCutCameraImageSource
-import ua.com.radiokot.camerapp.cut.domain.StampCutImageSource
+import ua.com.radiokot.camerapp.cut.render.StampCutBitmapImageRenderer
+import ua.com.radiokot.camerapp.cut.render.StampCutCameraImageRenderer
+import ua.com.radiokot.camerapp.cut.render.StampCutImageRenderer
 import ua.com.radiokot.camerapp.stamps.domain.StampCollection
 import ua.com.radiokot.camerapp.util.ImageFileDecoder
 import ua.com.radiokot.camerapp.util.lazyLogger
@@ -52,13 +53,13 @@ class NewStampViewModel(
     var showToastOnSave: Boolean = true
         private set
 
-    lateinit var imageSource: StampCutImageSource
+    lateinit var imageRenderer: StampCutImageRenderer
         private set
 
     var stampImageBitmap: Bitmap? = null
 
     val isCameraRequired: Boolean
-        get() = imageSource is StampCutCameraImageSource
+        get() = imageRenderer is StampCutCameraImageRenderer
 
     fun initOnce(
         collectionId: String?,
@@ -72,10 +73,10 @@ class NewStampViewModel(
         this.collectionId = collectionId ?: StampCollection.PRIMARY_ID
         this.showToastOnSave = showToastOnSave
 
-        this.imageSource =
+        this.imageRenderer =
             receivedImageUri
-                ?.let(::createBitmapImageSourceOrNull)
-                ?: createCameraImageSource()
+                ?.let(::createBitmapRendererSourceOrNull)
+                ?: createCameraRenderer()
 
         log.debug {
             "initOnce(): initialized:" +
@@ -87,15 +88,15 @@ class NewStampViewModel(
         isInitialized = true
     }
 
-    private fun createCameraImageSource(
+    private fun createCameraRenderer(
 
-    ) = StampCutCameraImageSource(
+    ) = StampCutCameraImageRenderer(
         coroutineScope = viewModelScope,
     )
 
-    private fun createBitmapImageSourceOrNull(
+    private fun createBitmapRendererSourceOrNull(
         imageUri: Uri,
-    ): StampCutBitmapImageSource? = runBlocking {
+    ): StampCutBitmapImageRenderer? = runBlocking {
 
         if (!receivedImageCacheDirectory.exists()) {
             if (!receivedImageCacheDirectory.mkdirs()) {
@@ -139,12 +140,14 @@ class NewStampViewModel(
             imageInputStream.close()
         }
 
-        val baseImageBitmap = try {
-            imageFileDecoder.invoke(
-                filePath = cachedImageFile.absolutePath,
-                maxWidth = StampCutBitmapImageSource.SCENE_SIZE.toInt(),
-                maxHeight = StampCutBitmapImageSource.SCENE_SIZE.toInt(),
-            )
+        val previewImage = try {
+            imageFileDecoder
+                .invoke(
+                    filePath = cachedImageFile.absolutePath,
+                    maxWidth = StampCutBitmapImageRenderer.SCENE_SIZE.toInt(),
+                    maxHeight = StampCutBitmapImageRenderer.SCENE_SIZE.toInt(),
+                )
+                .asImageBitmap()
         } catch (e: Exception) {
             log.error(e) {
                 "createBitmapImageSourceOrNull(): failed to decode image:" +
@@ -155,8 +158,8 @@ class NewStampViewModel(
             return@runBlocking null
         }
 
-        return@runBlocking StampCutBitmapImageSource(
-            bitmap = baseImageBitmap,
+        return@runBlocking StampCutBitmapImageRenderer(
+            previewImage = previewImage,
         )
     }
 }

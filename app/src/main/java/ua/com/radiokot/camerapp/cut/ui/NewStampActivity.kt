@@ -208,7 +208,7 @@ private fun SharedTransitionScope.StampCutNavHost(
                 LocalColors provides LightAppColors
             ) {
                 StampCutScreen(
-                    imageSource = viewModel.imageSource,
+                    imageRenderer = viewModel.imageRenderer,
                     cutImage = cutImage,
                     onCutAction = viewModel::onCutAction,
                     sharedTransitionScope = this@StampCutNavHost,

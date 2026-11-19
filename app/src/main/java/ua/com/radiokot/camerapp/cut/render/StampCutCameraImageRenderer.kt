@@ -17,7 +17,7 @@
    along with Press-Cut. If not, see <http://www.gnu.org/licenses/>.
 */
 
-package ua.com.radiokot.camerapp.cut.domain
+package ua.com.radiokot.camerapp.cut.render
 
 import android.annotation.SuppressLint
 import android.graphics.Bitmap
@@ -48,16 +48,15 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import ua.com.radiokot.camerapp.util.lazyLogger
-import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
 @Stable
-class StampCutCameraImageSource(
+class StampCutCameraImageRenderer(
     coroutineScope: CoroutineScope,
-) : StampCutImageSource {
+) : StampCutImageRenderer {
 
-    private val log by lazyLogger("StampCutCameraImageSource")
+    private val log by lazyLogger("StampCutCameraImageRenderer")
     private val previewUseCase =
         Preview.Builder().build()
 
@@ -91,7 +90,6 @@ class StampCutCameraImageSource(
         }
             .stateIn(coroutineScope, SharingStarted.Lazily, null)
 
-    @OptIn(ExperimentalAtomicApi::class)
     @SuppressLint("RestrictedApi")
     override fun capture(
 
