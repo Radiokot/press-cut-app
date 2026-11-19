@@ -41,6 +41,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.gestures.awaitEachGesture
 import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.PressInteraction
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -84,6 +85,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.toSize
+import androidx.compose.ui.util.fastCoerceIn
 import androidx.compose.ui.util.fastFirstOrNull
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import kotlinx.coroutines.Dispatchers
@@ -289,6 +291,21 @@ private fun StampCutFromImageScreen(
         imageSource = { imageSourceModifier, _ ->
             Canvas(
                 modifier = imageSourceModifier
+                    .pointerInput(imageSource) {
+
+                        detectTransformGestures { _, pan, zoom, rotation ->
+
+                            imageSource.imageCenter += pan
+
+                            imageSource.imageScale =
+                                (imageSource.imageScale * zoom)
+                                    .fastCoerceIn(0.1f, 10f)
+
+                            imageSource.imageRotationDegrees =
+                                (imageSource.imageRotationDegrees + rotation)
+                                    .mod(360f)
+                        }
+                    }
             ) {
                 // Scale the source to fill from center.
                 val sceneSize = StampCutBitmapImageSource.SCENE_SIZE * density

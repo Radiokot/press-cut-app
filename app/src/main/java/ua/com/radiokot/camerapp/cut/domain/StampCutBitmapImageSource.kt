@@ -30,7 +30,6 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.geometry.center
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.drawscope.DrawScope
@@ -97,13 +96,14 @@ class StampCutBitmapImageSource(
     }
 
     fun draw(drawScope: DrawScope) {
+        val center = imageCenter * drawScope.density
         val size = imageRect.size * drawScope.density
         val topLeft = imageRect.topLeft * drawScope.density
 
         drawScope.drawContext.canvas.rotate(
             degrees = imageRotationDegrees,
-            pivotX = imageCenter.x,
-            pivotY = imageCenter.y,
+            pivotX = center.x,
+            pivotY = center.y,
         )
 
         drawScope.drawImage(
@@ -112,16 +112,10 @@ class StampCutBitmapImageSource(
             dstSize = size.roundToIntSize(),
         )
 
-        drawScope.drawCircle(
-            color = Color.Red,
-            radius = 25f,
-            center = imageCenter * drawScope.density,
-        )
-
         drawScope.drawContext.canvas.rotate(
             degrees = -imageRotationDegrees,
-            pivotX = imageCenter.x,
-            pivotY = imageCenter.y,
+            pivotX = center.x,
+            pivotY = center.y,
         )
     }
 
