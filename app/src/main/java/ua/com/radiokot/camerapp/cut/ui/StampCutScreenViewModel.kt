@@ -38,6 +38,7 @@ import androidx.core.graphics.times
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -51,6 +52,8 @@ import ua.com.radiokot.camerapp.util.eventSharedFlow
 import ua.com.radiokot.camerapp.util.lazyLogger
 import ua.com.radiokot.camerapp.util.map
 import kotlin.math.min
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.measureTimedValue
 
 @Immutable
 class StampCutScreenViewModel(
@@ -107,7 +110,7 @@ class StampCutScreenViewModel(
         visibleViewfinderRect: RectF,
         visibleFrameRect: RectF,
     ) {
-        val stampImageBitmap =
+        val (stampImageBitmap, cutDuration) = measureTimedValue {
             imageRenderer
                 .capture()
                 .map { capturedBitmap ->
@@ -117,8 +120,14 @@ class StampCutScreenViewModel(
                         visibleFrameRect = visibleFrameRect,
                     ).also { capturedBitmap.recycle() }
                 }
-                .onEach(cutBitmap::value::set)
+                .onEach {
+                    // Prevent harsh switch from LQ to HQ on the cut piece.
+                    if (cutBitmap.value == null) {
+                        cutBitmap.value = it
+                    }
+                }
                 .lastOrNull()
+        }
 
         if (stampImageBitmap == null) {
             log.warn {
@@ -128,6 +137,9 @@ class StampCutScreenViewModel(
         }
 
         sharedViewModel.stampImageBitmap = stampImageBitmap
+
+        // Ensure min delay for visually pleasant animation.
+        delay(MIN_CUT_DURATION - cutDuration)
 
         events.emit(Event.ProceedToSave)
     }
@@ -197,5 +209,9 @@ class StampCutScreenViewModel(
 
     sealed interface Event {
         object ProceedToSave : Event
+    }
+
+    private companion object {
+        val MIN_CUT_DURATION = 750.milliseconds
     }
 }

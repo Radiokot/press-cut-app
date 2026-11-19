@@ -141,6 +141,7 @@ class StampCutCameraImageRenderer(
                         previewResolutionInfo.resolution.height
                     else
                         previewResolutionInfo.resolution.width,
+                config = Bitmap.Config.RGB_565,
             )
 
         PixelCopy.request(
@@ -166,20 +167,24 @@ class StampCutCameraImageRenderer(
     ) = withContext(Dispatchers.Default) {
 
         val captureImageProxy = captureUseCase.takePicture()
-        val captureImageBitmap = captureImageProxy.toBitmap()
-        val resultBitmap = Bitmap.createBitmap(
-            captureImageBitmap,
-            0, 0,
-            captureImageProxy.width,
-            captureImageProxy.height,
-            Matrix().apply {
-                setRotate(captureImageProxy.imageInfo.rotationDegrees.toFloat())
-            },
-            true
-        )
-        captureImageBitmap.recycle()
+        var captureImageBitmap = captureImageProxy.toBitmap()
+
+        val rotationDegrees = captureImageProxy.imageInfo.rotationDegrees.toFloat()
+        if (rotationDegrees != 0f) {
+            val notRotatedCaptureImageBitmap = captureImageBitmap
+            captureImageBitmap = Bitmap.createBitmap(
+                captureImageBitmap,
+                0, 0,
+                captureImageProxy.width,
+                captureImageProxy.height,
+                Matrix().apply { setRotate(rotationDegrees) },
+                true
+            )
+            notRotatedCaptureImageBitmap.recycle()
+        }
+
         captureImageProxy.close()
 
-        return@withContext resultBitmap
+        return@withContext captureImageBitmap
     }
 }

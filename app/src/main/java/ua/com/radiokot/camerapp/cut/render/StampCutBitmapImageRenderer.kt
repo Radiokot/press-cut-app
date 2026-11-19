@@ -31,12 +31,21 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.geometry.center
 import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.graphics.rotate
 import androidx.compose.ui.graphics.scale
 import androidx.compose.ui.unit.round
 import androidx.compose.ui.unit.roundToIntSize
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.flow.single
+import kotlinx.coroutines.flow.take
+import kotlinx.coroutines.launch
 import kotlin.math.max
 
 /**
@@ -47,7 +56,9 @@ import kotlin.math.max
 @Stable
 class StampCutBitmapImageRenderer(
     private val previewImage: ImageBitmap,
-) : StampCutImageRenderer {
+    coroutineScope: CoroutineScope,
+) : StampCutImageRenderer,
+    CoroutineScope by coroutineScope {
 
     /**
      * Position of the image center in the square scene of size [SCENE_SIZE].
@@ -89,9 +100,8 @@ class StampCutBitmapImageRenderer(
         )
     }
 
-    override fun capture(): Flow<Bitmap> {
-        TODO("Not yet implemented")
-    }
+    var screenshotRequest: Any? by mutableStateOf(null)
+    private val screenshots = MutableSharedFlow<Bitmap>()
 
     fun draw(
         drawScope: DrawScope,
@@ -134,6 +144,45 @@ class StampCutBitmapImageRenderer(
             pivotX = center.x,
             pivotY = center.y,
         )
+    }
+
+    fun onScreenshotTaken(
+        screenshotGraphicsLayer: GraphicsLayer,
+    ) {
+        screenshotRequest = null
+        launch {
+            var screenshot =
+                screenshotGraphicsLayer
+                    .toImageBitmap()
+                    .asAndroidBitmap()
+
+            if (screenshot.config == Bitmap.Config.HARDWARE) {
+                val hardwareScreenshot = screenshot
+                screenshot = hardwareScreenshot.copy(Bitmap.Config.RGB_565, false)
+                hardwareScreenshot.recycle()
+            }
+
+            screenshots.emit(screenshot)
+        }
+    }
+
+    override fun capture(
+
+    ): Flow<Bitmap> = channelFlow {
+
+        val screenshot =
+            screenshots
+                .take(1)
+                .onStart { screenshotRequest = true }
+                .single()
+
+        channel.send(screenshot)
+
+        if (screenshot.width > SCENE_SIZE || screenshot.height > SCENE_SIZE) {
+            return@channelFlow
+        }
+
+        // TODO HQ from a surface
     }
 
     companion object {

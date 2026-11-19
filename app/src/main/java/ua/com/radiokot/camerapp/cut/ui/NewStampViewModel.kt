@@ -160,6 +160,7 @@ class NewStampViewModel(
 
         return@runBlocking StampCutBitmapImageRenderer(
             previewImage = previewImage,
+            coroutineScope = viewModelScope,
         )
     }
 }

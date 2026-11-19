@@ -64,6 +64,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
+import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
@@ -71,6 +72,8 @@ import androidx.compose.ui.geometry.center
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.graphics.layer.drawLayer
+import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.changedToUpIgnoreConsumed
 import androidx.compose.ui.input.pointer.pointerInput
@@ -287,6 +290,8 @@ private fun StampCutFromBitmapScreen(
         sharedTransitionScope = sharedTransitionScope,
         animatedVisibilityScope = animatedVisibilityScope,
         renderedImage = { renderedModifier, _ ->
+            val screenshotGraphicsLayer = rememberGraphicsLayer()
+
             Canvas(
                 onDraw = bitmapImageRenderer::draw,
                 modifier = renderedModifier
@@ -303,6 +308,19 @@ private fun StampCutFromBitmapScreen(
                                 (bitmapImageRenderer.imageRotationDegrees + rotation)
                                     .mod(360f)
                         }
+                    }
+                    .drawWithContent {
+                        if (bitmapImageRenderer.screenshotRequest == null) {
+                            drawContent()
+                            return@drawWithContent
+                        }
+
+                        screenshotGraphicsLayer.record {
+                            this@drawWithContent.drawContent()
+                        }
+                        drawLayer(screenshotGraphicsLayer)
+
+                        bitmapImageRenderer.onScreenshotTaken(screenshotGraphicsLayer)
                     }
             )
         }
