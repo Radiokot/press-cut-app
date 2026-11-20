@@ -41,6 +41,7 @@ import androidx.compose.ui.graphics.scale
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.round
 import androidx.compose.ui.unit.roundToIntSize
+import androidx.compose.ui.util.fastRoundToInt
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
@@ -51,6 +52,8 @@ import kotlinx.coroutines.flow.single
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import ua.com.radiokot.camerapp.ui.DarkAppColors
+import ua.com.radiokot.camerapp.ui.drawPaperBackground
 import ua.com.radiokot.camerapp.util.awaitBitmap
 import ua.com.radiokot.camerapp.util.draw
 import ua.com.radiokot.camerapp.util.lazyLogger
@@ -132,6 +135,18 @@ class StampCutBitmapImageRenderer(
         drawContext.canvas.translate(
             dx = (size.width - sceneSize) / 2f,
             dy = (size.height - sceneSize) / 2f,
+        )
+
+        drawPaperBackground(
+            lineColor = DarkAppColors.paperBackgroundLine,
+            backgroundColor = DarkAppColors.componentBackground,
+            gridSizePx = (46 * density).fastRoundToInt(),
+            gridThicknessPx = 2.6f * density,
+            verticalOffsetPx = 0,
+            sizePx = Size(
+                width = sceneSize,
+                height = sceneSize,
+            ),
         )
 
         val center = imageCenter * density
