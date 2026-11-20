@@ -149,6 +149,7 @@ private fun StampCutFromCameraScreen(
         modifier = modifier,
         cutImage = cutImage,
         onCutAction = onCutAction,
+        cutterHint = "tap to focus, hold to cut",
         sharedTransitionScope = sharedTransitionScope,
         animatedVisibilityScope = animatedVisibilityScope,
         renderedImage = { renderedModifier, frameLayoutCoordinatesState ->
@@ -287,6 +288,7 @@ private fun StampCutFromBitmapScreen(
         modifier = modifier,
         cutImage = cutImage,
         onCutAction = onCutAction,
+        cutterHint = "hold to cut",
         sharedTransitionScope = sharedTransitionScope,
         animatedVisibilityScope = animatedVisibilityScope,
         renderedImage = { renderedModifier, _ ->
@@ -366,6 +368,7 @@ fun StampCutScreen(
 @Composable
 private fun StampCutScreenScaffold(
     modifier: Modifier = Modifier,
+    cutterHint: String,
     cutImage: ImageBitmap?,
     onCutAction: (
         viewfinderSize: Size,
@@ -531,6 +534,7 @@ private fun StampCutScreenScaffold(
 
     StampCutter(
         frameSize = frameSize,
+        hint = cutterHint,
         interactionSource = cutterInteractionSource,
         modifier = Modifier
             .requiredSize(cutterSize)
@@ -632,6 +636,7 @@ private fun StampCutScreenScaffoldPreview(
     StampCutScreenScaffold(
         cutImage = null,
         onCutAction = { _, _ -> },
+        cutterHint = "tap to focus, hold to cut",
         sharedTransitionScope = null,
         animatedVisibilityScope = null,
         renderedImage = { modifier, _ ->

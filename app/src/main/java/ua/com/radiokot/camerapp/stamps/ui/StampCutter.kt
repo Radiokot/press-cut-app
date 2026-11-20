@@ -63,6 +63,7 @@ fun StampCutter(
     modifier: Modifier = Modifier,
     interactionSource: MutableInteractionSource = remember(::MutableInteractionSource),
     frameSize: DpSize,
+    hint: String,
 ) {
     val colors = LocalColors.current
     Box(
@@ -204,7 +205,7 @@ fun StampCutter(
                             )
                             drawText(
                                 textMeasurer = textMeasurer,
-                                text = "tap to focus, hold to cut",
+                                text = hint,
                                 style = textStyle,
                                 topLeft = Offset(
                                     x = 0f,
@@ -237,6 +238,7 @@ private fun StampCutterPreview(
     ) {
         StampCutter(
             frameSize = UiStampShapeA.size * 1.5f,
+            hint = "tap to focus, hold to cut",
             modifier = Modifier
                 .requiredWidth(UiStampShapeA.size.width * 2.5f)
                 .requiredHeight(UiStampShapeA.size.height * 2.8f)
