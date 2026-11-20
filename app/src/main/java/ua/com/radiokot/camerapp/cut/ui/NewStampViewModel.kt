@@ -46,6 +46,7 @@ class NewStampViewModel(
     private val log by lazyLogger("NewStampVM")
 
     private var isInitialized = false
+    private val cachedImageFile = File(receivedImageCacheDirectory, "image")
 
     lateinit var collectionId: String
         private set
@@ -119,7 +120,6 @@ class NewStampViewModel(
             return@runBlocking null
         }
 
-        val cachedImageFile = File(receivedImageCacheDirectory, "image")
         try {
             cachedImageFile
                 .sink()
@@ -136,17 +136,18 @@ class NewStampViewModel(
                         "\nimageUri=$imageUri" +
                         "\nreceivedImageCacheDirectory=$receivedImageCacheDirectory"
             }
+            cachedImageFile.delete()
             return@runBlocking null
         } finally {
             imageInputStream.close()
         }
 
-        val previewImage = try {
+        val image = try {
             imageFileDecoder
                 .invoke(
                     filePath = cachedImageFile.absolutePath,
-                    maxWidth = StampCutBitmapImageRenderer.SCENE_SIZE.toInt(),
-                    maxHeight = StampCutBitmapImageRenderer.SCENE_SIZE.toInt(),
+                    maxWidth = 2 * StampCutBitmapImageRenderer.SCENE_SIZE.toInt(),
+                    maxHeight = 2 * StampCutBitmapImageRenderer.SCENE_SIZE.toInt(),
                 )
                 .asImageBitmap()
         } catch (e: Exception) {
@@ -160,8 +161,12 @@ class NewStampViewModel(
         }
 
         return@runBlocking StampCutBitmapImageRenderer(
-            previewImage = previewImage,
+            image = image,
             coroutineScope = viewModelScope,
         )
+    }
+
+    override fun onCleared() {
+        cachedImageFile.delete()
     }
 }

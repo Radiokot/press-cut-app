@@ -68,7 +68,7 @@ import kotlin.math.min
  */
 @Stable
 class StampCutBitmapImageRenderer(
-    private val previewImage: ImageBitmap,
+    private val image: ImageBitmap,
     coroutineScope: CoroutineScope,
 ) : StampCutImageRenderer,
     CoroutineScope by coroutineScope {
@@ -91,8 +91,8 @@ class StampCutBitmapImageRenderer(
     var imageScale: Float by mutableFloatStateOf(
         // Initially scale to fit.
         min(
-            SCENE_SIZE / previewImage.width,
-            SCENE_SIZE / previewImage.height,
+            SCENE_SIZE / image.width,
+            SCENE_SIZE / image.height,
         )
     )
 
@@ -106,8 +106,8 @@ class StampCutBitmapImageRenderer(
      */
     val imageRect: Rect by derivedStateOf {
         val imageSize = Size(
-            width = previewImage.width * imageScale,
-            height = previewImage.height * imageScale,
+            width = image.width * imageScale,
+            height = image.height * imageScale,
         )
         Rect(
             offset = imageCenter - imageSize.center,
@@ -161,7 +161,7 @@ class StampCutBitmapImageRenderer(
         )
 
         drawImage(
-            image = previewImage,
+            image = image,
             dstOffset = topLeft.round(),
             dstSize = size.roundToIntSize(),
         )
