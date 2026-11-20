@@ -59,6 +59,7 @@ import ua.com.radiokot.camerapp.util.draw
 import ua.com.radiokot.camerapp.util.lazyLogger
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.math.max
+import kotlin.math.min
 
 /**
  * A renderer of a freely transformed image.
@@ -88,8 +89,8 @@ class StampCutBitmapImageRenderer(
      * XY scale of the image from [imageCenter].
      */
     var imageScale: Float by mutableFloatStateOf(
-        // Initially scale to fill.
-        max(
+        // Initially scale to fit.
+        min(
             SCENE_SIZE / previewImage.width,
             SCENE_SIZE / previewImage.height,
         )
