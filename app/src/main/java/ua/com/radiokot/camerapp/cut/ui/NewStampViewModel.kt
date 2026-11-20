@@ -75,14 +75,15 @@ class NewStampViewModel(
 
         this.imageRenderer =
             receivedImageUri
-                ?.let(::createBitmapRendererSourceOrNull)
+                ?.let(::createBitmapRendererOrNull)
                 ?: createCameraRenderer()
 
         log.debug {
             "initOnce(): initialized:" +
                     "\ncollectionId=$collectionId" +
                     "\nshowToastOnSave=$showToastOnSave" +
-                    "\nimageUri=$receivedImageUri"
+                    "\nimageUri=$receivedImageUri" +
+                    "\nimageRenderer=${this.imageRenderer}"
         }
 
         isInitialized = true
@@ -94,14 +95,14 @@ class NewStampViewModel(
         coroutineScope = viewModelScope,
     )
 
-    private fun createBitmapRendererSourceOrNull(
+    private fun createBitmapRendererOrNull(
         imageUri: Uri,
     ): StampCutBitmapImageRenderer? = runBlocking {
 
         if (!receivedImageCacheDirectory.exists()) {
             if (!receivedImageCacheDirectory.mkdirs()) {
                 log.error {
-                    "createBitmapImageSourceOrNull(): failed to create cache directory:" +
+                    "createBitmapRendererOrNull(): failed to create cache directory:" +
                             "\nreceivedImageCacheDirectory=$receivedImageCacheDirectory"
                 }
             }
@@ -112,7 +113,7 @@ class NewStampViewModel(
             contentResolver.openInputStream(imageUri)!!
         } catch (e: Exception) {
             log.error(e) {
-                "createBitmapImageSourceOrNull(): failed to open image input stream:" +
+                "createBitmapRendererOrNull(): failed to open image input stream:" +
                         "\nimageUri=$imageUri"
             }
             return@runBlocking null
@@ -131,7 +132,7 @@ class NewStampViewModel(
                 }
         } catch (e: Exception) {
             log.error(e) {
-                "createBitmapImageSourceOrNull(): failed to copy image to cache:" +
+                "createBitmapRendererOrNull(): failed to copy image to cache:" +
                         "\nimageUri=$imageUri" +
                         "\nreceivedImageCacheDirectory=$receivedImageCacheDirectory"
             }
@@ -150,7 +151,7 @@ class NewStampViewModel(
                 .asImageBitmap()
         } catch (e: Exception) {
             log.error(e) {
-                "createBitmapImageSourceOrNull(): failed to decode image:" +
+                "createBitmapRendererOrNull(): failed to decode image:" +
                         "\nimageUri=$imageUri" +
                         "\ncachedImageFile=$cachedImageFile"
             }

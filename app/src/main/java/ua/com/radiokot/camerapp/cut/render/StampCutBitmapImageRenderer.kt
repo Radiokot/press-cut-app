@@ -20,6 +20,8 @@
 package ua.com.radiokot.camerapp.cut.render
 
 import android.graphics.Bitmap
+import android.graphics.PixelFormat
+import android.media.ImageReader
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -36,9 +38,11 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.graphics.rotate
 import androidx.compose.ui.graphics.scale
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.round
 import androidx.compose.ui.unit.roundToIntSize
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.channelFlow
@@ -46,6 +50,11 @@ import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.single
 import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import ua.com.radiokot.camerapp.util.awaitBitmap
+import ua.com.radiokot.camerapp.util.draw
+import ua.com.radiokot.camerapp.util.lazyLogger
+import kotlin.coroutines.cancellation.CancellationException
 import kotlin.math.max
 
 /**
@@ -59,6 +68,8 @@ class StampCutBitmapImageRenderer(
     coroutineScope: CoroutineScope,
 ) : StampCutImageRenderer,
     CoroutineScope by coroutineScope {
+
+    private val log by lazyLogger("StampCutBitmapImageRenderer")
 
     /**
      * Position of the image center in the square scene of size [SCENE_SIZE].
@@ -150,16 +161,15 @@ class StampCutBitmapImageRenderer(
         screenshotGraphicsLayer: GraphicsLayer,
     ) {
         screenshotRequest = null
-        launch {
+
+        launch(Dispatchers.Default) {
             var screenshot =
                 screenshotGraphicsLayer
                     .toImageBitmap()
                     .asAndroidBitmap()
 
             if (screenshot.config == Bitmap.Config.HARDWARE) {
-                val hardwareScreenshot = screenshot
-                screenshot = hardwareScreenshot.copy(Bitmap.Config.RGB_565, false)
-                hardwareScreenshot.recycle()
+                screenshot = screenshot.copy(Bitmap.Config.RGB_565, false)
             }
 
             screenshots.emit(screenshot)
@@ -170,6 +180,10 @@ class StampCutBitmapImageRenderer(
 
     ): Flow<Bitmap> = channelFlow {
 
+        log.debug {
+            "capture(): taking a screenshot"
+        }
+
         val screenshot =
             screenshots
                 .take(1)
@@ -179,10 +193,63 @@ class StampCutBitmapImageRenderer(
         channel.send(screenshot)
 
         if (screenshot.width > SCENE_SIZE || screenshot.height > SCENE_SIZE) {
+            log.debug {
+                "capture(): screenshot is large enough, skipping the high quality capture:" +
+                        "\nwidth=${screenshot.width}" +
+                        "\nheight=${screenshot.height}"
+            }
+
             return@channelFlow
         }
 
-        // TODO HQ from a surface
+        log.debug {
+            "capture(): screenshot is small, making a high quality capture:" +
+                    "\nscreenshotWidth=${screenshot.width}" +
+                    "\nscreenshotHeight=${screenshot.height}"
+        }
+
+        val hqCapture: Bitmap
+        try {
+            hqCapture = getHighQualityCapture()
+            channel.send(hqCapture)
+
+            log.debug {
+                "capture(): high quality capture done"
+            }
+        } catch (e: Exception) {
+            if (e is CancellationException) {
+                throw e
+            }
+            log.error(e) {
+                "capture(): failed to make a high quality capture"
+            }
+        }
+    }
+
+    private suspend fun getHighQualityCapture(
+
+    ) = withContext(Dispatchers.Default) {
+
+        val imageReader = ImageReader.newInstance(
+            SCENE_SIZE.toInt(),
+            SCENE_SIZE.toInt(),
+            // The desired RGB 565 is not supported on a surface.
+            PixelFormat.RGBA_8888,
+            2,
+        )
+
+        return@withContext imageReader.use { imageReader ->
+            imageReader.draw(
+                density = Density(
+                    density = 1f,
+                    fontScale = 1f,
+                ),
+                block = ::draw,
+            )
+            imageReader.awaitBitmap(
+                outConfig = Bitmap.Config.RGB_565,
+            )
+        }
     }
 
     companion object {

@@ -100,7 +100,7 @@ class StampCutCameraImageRenderer(
 
             // Get low quality capture from the preview first,
             // for immediate visual effect.
-            launch(Dispatchers.Default) {
+            launch {
                 val previewCapture = getPreviewCaptureOrNull()
                     ?: return@launch
                 if (System.currentTimeMillis() < hqSentAt) {
@@ -110,7 +110,7 @@ class StampCutCameraImageRenderer(
 
             // Then make the high quality capture,
             // that takes some time.
-            launch(Dispatchers.Default) {
+            launch {
                 val hqCapture = getHighQualityCapture()
                 hqSentAt = System.currentTimeMillis()
                 channel.send(hqCapture)
