@@ -118,7 +118,7 @@ class StampCutScreenViewModel(
                         image = capturedBitmap,
                         visibleViewfinderRect = visibleViewfinderRect,
                         visibleFrameRect = visibleFrameRect,
-                    ).also { capturedBitmap.recycle() }
+                    )
                 }
                 .onEach {
                     // Prevent harsh switch from LQ to HQ on the cut piece.

@@ -21,7 +21,6 @@ package ua.com.radiokot.camerapp.util
 
 import android.graphics.Bitmap
 import android.graphics.PixelFormat
-import android.graphics.Rect
 import android.media.Image
 import android.media.ImageReader
 import android.os.Handler
@@ -58,7 +57,7 @@ suspend fun ImageReader.awaitBitmap(
     outConfig: Bitmap.Config,
 ): Bitmap = withContext(Dispatchers.Default) {
 
-    val rawBitmap = awaitImage().use { image ->
+    val bitmap = awaitImage().use { image ->
         val imagePlane = image.planes.first()
         createBitmap(
             width = imagePlane.rowStride / imagePlane.pixelStride,
@@ -70,23 +69,9 @@ suspend fun ImageReader.awaitBitmap(
         ).apply { copyPixelsFromBuffer(imagePlane.buffer) }
     }
 
-    val resultBitmap = createBitmap(
-        width = width,
-        height = height,
-        config = outConfig,
-    )
-    val resultRect =
-        Rect(0, 0, resultBitmap.width, resultBitmap.height)
-    android.graphics.Canvas(resultBitmap).drawBitmap(
-        rawBitmap,
-        resultRect,
-        resultRect,
-        null,
-    )
+    bitmap.reconfigure(width, height, outConfig)
 
-    rawBitmap.recycle()
-
-    return@withContext resultBitmap
+    return@withContext bitmap
 }
 
 private suspend fun ImageReader.awaitImage(

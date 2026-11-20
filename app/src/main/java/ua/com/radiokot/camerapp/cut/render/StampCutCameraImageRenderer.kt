@@ -171,7 +171,6 @@ class StampCutCameraImageRenderer(
 
         val rotationDegrees = captureImageProxy.imageInfo.rotationDegrees.toFloat()
         if (rotationDegrees != 0f) {
-            val notRotatedCaptureImageBitmap = captureImageBitmap
             captureImageBitmap = Bitmap.createBitmap(
                 captureImageBitmap,
                 0, 0,
@@ -180,7 +179,6 @@ class StampCutCameraImageRenderer(
                 Matrix().apply { setRotate(rotationDegrees) },
                 true
             )
-            notRotatedCaptureImageBitmap.recycle()
         }
 
         captureImageProxy.close()
