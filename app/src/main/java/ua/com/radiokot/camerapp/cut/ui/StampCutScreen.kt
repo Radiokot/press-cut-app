@@ -304,7 +304,7 @@ private fun StampCutFromBitmapScreen(
 
                             bitmapImageRenderer.imageScale =
                                 (bitmapImageRenderer.imageScale * zoom)
-                                    .fastCoerceIn(0.1f, 10f)
+                                    .fastCoerceIn(0.1f, 3f)
 
                             bitmapImageRenderer.imageRotationDegrees =
                                 (bitmapImageRenderer.imageRotationDegrees + rotation)
