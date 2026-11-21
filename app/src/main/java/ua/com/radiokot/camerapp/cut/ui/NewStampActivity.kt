@@ -209,6 +209,7 @@ private fun SharedTransitionScope.StampCutNavHost(
             ) {
                 StampCutScreen(
                     imageRenderer = viewModel.imageRenderer,
+                    shape = viewModel.shape,
                     cutImage = cutImage,
                     onCutAction = viewModel::onCutAction,
                     sharedTransitionScope = this@StampCutNavHost,

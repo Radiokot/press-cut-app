@@ -48,6 +48,7 @@ import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
 import ua.com.radiokot.camerapp.cut.render.StampCutImageRenderer
 import ua.com.radiokot.camerapp.stamps.domain.shape.StampShapeA
+import ua.com.radiokot.camerapp.stamps.ui.UiStampShape
 import ua.com.radiokot.camerapp.util.eventSharedFlow
 import ua.com.radiokot.camerapp.util.lazyLogger
 import ua.com.radiokot.camerapp.util.map
@@ -61,6 +62,9 @@ class StampCutScreenViewModel(
 ) : ViewModel() {
 
     private val log by lazyLogger("StampCutScreenVM")
+
+    private val _shape = StampShapeA
+    val shape = UiStampShape.fromShape(_shape)
 
     val imageRenderer: StampCutImageRenderer =
         sharedViewModel.imageRenderer
@@ -78,8 +82,8 @@ class StampCutScreenViewModel(
     private var cutJob: Job? = null
 
     fun onCutAction(
-        visibleViewfinderSize: Size,
-        visibleFrameRect: Rect,
+        viewfinderSize: Size,
+        shapeRectInViewfinder: Rect,
     ) {
         if (cutJob?.isActive == true) {
             return
@@ -87,28 +91,28 @@ class StampCutScreenViewModel(
 
         log.debug {
             "onCutAction(): starting the cut sequence:" +
-                    "\nvisibleViewfinderSize=$visibleViewfinderSize" +
-                    "\nvisibleFrameRect=$visibleFrameRect"
+                    "\nviewfinderSize=$viewfinderSize" +
+                    "\nshapeRectInViewfinder=$shapeRectInViewfinder"
         }
 
         cutJob = viewModelScope.launch {
             doCut(
-                visibleViewfinderRect =
-                    RectF(0f, 0f, visibleViewfinderSize.width, visibleViewfinderSize.height),
-                visibleFrameRect =
+                viewfinderRect =
+                    RectF(0f, 0f, viewfinderSize.width, viewfinderSize.height),
+                shapeRectInViewfinder =
                     RectF(
-                        visibleFrameRect.left,
-                        visibleFrameRect.top,
-                        visibleFrameRect.right,
-                        visibleFrameRect.bottom
+                        shapeRectInViewfinder.left,
+                        shapeRectInViewfinder.top,
+                        shapeRectInViewfinder.right,
+                        shapeRectInViewfinder.bottom
                     ),
             )
         }
     }
 
     private suspend fun doCut(
-        visibleViewfinderRect: RectF,
-        visibleFrameRect: RectF,
+        viewfinderRect: RectF,
+        shapeRectInViewfinder: RectF,
     ) {
         val (stampImageBitmap, cutDuration) = measureTimedValue {
             imageRenderer
@@ -116,8 +120,8 @@ class StampCutScreenViewModel(
                 .map { capturedBitmap ->
                     frameImage(
                         image = capturedBitmap,
-                        visibleViewfinderRect = visibleViewfinderRect,
-                        visibleFrameRect = visibleFrameRect,
+                        visibleViewfinderRect = viewfinderRect,
+                        visibleFrameRect = shapeRectInViewfinder,
                     )
                 }
                 .onEach {
@@ -189,7 +193,7 @@ class StampCutScreenViewModel(
         }
 
         val stampPath =
-            StampShapeA
+            _shape
                 .path
                 .toPath()
                 .asAndroidPath()
