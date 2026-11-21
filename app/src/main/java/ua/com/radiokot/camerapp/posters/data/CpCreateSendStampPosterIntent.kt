@@ -22,8 +22,6 @@ package ua.com.radiokot.camerapp.posters.data
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
-import android.graphics.PixelFormat
-import android.media.ImageReader
 import androidx.core.content.FileProvider
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -33,11 +31,11 @@ import ua.com.radiokot.camerapp.posters.domain.StampPosterDensity
 import ua.com.radiokot.camerapp.posters.domain.StampPosterLayer
 import ua.com.radiokot.camerapp.posters.domain.StampPosterSize
 import ua.com.radiokot.camerapp.posters.domain.drawStampPoster
-import ua.com.radiokot.camerapp.util.awaitBitmap
-import ua.com.radiokot.camerapp.util.draw
+import ua.com.radiokot.camerapp.util.drawToBitmap
 import java.io.File
 import java.io.OutputStream
 import kotlin.io.outputStream
+import kotlin.time.measureTime
 import kotlin.use
 
 class CpCreateSendStampPosterIntent(
@@ -57,11 +55,13 @@ class CpCreateSendStampPosterIntent(
         val posterFile = File(stampPosterProviderDirectory, "poster.png")
 
         posterFile.outputStream().use { outputStream ->
-            renderPosterAsPng(
-                layers = layers,
-                isDark = isDark,
-                outputStream = outputStream,
-            )
+            measureTime {
+                renderPosterAsPng(
+                    layers = layers,
+                    isDark = isDark,
+                    outputStream = outputStream,
+                )
+            }.also { println("OOLEG duration $it") }
         }
 
         val uri = FileProvider.getUriForFile(
@@ -83,27 +83,19 @@ class CpCreateSendStampPosterIntent(
         outputStream: OutputStream,
     ) = withContext(Dispatchers.IO) {
 
-        val imageReader = ImageReader.newInstance(
-            StampPosterSize.width.toInt(),
-            StampPosterSize.height.toInt(),
-            // The desired RGB 565 is not supported on a surface.
-            PixelFormat.RGBA_8888,
-            2,
-        )
-
-        val resultBitmap = imageReader.use { imageReader ->
-            imageReader.draw(
+        val resultBitmap =
+            drawToBitmap(
+                width = StampPosterSize.width.toInt(),
+                height = StampPosterSize.height.toInt(),
                 density = StampPosterDensity,
-            ) {
-                drawStampPoster(
-                    layers = layers,
-                    isDark = isDark,
-                )
-            }
-            imageReader.awaitBitmap(
-                outConfig = Bitmap.Config.RGB_565,
+                config = Bitmap.Config.RGB_565,
+                block = {
+                    drawStampPoster(
+                        layers = layers,
+                        isDark = isDark,
+                    )
+                },
             )
-        }
         resultBitmap.compress(
             Bitmap.CompressFormat.PNG,
             100,

@@ -166,23 +166,24 @@ class StampCutCameraImageRenderer(
 
     ) = withContext(Dispatchers.Default) {
 
-        val captureImageProxy = captureUseCase.takePicture()
-        var captureImageBitmap = captureImageProxy.toBitmap()
+        captureUseCase.takePicture().use { captureImageProxy ->
 
-        val rotationDegrees = captureImageProxy.imageInfo.rotationDegrees.toFloat()
-        if (rotationDegrees != 0f) {
-            captureImageBitmap = Bitmap.createBitmap(
+            val captureImageBitmap = captureImageProxy.toBitmap()
+            val rotationDegrees = captureImageProxy.imageInfo.rotationDegrees.toFloat()
+
+            if (rotationDegrees == 0f) {
+                return@withContext captureImageBitmap
+            }
+
+            return@withContext Bitmap.createBitmap(
                 captureImageBitmap,
-                0, 0,
-                captureImageProxy.width,
-                captureImageProxy.height,
-                Matrix().apply { setRotate(rotationDegrees) },
-                true
-            )
+                0,
+                0,
+                captureImageBitmap.width,
+                captureImageBitmap.height,
+                Matrix().apply { postRotate(rotationDegrees) },
+                true,
+            ).also { captureImageBitmap.recycle() }
         }
-
-        captureImageProxy.close()
-
-        return@withContext captureImageBitmap
     }
 }

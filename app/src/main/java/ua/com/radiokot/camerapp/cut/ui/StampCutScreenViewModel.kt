@@ -118,11 +118,11 @@ class StampCutScreenViewModel(
             imageRenderer
                 .capture()
                 .map { capturedBitmap ->
-                    frameImage(
-                        image = capturedBitmap,
-                        visibleViewfinderRect = viewfinderRect,
-                        visibleFrameRect = shapeRectInViewfinder,
-                    )
+                    frameCapture(
+                        capturedBitmap = capturedBitmap,
+                        viewfinderRect = viewfinderRect,
+                        shapeRectInViewfinder = shapeRectInViewfinder,
+                    ).also { capturedBitmap.recycle() }
                 }
                 .onEach {
                     // Prevent harsh switch from LQ to HQ on the cut piece.
@@ -157,35 +157,35 @@ class StampCutScreenViewModel(
         cutBitmap.value = null
     }
 
-    private fun frameImage(
-        image: Bitmap,
-        visibleViewfinderRect: RectF,
-        visibleFrameRect: RectF,
+    private fun frameCapture(
+        capturedBitmap: Bitmap,
+        viewfinderRect: RectF,
+        shapeRectInViewfinder: RectF,
     ): Bitmap {
-        val frameScale = min(
-            image.width / visibleViewfinderRect.width(),
-            image.height / visibleViewfinderRect.height(),
+        val viewfinderScale = min(
+            capturedBitmap.width / viewfinderRect.width(),
+            capturedBitmap.height / viewfinderRect.height(),
         )
-        val scaledViewfinderRect = visibleViewfinderRect * frameScale
-        val scaledFrameRect = visibleFrameRect * frameScale
+        val scaledViewfinderRect = viewfinderRect * viewfinderScale
+        val scaledShapeRect = shapeRectInViewfinder * viewfinderScale
 
         val resultBitmap = createBitmap(
-            width = scaledFrameRect.width().toInt(),
-            height = scaledFrameRect.height().toInt(),
+            width = scaledShapeRect.width().toInt(),
+            height = scaledShapeRect.height().toInt(),
         )
 
         val imageShaderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             shader = BitmapShader(
-                image,
+                capturedBitmap,
                 Shader.TileMode.CLAMP,
                 Shader.TileMode.CLAMP,
             ).apply {
                 setLocalMatrix(Matrix().apply {
                     setTranslate(
-                        -(image.width - scaledViewfinderRect.width()) / 2f
-                                - scaledFrameRect.left,
-                        -(image.height - scaledViewfinderRect.height()) / 2f
-                                - scaledFrameRect.top,
+                        -(capturedBitmap.width - scaledViewfinderRect.width()) / 2f
+                                - scaledShapeRect.left,
+                        -(capturedBitmap.height - scaledViewfinderRect.height()) / 2f
+                                - scaledShapeRect.top,
                     )
                 })
             }

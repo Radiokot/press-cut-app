@@ -20,8 +20,6 @@
 package ua.com.radiokot.camerapp.cut.render
 
 import android.graphics.Bitmap
-import android.graphics.PixelFormat
-import android.media.ImageReader
 import androidx.compose.runtime.Stable
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -47,15 +45,13 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.onStart
-import kotlinx.coroutines.flow.single
-import kotlinx.coroutines.flow.take
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import ua.com.radiokot.camerapp.ui.DarkAppColors
 import ua.com.radiokot.camerapp.ui.drawPaperBackground
-import ua.com.radiokot.camerapp.util.awaitBitmap
-import ua.com.radiokot.camerapp.util.draw
+import ua.com.radiokot.camerapp.util.drawToBitmap
 import ua.com.radiokot.camerapp.util.lazyLogger
 import kotlin.coroutines.cancellation.CancellationException
 import kotlin.math.max
@@ -178,17 +174,22 @@ class StampCutBitmapImageRenderer(
     ) {
         screenshotRequest = null
 
-        launch(Dispatchers.Default) {
+        launch(Dispatchers.Main) {
             var screenshot =
                 screenshotGraphicsLayer
                     .toImageBitmap()
                     .asAndroidBitmap()
 
-            if (screenshot.config == Bitmap.Config.HARDWARE) {
-                screenshot = screenshot.copy(Bitmap.Config.RGB_565, false)
-            }
+            withContext(Dispatchers.Default) {
+                if (screenshot.config == Bitmap.Config.HARDWARE) {
+                    screenshot =
+                        screenshot
+                            .copy(Bitmap.Config.RGB_565, false)
+                            .also { screenshot.recycle() }
+                }
 
-            screenshots.emit(screenshot)
+                screenshots.emit(screenshot)
+            }
         }
     }
 
@@ -202,9 +203,8 @@ class StampCutBitmapImageRenderer(
 
         val screenshot =
             screenshots
-                .take(1)
                 .onStart { screenshotRequest = true }
-                .single()
+                .first()
 
         channel.send(screenshot)
 
@@ -226,7 +226,17 @@ class StampCutBitmapImageRenderer(
 
         val hqCapture: Bitmap
         try {
-            hqCapture = getHighQualityCapture()
+            hqCapture =
+                drawToBitmap(
+                    width = SCENE_SIZE.toInt(),
+                    height = SCENE_SIZE.toInt(),
+                    density = Density(
+                        density = 1f,
+                        fontScale = 1f,
+                    ),
+                    config = Bitmap.Config.RGB_565,
+                    block = ::draw,
+                )
             channel.send(hqCapture)
 
             log.debug {
@@ -239,32 +249,6 @@ class StampCutBitmapImageRenderer(
             log.error(e) {
                 "capture(): failed to make a high quality capture"
             }
-        }
-    }
-
-    private suspend fun getHighQualityCapture(
-
-    ) = withContext(Dispatchers.Default) {
-
-        val imageReader = ImageReader.newInstance(
-            SCENE_SIZE.toInt(),
-            SCENE_SIZE.toInt(),
-            // The desired RGB 565 is not supported on a surface.
-            PixelFormat.RGBA_8888,
-            2,
-        )
-
-        return@withContext imageReader.use { imageReader ->
-            imageReader.draw(
-                density = Density(
-                    density = 1f,
-                    fontScale = 1f,
-                ),
-                block = ::draw,
-            )
-            imageReader.awaitBitmap(
-                outConfig = Bitmap.Config.RGB_565,
-            )
         }
     }
 
