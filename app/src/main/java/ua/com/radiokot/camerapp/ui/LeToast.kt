@@ -17,7 +17,7 @@
    along with Press-Cut. If not, see <http://www.gnu.org/licenses/>.
 */
 
-package ua.com.radiokot.camerapp.cut.ui
+package ua.com.radiokot.camerapp.ui
 
 import android.annotation.SuppressLint
 import android.content.Context
@@ -35,7 +35,6 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import ua.com.radiokot.camerapp.R
-import ua.com.radiokot.camerapp.ui.AppColors
 import kotlin.time.Duration.Companion.milliseconds
 
 @OptIn(DelicateCoroutinesApi::class)

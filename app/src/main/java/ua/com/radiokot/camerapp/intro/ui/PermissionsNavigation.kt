@@ -32,7 +32,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
-import ua.com.radiokot.camerapp.cut.ui.showToast
+import ua.com.radiokot.camerapp.ui.showToast
 import ua.com.radiokot.camerapp.ui.LocalColors
 
 fun NavGraphBuilder.permissionsDestination(

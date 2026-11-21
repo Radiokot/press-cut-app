@@ -42,10 +42,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.savedstate.serialization.saved
+import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
@@ -59,6 +61,7 @@ import ua.com.radiokot.camerapp.ui.AppTheme
 import ua.com.radiokot.camerapp.ui.LightAppColors
 import ua.com.radiokot.camerapp.ui.LocalColors
 import ua.com.radiokot.camerapp.ui.paperBackground
+import ua.com.radiokot.camerapp.ui.showToast
 import ua.com.radiokot.camerapp.util.fadeOutExit
 import ua.com.radiokot.camerapp.util.keepWhile
 import ua.com.radiokot.camerapp.util.lazyLogger
@@ -88,6 +91,29 @@ class NewStampActivity : ComponentActivity() {
         )
 
         super.onCreate(savedInstanceState)
+
+        lifecycleScope.launch {
+            val toastColors = LightAppColors
+            sharedViewModel.events.collect { event ->
+                when (event) {
+                    NewStampViewModel.Event.ShowImageReadErrorMessage ->
+                        showToast(
+                            context = this@NewStampActivity,
+                            text = "Can't read this image",
+                            durationMs = 1000,
+                            colors = toastColors,
+                        )
+
+                    NewStampViewModel.Event.ShowImageFileTooBigMessage ->
+                        showToast(
+                            context = this@NewStampActivity,
+                            text = "The image is too big. Try taking a screenshot of it",
+                            durationMs = 3000,
+                            colors = toastColors,
+                        )
+                }
+            }
+        }
 
         sharedViewModel.initOnce(
             collectionId =

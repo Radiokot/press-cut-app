@@ -25,6 +25,7 @@ import android.net.Uri
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.runBlocking
 import okio.buffer
 import okio.sink
@@ -34,6 +35,7 @@ import ua.com.radiokot.camerapp.cut.render.StampCutCameraImageRenderer
 import ua.com.radiokot.camerapp.cut.render.StampCutImageRenderer
 import ua.com.radiokot.camerapp.stamps.domain.StampCollection
 import ua.com.radiokot.camerapp.util.ImageFileDecoder
+import ua.com.radiokot.camerapp.util.eventSharedFlow
 import ua.com.radiokot.camerapp.util.lazyLogger
 import java.io.File
 
@@ -62,6 +64,9 @@ class NewStampViewModel(
     val isCameraRequired: Boolean
         get() = imageRenderer is StampCutCameraImageRenderer
 
+    val events: SharedFlow<Event>
+        field = eventSharedFlow()
+
     fun initOnce(
         collectionId: String?,
         showToastOnSave: Boolean,
@@ -74,10 +79,30 @@ class NewStampViewModel(
         this.collectionId = collectionId ?: StampCollection.PRIMARY_ID
         this.showToastOnSave = showToastOnSave
 
-        this.imageRenderer =
-            receivedImageUri
-                ?.let(::createBitmapRendererOrNull)
-                ?: createCameraRenderer()
+        if (receivedImageUri != null) {
+            val (bitmapRenderer, bitmapRendererCreationError) =
+                createBitmapRenderer(
+                    imageUri = receivedImageUri,
+                )
+
+            this.imageRenderer = bitmapRenderer ?: createCameraRenderer()
+
+            when (bitmapRendererCreationError) {
+                null -> {}
+
+                BitmapRendererCreationError.FileTooBig -> {
+                    events.tryEmit(Event.ShowImageFileTooBigMessage)
+                }
+
+                BitmapRendererCreationError.ImageNotDecoding,
+                BitmapRendererCreationError.IoError,
+                    -> {
+                    events.tryEmit(Event.ShowImageReadErrorMessage)
+                }
+            }
+        } else {
+            this.imageRenderer = createCameraRenderer()
+        }
 
         log.debug {
             "initOnce(): initialized:" +
@@ -96,9 +121,9 @@ class NewStampViewModel(
         coroutineScope = viewModelScope,
     )
 
-    private fun createBitmapRendererOrNull(
+    private fun createBitmapRenderer(
         imageUri: Uri,
-    ): StampCutBitmapImageRenderer? = runBlocking {
+    ): Pair<StampCutBitmapImageRenderer?, BitmapRendererCreationError?> = runBlocking {
 
         if (!receivedImageCacheDirectory.exists()) {
             if (!receivedImageCacheDirectory.mkdirs()) {
@@ -107,7 +132,7 @@ class NewStampViewModel(
                             "\nreceivedImageCacheDirectory=$receivedImageCacheDirectory"
                 }
             }
-            return@runBlocking null
+            return@runBlocking null to BitmapRendererCreationError.IoError
         }
 
         val imageInputStream = try {
@@ -117,18 +142,20 @@ class NewStampViewModel(
                 "createBitmapRendererOrNull(): failed to open image input stream:" +
                         "\nimageUri=$imageUri"
             }
-            return@runBlocking null
+            return@runBlocking null to BitmapRendererCreationError.IoError
         }
 
+        var imageSizeBytes = 0L
         try {
             cachedImageFile
                 .sink()
                 .buffer()
                 .use { cachedImageFileSink ->
-                    imageInputStream
-                        .source()
-                        .buffer()
-                        .use(cachedImageFileSink::writeAll)
+                    imageSizeBytes =
+                        imageInputStream
+                            .source()
+                            .buffer()
+                            .use(cachedImageFileSink::writeAll)
                 }
         } catch (e: Exception) {
             log.error(e) {
@@ -137,9 +164,18 @@ class NewStampViewModel(
                         "\nreceivedImageCacheDirectory=$receivedImageCacheDirectory"
             }
             cachedImageFile.delete()
-            return@runBlocking null
+            return@runBlocking null to BitmapRendererCreationError.IoError
         } finally {
             imageInputStream.close()
+        }
+
+        if (imageSizeBytes > MAX_IMAGE_FILE_SIZE_BYTES) {
+            log.debug {
+                "createBitmapRendererOrNull(): image file is too big:" +
+                        "\nimageSizeBytes=$imageSizeBytes"
+            }
+            cachedImageFile.delete()
+            return@runBlocking null to BitmapRendererCreationError.FileTooBig
         }
 
         val image = try {
@@ -157,16 +193,31 @@ class NewStampViewModel(
                         "\ncachedImageFile=$cachedImageFile"
             }
             cachedImageFile.delete()
-            return@runBlocking null
+            return@runBlocking null to BitmapRendererCreationError.ImageNotDecoding
         }
 
         return@runBlocking StampCutBitmapImageRenderer(
             image = image,
             coroutineScope = viewModelScope,
-        )
+        ) to null
+    }
+
+    private enum class BitmapRendererCreationError {
+        FileTooBig,
+        ImageNotDecoding,
+        IoError,
     }
 
     override fun onCleared() {
         cachedImageFile.delete()
+    }
+
+    sealed interface Event {
+        object ShowImageFileTooBigMessage : Event
+        object ShowImageReadErrorMessage : Event
+    }
+
+    private companion object {
+        private const val MAX_IMAGE_FILE_SIZE_BYTES = 16 * 1024 * 1024
     }
 }
