@@ -141,8 +141,8 @@ class StampCutBitmapImageRenderer(
         drawPaperBackground(
             lineColor = DarkAppColors.paperBackgroundLine,
             backgroundColor = DarkAppColors.componentBackground,
-            gridSizePx = (57 * density).fastRoundToInt(),
-            gridThicknessPx = 3.6f * density,
+            gridSizePx = (46 * density).fastRoundToInt(),
+            gridThicknessPx = 2.6f * density,
             verticalOffsetPx = 0,
             sizePx = Size(
                 width = sceneSize,
@@ -221,15 +221,15 @@ class StampCutBitmapImageRenderer(
             launch(Dispatchers.Default) {
                 val hqCapture =
                     createBitmap(
-                        width = SCENE_SIZE.toInt(),
-                        height = SCENE_SIZE.toInt(),
+                        width = (HQ_MULTIPLIER * SCENE_SIZE).toInt(),
+                        height = (HQ_MULTIPLIER * SCENE_SIZE).toInt(),
                         config = Bitmap.Config.RGB_565,
                     )
 
                 drawToBitmap(
                     outBitmap = hqCapture,
                     density = Density(
-                        density = 1f,
+                        density = HQ_MULTIPLIER,
                         fontScale = 1f,
                     ),
                     block = ::draw,
@@ -242,6 +242,8 @@ class StampCutBitmapImageRenderer(
     }
 
     companion object {
-        const val SCENE_SIZE = 3360f
+        const val SCENE_SIZE = 1920f
+        const val HQ_MULTIPLIER = 2.1f
+        const val HQ_SCENE_SIZE = SCENE_SIZE * HQ_MULTIPLIER
     }
 }

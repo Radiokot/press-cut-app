@@ -182,8 +182,8 @@ class NewStampViewModel(
             imageFileDecoder
                 .invoke(
                     filePath = cachedImageFile.absolutePath,
-                    maxWidth = 2 * StampCutBitmapImageRenderer.SCENE_SIZE.toInt(),
-                    maxHeight = 2 * StampCutBitmapImageRenderer.SCENE_SIZE.toInt(),
+                    maxWidth = 2 * StampCutBitmapImageRenderer.HQ_SCENE_SIZE.toInt(),
+                    maxHeight = 2 * StampCutBitmapImageRenderer.HQ_SCENE_SIZE.toInt(),
                 )
                 .asImageBitmap()
         } catch (e: Exception) {
