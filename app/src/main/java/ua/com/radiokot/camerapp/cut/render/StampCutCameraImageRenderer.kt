@@ -22,7 +22,6 @@ package ua.com.radiokot.camerapp.cut.render
 import android.annotation.SuppressLint
 import android.graphics.Bitmap
 import android.graphics.Matrix
-import android.os.Handler
 import android.os.Looper
 import android.view.PixelCopy
 import android.view.Surface
@@ -35,6 +34,7 @@ import androidx.camera.core.resolutionselector.ResolutionStrategy
 import androidx.camera.core.takePicture
 import androidx.compose.runtime.Stable
 import androidx.core.graphics.createBitmap
+import androidx.core.os.HandlerCompat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
@@ -100,7 +100,7 @@ class StampCutCameraImageRenderer(
 
             // Get low quality capture from the preview first,
             // for immediate visual effect.
-            launch {
+            launch(Dispatchers.Main) {
                 val previewCapture = getPreviewCaptureOrNull()
                     ?: return@launch
                 if (System.currentTimeMillis() < hqSentAt) {
@@ -124,6 +124,7 @@ class StampCutCameraImageRenderer(
 
     ): Bitmap? = suspendCoroutine { continuation ->
 
+        val looper = Looper.myLooper() ?: Looper.getMainLooper()
         val previewResolutionInfo = previewUseCase.resolutionInfo!!
         val resultBitmap =
             createBitmap(
@@ -158,7 +159,7 @@ class StampCutCameraImageRenderer(
                     continuation.resume(null)
                 }
             },
-            Handler(Looper.getMainLooper()),
+            HandlerCompat.createAsync(looper),
         )
     }
 
