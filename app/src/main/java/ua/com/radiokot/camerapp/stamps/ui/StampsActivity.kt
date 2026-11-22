@@ -167,13 +167,14 @@ private fun SharedTransitionScope.StampsNavHost(
     onStartDestinationReached: () -> Unit,
 ) {
     val navController = rememberNavController()
+    val permissionsRoute = PermissionsRoute(
+        isCameraRequiredNow = false,
+    )
     val startRoute =
         if (isIntroNeeded)
             IntroRoute
         else if (arePermissionsNeeded)
-            PermissionsRoute(
-                isCameraRequiredNow = false,
-            )
+            permissionsRoute
         else
             CollectionsRoute
     var startDestinationEverReached by retain { mutableStateOf(false) }
@@ -289,7 +290,7 @@ private fun SharedTransitionScope.StampsNavHost(
                 navController.navigate(
                     route =
                         if (arePermissionsNeeded)
-                            PermissionsRoute
+                            permissionsRoute
                         else
                             CollectionsRoute,
                 ) {
