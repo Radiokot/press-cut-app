@@ -130,8 +130,8 @@ class StampCutBitmapImageRenderer(
         drawPaperBackground(
             lineColor = DarkAppColors.paperBackgroundLine,
             backgroundColor = DarkAppColors.componentBackground,
-            gridSizePx = (46 * density).fastRoundToInt(),
-            gridThicknessPx = 2.6f * density,
+            gridSizePx = (57 * density).fastRoundToInt(),
+            gridThicknessPx = 3.6f * density,
             verticalOffsetPx = 0,
             sizePx = Size(
                 width = sceneSize,
@@ -185,6 +185,6 @@ class StampCutBitmapImageRenderer(
     }
 
     companion object {
-        const val SCENE_SIZE = 1920f
+        const val SCENE_SIZE = 3360f
     }
 }
