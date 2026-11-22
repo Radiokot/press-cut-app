@@ -32,6 +32,8 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.geometry.center
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.layer.GraphicsLayer
+import androidx.compose.ui.graphics.layer.drawLayer
 import androidx.compose.ui.graphics.rotate
 import androidx.compose.ui.graphics.scale
 import androidx.compose.ui.unit.Density
@@ -41,8 +43,14 @@ import androidx.compose.ui.util.fastCoerceIn
 import androidx.compose.ui.util.fastRoundToInt
 import androidx.core.graphics.createBitmap
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.onStart
+import kotlinx.coroutines.launch
 import ua.com.radiokot.camerapp.ui.DarkAppColors
 import ua.com.radiokot.camerapp.ui.drawPaperBackground
 import ua.com.radiokot.camerapp.util.drawToBitmap
@@ -103,6 +111,9 @@ class StampCutBitmapImageRenderer(
         )
     }
 
+    var screenshotRequest: Any? by mutableStateOf(null)
+    private val screenshots = MutableSharedFlow<Bitmap>()
+
     @Suppress("NOTHING_TO_INLINE")
     inline fun clampImageScale(desiredScale: Float): Float =
         desiredScale.fastCoerceIn(0.1f, 3f)
@@ -162,26 +173,72 @@ class StampCutBitmapImageRenderer(
         )
     }
 
-    override fun capture(
+    suspend fun awaitScreenshot(): Bitmap =
+        screenshots
+            .onStart { screenshotRequest = System.currentTimeMillis() }
+            .first()
 
-    ): Flow<Bitmap> = flow {
+    fun onScreenshotTaken(
+        screenshotGraphicsLayer: GraphicsLayer,
+    ) {
+        screenshotRequest = null
 
-        val resultBitmap = createBitmap(
-            width = SCENE_SIZE.toInt(),
-            height = SCENE_SIZE.toInt(),
-            config = Bitmap.Config.RGB_565,
-        )
+        launch(Dispatchers.Default) {
+            val screenshot =
+                createBitmap(
+                    width = screenshotGraphicsLayer.size.width,
+                    height = screenshotGraphicsLayer.size.height,
+                    config = Bitmap.Config.RGB_565,
+                )
 
-        drawToBitmap(
-            outBitmap = resultBitmap,
-            density = Density(
-                density = 1f,
-                fontScale = 1f,
-            ),
-            block = ::draw,
-        )
+            drawToBitmap(
+                outBitmap = screenshot,
+                density = Density(
+                    density = 1f,
+                    fontScale = 1f,
+                ),
+                block = {
+                    drawLayer(screenshotGraphicsLayer)
+                }
+            )
 
-        emit(resultBitmap)
+            screenshots.emit(screenshot)
+        }
+    }
+
+    override fun capture(): Flow<Bitmap> = channelFlow {
+
+        coroutineScope {
+            var hqSentAt = Long.MAX_VALUE
+
+            launch {
+                val screenshot = awaitScreenshot()
+                if (System.currentTimeMillis() < hqSentAt) {
+                    channel.send(screenshot)
+                }
+            }
+
+            launch(Dispatchers.Default) {
+                val hqCapture =
+                    createBitmap(
+                        width = SCENE_SIZE.toInt(),
+                        height = SCENE_SIZE.toInt(),
+                        config = Bitmap.Config.RGB_565,
+                    )
+
+                drawToBitmap(
+                    outBitmap = hqCapture,
+                    density = Density(
+                        density = 1f,
+                        fontScale = 1f,
+                    ),
+                    block = ::draw,
+                )
+
+                hqSentAt = System.currentTimeMillis()
+                channel.send(hqCapture)
+            }
+        }
     }
 
     companion object {
