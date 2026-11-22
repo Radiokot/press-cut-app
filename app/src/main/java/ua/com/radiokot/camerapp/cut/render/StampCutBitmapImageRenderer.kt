@@ -37,6 +37,7 @@ import androidx.compose.ui.graphics.scale
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.round
 import androidx.compose.ui.unit.roundToIntSize
+import androidx.compose.ui.util.fastCoerceIn
 import androidx.compose.ui.util.fastRoundToInt
 import androidx.core.graphics.createBitmap
 import kotlinx.coroutines.CoroutineScope
@@ -75,9 +76,11 @@ class StampCutBitmapImageRenderer(
      */
     var imageScale: Float by mutableFloatStateOf(
         // Initially scale to fit.
-        min(
-            SCENE_SIZE / image.width,
-            SCENE_SIZE / image.height,
+        clampImageScale(
+            min(
+                SCENE_SIZE / image.width,
+                SCENE_SIZE / image.height,
+            )
         )
     )
 
@@ -99,6 +102,10 @@ class StampCutBitmapImageRenderer(
             size = imageSize,
         )
     }
+
+    @Suppress("NOTHING_TO_INLINE")
+    inline fun clampImageScale(desiredScale: Float): Float =
+        desiredScale.fastCoerceIn(0.1f, 3f)
 
     fun draw(
         drawScope: DrawScope,

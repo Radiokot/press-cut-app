@@ -86,7 +86,6 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.toSize
-import androidx.compose.ui.util.fastCoerceIn
 import androidx.compose.ui.util.fastFirstOrNull
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import kotlinx.coroutines.Dispatchers
@@ -301,7 +300,7 @@ private fun StampCutFromBitmapScreen(
 
                             bitmapImageRenderer.imageScale =
                                 (bitmapImageRenderer.imageScale * zoom)
-                                    .fastCoerceIn(0.1f, 3f)
+                                    .let(bitmapImageRenderer::clampImageScale)
 
                             bitmapImageRenderer.imageRotationDegrees =
                                 (bitmapImageRenderer.imageRotationDegrees + rotation)
