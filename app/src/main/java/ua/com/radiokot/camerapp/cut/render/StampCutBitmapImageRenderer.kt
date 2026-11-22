@@ -31,29 +31,20 @@ import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.geometry.center
 import androidx.compose.ui.graphics.ImageBitmap
-import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.graphics.drawscope.DrawScope
-import androidx.compose.ui.graphics.layer.GraphicsLayer
 import androidx.compose.ui.graphics.rotate
 import androidx.compose.ui.graphics.scale
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.round
 import androidx.compose.ui.unit.roundToIntSize
 import androidx.compose.ui.util.fastRoundToInt
+import androidx.core.graphics.createBitmap
 import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.flow.channelFlow
-import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.onStart
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
+import kotlinx.coroutines.flow.flow
 import ua.com.radiokot.camerapp.ui.DarkAppColors
 import ua.com.radiokot.camerapp.ui.drawPaperBackground
 import ua.com.radiokot.camerapp.util.drawToBitmap
-import ua.com.radiokot.camerapp.util.lazyLogger
-import kotlin.coroutines.cancellation.CancellationException
 import kotlin.math.max
 import kotlin.math.min
 
@@ -68,8 +59,6 @@ class StampCutBitmapImageRenderer(
     coroutineScope: CoroutineScope,
 ) : StampCutImageRenderer,
     CoroutineScope by coroutineScope {
-
-    private val log by lazyLogger("StampCutBitmapImageRenderer")
 
     /**
      * Position of the image center in the square scene of size [SCENE_SIZE].
@@ -110,9 +99,6 @@ class StampCutBitmapImageRenderer(
             size = imageSize,
         )
     }
-
-    var screenshotRequest: Any? by mutableStateOf(null)
-    private val screenshots = MutableSharedFlow<Bitmap>()
 
     fun draw(
         drawScope: DrawScope,
@@ -169,87 +155,26 @@ class StampCutBitmapImageRenderer(
         )
     }
 
-    fun onScreenshotTaken(
-        screenshotGraphicsLayer: GraphicsLayer,
-    ) {
-        screenshotRequest = null
-
-        launch(Dispatchers.Main) {
-            var screenshot =
-                screenshotGraphicsLayer
-                    .toImageBitmap()
-                    .asAndroidBitmap()
-
-            withContext(Dispatchers.Default) {
-                if (screenshot.config == Bitmap.Config.HARDWARE) {
-                    screenshot =
-                        screenshot
-                            .copy(Bitmap.Config.RGB_565, false)
-                            .also { screenshot.recycle() }
-                }
-
-                screenshots.emit(screenshot)
-            }
-        }
-    }
-
     override fun capture(
 
-    ): Flow<Bitmap> = channelFlow {
+    ): Flow<Bitmap> = flow {
 
-        log.debug {
-            "capture(): taking a screenshot"
-        }
+        val resultBitmap = createBitmap(
+            width = SCENE_SIZE.toInt(),
+            height = SCENE_SIZE.toInt(),
+            config = Bitmap.Config.RGB_565,
+        )
 
-        val screenshot =
-            screenshots
-                .onStart { screenshotRequest = true }
-                .first()
+        drawToBitmap(
+            outBitmap = resultBitmap,
+            density = Density(
+                density = 1f,
+                fontScale = 1f,
+            ),
+            block = ::draw,
+        )
 
-        channel.send(screenshot)
-
-        if (screenshot.width > SCENE_SIZE || screenshot.height > SCENE_SIZE) {
-            log.debug {
-                "capture(): screenshot is large enough, skipping the high quality capture:" +
-                        "\nwidth=${screenshot.width}" +
-                        "\nheight=${screenshot.height}"
-            }
-
-            return@channelFlow
-        }
-
-        log.debug {
-            "capture(): screenshot is small, making a high quality capture:" +
-                    "\nscreenshotWidth=${screenshot.width}" +
-                    "\nscreenshotHeight=${screenshot.height}"
-        }
-
-        val hqCapture: Bitmap
-        try {
-            hqCapture =
-                drawToBitmap(
-                    width = SCENE_SIZE.toInt(),
-                    height = SCENE_SIZE.toInt(),
-                    density = Density(
-                        density = 1f,
-                        fontScale = 1f,
-                    ),
-                    config = Bitmap.Config.RGB_565,
-                    block = ::draw,
-                )
-            channel.send(hqCapture)
-
-            log.debug {
-                "capture(): high quality capture done"
-            }
-        } catch (e: Exception) {
-            if (e is CancellationException) {
-                throw e
-            }
-            log.error(e) {
-                "capture(): failed to make a high quality capture"
-            }
-        }
+        emit(resultBitmap)
     }
 
     companion object {

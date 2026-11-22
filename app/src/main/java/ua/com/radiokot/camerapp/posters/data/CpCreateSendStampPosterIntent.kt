@@ -23,6 +23,7 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
 import androidx.core.content.FileProvider
+import androidx.core.graphics.createBitmap
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import ua.com.radiokot.camerapp.BuildConfig
@@ -35,13 +36,18 @@ import ua.com.radiokot.camerapp.util.drawToBitmap
 import java.io.File
 import java.io.OutputStream
 import kotlin.io.outputStream
-import kotlin.time.measureTime
 import kotlin.use
 
 class CpCreateSendStampPosterIntent(
     private val context: Context,
     private val stampPosterProviderDirectory: File,
 ) : CreateSendStampPosterIntent {
+
+    private val posterBitmap = createBitmap(
+        width = StampPosterSize.width.toInt(),
+        height = StampPosterSize.height.toInt(),
+        config = Bitmap.Config.RGB_565,
+    )
 
     override suspend fun invoke(
         layers: Collection<StampPosterLayer>,
@@ -55,13 +61,11 @@ class CpCreateSendStampPosterIntent(
         val posterFile = File(stampPosterProviderDirectory, "poster.png")
 
         posterFile.outputStream().use { outputStream ->
-            measureTime {
-                renderPosterAsPng(
-                    layers = layers,
-                    isDark = isDark,
-                    outputStream = outputStream,
-                )
-            }.also { println("OOLEG duration $it") }
+            renderPosterAsPng(
+                layers = layers,
+                isDark = isDark,
+                outputStream = outputStream,
+            )
         }
 
         val uri = FileProvider.getUriForFile(
@@ -83,24 +87,21 @@ class CpCreateSendStampPosterIntent(
         outputStream: OutputStream,
     ) = withContext(Dispatchers.IO) {
 
-        val resultBitmap =
-            drawToBitmap(
-                width = StampPosterSize.width.toInt(),
-                height = StampPosterSize.height.toInt(),
-                density = StampPosterDensity,
-                config = Bitmap.Config.RGB_565,
-                block = {
-                    drawStampPoster(
-                        layers = layers,
-                        isDark = isDark,
-                    )
-                },
-            )
-        resultBitmap.compress(
+        drawToBitmap(
+            outBitmap = posterBitmap,
+            density = StampPosterDensity,
+            block = {
+                drawStampPoster(
+                    layers = layers,
+                    isDark = isDark,
+                )
+            },
+        )
+
+        posterBitmap.compress(
             Bitmap.CompressFormat.PNG,
             100,
             outputStream,
         )
-        resultBitmap.recycle()
     }
 }

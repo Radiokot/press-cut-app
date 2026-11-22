@@ -193,6 +193,9 @@ class StampSaveScreenViewModel(
         events.emit(Event.Done)
     }
 
+    private var applyImageAdjustmentsBuffer: IntArray? = null
+    private var applyImageAdjustmentsResult: Bitmap? = null
+
     private fun applyImageAdjustments(
         image: Bitmap,
         adjustments: Array<ImageAdjustment>,
@@ -200,18 +203,31 @@ class StampSaveScreenViewModel(
         val width = image.width
         val height = image.height
 
-        val pixels = IntArray(width * height)
+        val pixels =
+            if ((applyImageAdjustmentsBuffer?.size ?: 0) >= width * height)
+                applyImageAdjustmentsBuffer!!
+            else
+                IntArray(width * height)
+                    .also { applyImageAdjustmentsBuffer = it }
+
         image.getPixels(pixels, 0, width, 0, 0, width, height)
 
         for (adjustment in adjustments) {
             adjustment.applyToImage(pixels)
         }
 
-        val resultBitmap = createBitmap(
-            width = width,
-            height = height,
-            config = originalStampImageBitmap.config!!,
-        )
+        val resultBitmap =
+            if (applyImageAdjustmentsResult?.width == width
+                && applyImageAdjustmentsResult?.height == height
+            )
+                applyImageAdjustmentsResult!!
+            else
+                createBitmap(
+                    width = width,
+                    height = height,
+                    config = originalStampImageBitmap.config!!,
+                ).also { applyImageAdjustmentsResult = it }
+
         resultBitmap.setPixels(pixels, 0, width, 0, 0, width, height)
 
         return resultBitmap

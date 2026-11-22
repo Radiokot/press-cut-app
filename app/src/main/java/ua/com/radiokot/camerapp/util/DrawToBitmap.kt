@@ -43,14 +43,14 @@ import kotlin.coroutines.resume
 // Close copy of androidx\compose\ui\graphics\layer\LayerSnapshot.android.kt
 
 suspend fun drawToBitmap(
-    width: Int,
-    height: Int,
+    outBitmap: Bitmap,
     density: Density,
-    config: Bitmap.Config,
     block: DrawScope.() -> Unit,
-): Bitmap = withContext(Dispatchers.Main) {
+) = withContext(Dispatchers.Default) {
 
     val looper = Looper.myLooper() ?: Looper.getMainLooper()
+    val width = outBitmap.width
+    val height = outBitmap.height
 
     ImageReader.newInstance(
         width,
@@ -58,60 +58,48 @@ suspend fun drawToBitmap(
         PixelFormat.RGBA_8888,
         1,
     ).use { reader ->
-        val image = suspendCancellableCoroutine { continuation ->
-            reader.setOnImageAvailableListener(
-                { continuation.resume(it.acquireNextImage()) },
-                HandlerCompat.createAsync(looper),
-            )
-
-            val surface = reader.surface
-            val hardwareCanvas = surface.lockHardwareCanvas()
-            try {
-                hardwareCanvas.drawColor(Color.Black.toArgb(), PorterDuff.Mode.CLEAR)
-                CanvasDrawScope().draw(
-                    density = density,
-                    layoutDirection = LayoutDirection.Ltr,
-                    canvas = Canvas(hardwareCanvas),
-                    size = Size(width.toFloat(), height.toFloat()),
-                    block = block,
+        val image = withContext(Dispatchers.Main) {
+            suspendCancellableCoroutine { continuation ->
+                reader.setOnImageAvailableListener(
+                    { continuation.resume(it.acquireNextImage()) },
+                    HandlerCompat.createAsync(looper),
                 )
-            } finally {
-                surface.unlockCanvasAndPost(hardwareCanvas)
+
+                val surface = reader.surface
+                val hardwareCanvas = surface.lockHardwareCanvas()
+                try {
+                    hardwareCanvas.drawColor(Color.Black.toArgb(), PorterDuff.Mode.CLEAR)
+                    CanvasDrawScope().draw(
+                        density = density,
+                        layoutDirection = LayoutDirection.Ltr,
+                        canvas = Canvas(hardwareCanvas),
+                        size = Size(width.toFloat(), height.toFloat()),
+                        block = block,
+                    )
+                } finally {
+                    surface.unlockCanvasAndPost(hardwareCanvas)
+                }
             }
         }
 
-        return@withContext withContext(Dispatchers.Default) {
+        val rawBitmap = image.use { image ->
+            val plane = image.planes!![0]
+            val buffer = plane.buffer
+            buffer.rewind()
 
-            val rawBitmap = image.use { image ->
-                val plane = image.planes!![0]
-                val buffer = plane.buffer
-                buffer.rewind()
-
-                createBitmap(
-                    width = plane.rowStride / plane.pixelStride,
-                    height = height,
-                    config = Bitmap.Config.ARGB_8888,
-                ).apply { copyPixelsFromBuffer(buffer) }
-            }
-
-            val resultBitmap =
-                createBitmap(
-                    width = width,
-                    height = height,
-                    config = config,
-                )
-            val resultRect =
-                Rect(0, 0, resultBitmap.width, resultBitmap.height)
-
-            android.graphics.Canvas(resultBitmap).drawBitmap(
-                rawBitmap,
-                resultRect,
-                resultRect,
-                null,
-            )
-            rawBitmap.recycle()
-
-            resultBitmap
+            createBitmap(
+                width = plane.rowStride / plane.pixelStride,
+                height = height,
+                config = Bitmap.Config.ARGB_8888,
+            ).apply { copyPixelsFromBuffer(buffer) }
         }
+        val resultRect = Rect(0, 0, width, height)
+        android.graphics.Canvas(outBitmap).drawBitmap(
+            rawBitmap,
+            resultRect,
+            resultRect,
+            null,
+        )
+        rawBitmap.recycle()
     }
 }
