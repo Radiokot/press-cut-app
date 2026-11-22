@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- The ability to cut a stamp from any image by sharing it to Press-Cut
+
 ### Changed
 
 - The camera permission is no longer required from the start
