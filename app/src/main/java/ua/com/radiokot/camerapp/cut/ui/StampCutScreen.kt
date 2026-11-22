@@ -90,7 +90,6 @@ import androidx.compose.ui.util.fastFirstOrNull
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import ua.com.radiokot.camerapp.R
@@ -104,7 +103,6 @@ import ua.com.radiokot.camerapp.util.optionalSharedElement
 import java.util.concurrent.TimeUnit
 import kotlin.math.min
 import kotlin.random.Random
-import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
 private fun StampCutFromCameraScreen(
@@ -504,7 +502,6 @@ private fun StampCutScreenScaffold(
                                 playCutSound()
                             }
                         }
-                        delay(50.milliseconds)
                         cut()
                         cutterInteractionSource.emit(
                             PressInteraction.Cancel(

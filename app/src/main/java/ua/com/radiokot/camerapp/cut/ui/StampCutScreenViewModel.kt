@@ -46,6 +46,7 @@ import kotlinx.coroutines.flow.lastOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
+import ua.com.radiokot.camerapp.cut.render.StampCutCameraImageRenderer
 import ua.com.radiokot.camerapp.cut.render.StampCutImageRenderer
 import ua.com.radiokot.camerapp.stamps.domain.shape.StampShapeA
 import ua.com.radiokot.camerapp.stamps.ui.UiStampShape
@@ -115,6 +116,13 @@ class StampCutScreenViewModel(
         shapeRectInViewfinder: RectF,
     ) {
         val (stampImageBitmap, cutDuration) = measureTimedValue {
+
+            // A delay gives better visual for camera.
+            // Bitmap is slower on its own 🤷‍♂️
+            if (imageRenderer is StampCutCameraImageRenderer) {
+                delay(50.milliseconds)
+            }
+
             imageRenderer
                 .capture()
                 .map { capturedBitmap ->
