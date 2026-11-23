@@ -1,0 +1,8 @@
+Added:
+- The ability to cut a stamp from any image by sharing it to Press-Cut
+
+Fixed:
+- Inability to leave the poster text input on Android 16
+
+Changed:
+- The camera permission is no longer required from the start (it is still requested but can be denied)
