@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - The ability to cut a stamp from any image by sharing it to Press-Cut
 
+### Fixed
+
+- Inability to leave the poster text input on Android 16
+
 ### Changed
 
 - The camera permission is no longer required from the start
