@@ -17,12 +17,11 @@
    along with Press-Cut. If not, see <http://www.gnu.org/licenses/>.
 */
 
-package ua.com.radiokot.camerapp.cut.domain
+package ua.com.radiokot.camerapp.cut.render
 
 import android.annotation.SuppressLint
 import android.graphics.Bitmap
 import android.graphics.Matrix
-import android.os.Handler
 import android.os.Looper
 import android.view.PixelCopy
 import android.view.Surface
@@ -33,7 +32,9 @@ import androidx.camera.core.UseCaseGroup
 import androidx.camera.core.resolutionselector.ResolutionSelector
 import androidx.camera.core.resolutionselector.ResolutionStrategy
 import androidx.camera.core.takePicture
+import androidx.compose.runtime.Stable
 import androidx.core.graphics.createBitmap
+import androidx.core.os.HandlerCompat
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.awaitClose
@@ -47,15 +48,15 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import ua.com.radiokot.camerapp.util.lazyLogger
-import kotlin.concurrent.atomics.ExperimentalAtomicApi
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
-class StampCutCameraImageSource(
+@Stable
+class StampCutCameraImageRenderer(
     coroutineScope: CoroutineScope,
-) : StampCutImageSource {
+) : StampCutImageRenderer {
 
-    private val log by lazyLogger("StampCutCameraImageSource")
+    private val log by lazyLogger("StampCutCameraImageRenderer")
     private val previewUseCase =
         Preview.Builder().build()
 
@@ -89,7 +90,6 @@ class StampCutCameraImageSource(
         }
             .stateIn(coroutineScope, SharingStarted.Lazily, null)
 
-    @OptIn(ExperimentalAtomicApi::class)
     @SuppressLint("RestrictedApi")
     override fun capture(
 
@@ -100,7 +100,7 @@ class StampCutCameraImageSource(
 
             // Get low quality capture from the preview first,
             // for immediate visual effect.
-            launch(Dispatchers.Default) {
+            launch(Dispatchers.Main) {
                 val previewCapture = getPreviewCaptureOrNull()
                     ?: return@launch
                 if (System.currentTimeMillis() < hqSentAt) {
@@ -110,7 +110,7 @@ class StampCutCameraImageSource(
 
             // Then make the high quality capture,
             // that takes some time.
-            launch(Dispatchers.Default) {
+            launch {
                 val hqCapture = getHighQualityCapture()
                 hqSentAt = System.currentTimeMillis()
                 channel.send(hqCapture)
@@ -124,6 +124,7 @@ class StampCutCameraImageSource(
 
     ): Bitmap? = suspendCoroutine { continuation ->
 
+        val looper = Looper.myLooper() ?: Looper.getMainLooper()
         val previewResolutionInfo = previewUseCase.resolutionInfo!!
         val resultBitmap =
             createBitmap(
@@ -141,6 +142,7 @@ class StampCutCameraImageSource(
                         previewResolutionInfo.resolution.height
                     else
                         previewResolutionInfo.resolution.width,
+                config = Bitmap.Config.RGB_565,
             )
 
         PixelCopy.request(
@@ -157,7 +159,7 @@ class StampCutCameraImageSource(
                     continuation.resume(null)
                 }
             },
-            Handler(Looper.getMainLooper()),
+            HandlerCompat.createAsync(looper),
         )
     }
 
@@ -165,21 +167,24 @@ class StampCutCameraImageSource(
 
     ) = withContext(Dispatchers.Default) {
 
-        val captureImageProxy = captureUseCase.takePicture()
-        val captureImageBitmap = captureImageProxy.toBitmap()
-        val resultBitmap = Bitmap.createBitmap(
-            captureImageBitmap,
-            0, 0,
-            captureImageProxy.width,
-            captureImageProxy.height,
-            Matrix().apply {
-                setRotate(captureImageProxy.imageInfo.rotationDegrees.toFloat())
-            },
-            true
-        )
-        captureImageBitmap.recycle()
-        captureImageProxy.close()
+        captureUseCase.takePicture().use { captureImageProxy ->
 
-        return@withContext resultBitmap
+            val captureImageBitmap = captureImageProxy.toBitmap()
+            val rotationDegrees = captureImageProxy.imageInfo.rotationDegrees.toFloat()
+
+            if (rotationDegrees == 0f) {
+                return@withContext captureImageBitmap
+            }
+
+            return@withContext Bitmap.createBitmap(
+                captureImageBitmap,
+                0,
+                0,
+                captureImageBitmap.width,
+                captureImageBitmap.height,
+                Matrix().apply { postRotate(rotationDegrees) },
+                true,
+            ).also { captureImageBitmap.recycle() }
+        }
     }
 }

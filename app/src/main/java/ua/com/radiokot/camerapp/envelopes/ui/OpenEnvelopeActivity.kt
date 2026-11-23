@@ -39,7 +39,7 @@ import androidx.navigation.compose.rememberNavController
 import org.koin.compose.koinInject
 import ua.com.radiokot.camerapp.collectionselection.ui.SelectDestinationCollectionContract
 import ua.com.radiokot.camerapp.collectionselection.ui.selectDestinationCollectionDestination
-import ua.com.radiokot.camerapp.cut.ui.showToast
+import ua.com.radiokot.camerapp.ui.showToast
 import ua.com.radiokot.camerapp.envelopes.domain.EnvelopePreviewResult
 import ua.com.radiokot.camerapp.ui.AppTheme
 import ua.com.radiokot.camerapp.ui.LocalColors

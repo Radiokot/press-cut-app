@@ -17,7 +17,7 @@
    along with Press-Cut. If not, see <http://www.gnu.org/licenses/>.
 */
 
-@file:OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
+@file:OptIn(ExperimentalCoroutinesApi::class)
 
 package ua.com.radiokot.camerapp.cut.ui
 
@@ -34,7 +34,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -51,7 +50,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import ua.com.radiokot.camerapp.adjustments.domain.ImageAdjustment
 import ua.com.radiokot.camerapp.adjustments.ui.ImageAdjustmentsControllerViewModel
-import ua.com.radiokot.camerapp.stamps.domain.StampCollection
 import ua.com.radiokot.camerapp.stamps.domain.StampRepository
 import ua.com.radiokot.camerapp.stamps.domain.shape.StampShapeA
 import ua.com.radiokot.camerapp.util.eventSharedFlow
@@ -61,13 +59,15 @@ import ua.com.radiokot.camerapp.util.lazyLogger
 class StampSaveScreenViewModel(
     private val stampRepository: StampRepository,
     val imageAdjustmentsControllerViewModel: ImageAdjustmentsControllerViewModel,
-    private val parameters: Parameters,
+    private val sharedViewModel: NewStampViewModel,
 ) : ViewModel() {
 
     private val log by lazyLogger("StampSaveScreenVM")
 
     private val originalStampImageBitmap: Bitmap =
-        parameters.stampImageBitmap
+        checkNotNull(sharedViewModel.stampImageBitmap) {
+            "There must be a stamp bitmap in the shared VM at this time"
+        }
     private val previewSize: MutableStateFlow<IntSize> =
         MutableStateFlow(IntSize(100, 100))
     private val previewSizeOriginalStampImageBitmap: Flow<Bitmap> =
@@ -153,9 +153,7 @@ class StampSaveScreenViewModel(
     }
 
     private suspend fun saveStamp() = withContext(Dispatchers.IO) {
-        val collectionId =
-            parameters.collectionId
-                ?: StampCollection.PRIMARY_ID
+        val collectionId = sharedViewModel.collectionId
 
         val caption =
             captionInput
@@ -188,8 +186,15 @@ class StampSaveScreenViewModel(
             "Saved a stamp"
         }
 
-        events.emit(Event.DidSave)
+        if (sharedViewModel.showToastOnSave) {
+            events.emit(Event.ShowStampSavedMessage)
+        }
+
+        events.emit(Event.Done)
     }
+
+    private var applyImageAdjustmentsBuffer: IntArray? = null
+    private var applyImageAdjustmentsResult: Bitmap? = null
 
     private fun applyImageAdjustments(
         image: Bitmap,
@@ -198,29 +203,38 @@ class StampSaveScreenViewModel(
         val width = image.width
         val height = image.height
 
-        val pixels = IntArray(width * height)
+        val pixels =
+            if ((applyImageAdjustmentsBuffer?.size ?: 0) >= width * height)
+                applyImageAdjustmentsBuffer!!
+            else
+                IntArray(width * height)
+                    .also { applyImageAdjustmentsBuffer = it }
+
         image.getPixels(pixels, 0, width, 0, 0, width, height)
 
         for (adjustment in adjustments) {
             adjustment.applyToImage(pixels)
         }
 
-        val resultBitmap = createBitmap(
-            width = width,
-            height = height,
-            config = originalStampImageBitmap.config!!,
-        )
+        val resultBitmap =
+            if (applyImageAdjustmentsResult?.width == width
+                && applyImageAdjustmentsResult?.height == height
+            )
+                applyImageAdjustmentsResult!!
+            else
+                createBitmap(
+                    width = width,
+                    height = height,
+                    config = originalStampImageBitmap.config!!,
+                ).also { applyImageAdjustmentsResult = it }
+
         resultBitmap.setPixels(pixels, 0, width, 0, 0, width, height)
 
         return resultBitmap
     }
 
     sealed interface Event {
-        object DidSave : Event
+        object ShowStampSavedMessage : Event
+        object Done : Event
     }
-
-    data class Parameters(
-        val collectionId: String?,
-        val stampImageBitmap: Bitmap,
-    )
 }

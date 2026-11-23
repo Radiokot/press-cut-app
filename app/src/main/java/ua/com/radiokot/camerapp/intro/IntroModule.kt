@@ -46,6 +46,9 @@ val introModule = module {
             stampDirectory = get(named(DIRECTORY_STAMPS)),
             stampDirectoryDocumentUri = get(named(DIRECTORY_STAMPS)),
             application = androidApplication(),
+            parameters =
+                getOrNull()
+                    ?: error("No PermissionsScreenViewModel.Parameters provided"),
         )
     }
 }

@@ -19,15 +19,27 @@
 
 package ua.com.radiokot.camerapp.io
 
+import android.os.Build
 import com.skydoves.landscapist.core.Landscapist
 import com.skydoves.landscapist.core.LandscapistConfig
 import kotlinx.coroutines.Dispatchers
 import org.koin.dsl.bind
 import org.koin.dsl.module
+import ua.com.radiokot.camerapp.util.BitmapFactoryImageFileDecoder
 import ua.com.radiokot.camerapp.util.FileUriDecodingImageFetcher
+import ua.com.radiokot.camerapp.util.ImageDecoderImageFileDecoder
+import ua.com.radiokot.camerapp.util.ImageFileDecoder
 import ua.com.radiokot.camerapp.util.NoOpImageDecoder
 
 val ioModule = module {
+
+    single<ImageFileDecoder> {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            ImageDecoderImageFileDecoder()
+        } else {
+            BitmapFactoryImageFileDecoder()
+        }
+    } bind ImageFileDecoder::class
 
     single<Landscapist> {
         val config = LandscapistConfig(
@@ -38,7 +50,11 @@ val ioModule = module {
         Landscapist.Builder()
             .config(config)
             .dispatcher(Dispatchers.Default)
-            .fetcher(FileUriDecodingImageFetcher())
+            .fetcher(
+                FileUriDecodingImageFetcher(
+                    decoder = get(),
+                )
+            )
             .decoder(NoOpImageDecoder())
             .build()
     } bind Landscapist::class

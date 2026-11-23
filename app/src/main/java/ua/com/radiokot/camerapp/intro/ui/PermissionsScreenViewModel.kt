@@ -28,8 +28,9 @@ import android.os.Build
 import android.provider.DocumentsContract
 import androidx.compose.runtime.Immutable
 import androidx.lifecycle.AndroidViewModel
-import kotlinx.collections.immutable.ImmutableList
-import kotlinx.collections.immutable.toPersistentList
+import kotlinx.collections.immutable.ImmutableSet
+import kotlinx.collections.immutable.PersistentSet
+import kotlinx.collections.immutable.toPersistentSet
 import kotlinx.coroutines.flow.SharedFlow
 import ua.com.radiokot.camerapp.util.eventSharedFlow
 import ua.com.radiokot.camerapp.util.lazyLogger
@@ -40,6 +41,7 @@ class PermissionsScreenViewModel(
     private val stampDirectory: File,
     private val stampDirectoryDocumentUri: Uri,
     private val application: Application,
+    parameters: Parameters,
 ) : AndroidViewModel(application) {
 
     private val log by lazyLogger("PermissionsScreenVM")
@@ -47,18 +49,29 @@ class PermissionsScreenViewModel(
     val events: SharedFlow<Event>
         field = eventSharedFlow()
 
-    val requiredPermissions: ImmutableList<String> =
-        buildList {
+    private val optionalPermissions: Set<String> = buildSet {
+        if (!parameters.isCameraRequiredNow) {
             add(Manifest.permission.CAMERA)
-
-            if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q) {
-                add(Manifest.permission.READ_EXTERNAL_STORAGE)
-                add(Manifest.permission.WRITE_EXTERNAL_STORAGE)
-            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                add(Manifest.permission.READ_MEDIA_IMAGES)
-            }
         }
-            .toPersistentList()
+    }
+
+    private val requiredPermissions: Set<String> = buildSet {
+        if (parameters.isCameraRequiredNow) {
+            add(Manifest.permission.CAMERA)
+        }
+
+        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q) {
+            add(Manifest.permission.READ_EXTERNAL_STORAGE)
+            add(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            add(Manifest.permission.READ_MEDIA_IMAGES)
+        }
+    }
+
+    val requestedPermissions: PersistentSet<String> =
+        (optionalPermissions + requiredPermissions)
+            .filterNot(::isPermissionGranted)
+            .toPersistentSet()
 
     val requiredDocumentTreeAccessUri: Uri =
         DocumentsContract.buildTreeDocumentUri(
@@ -77,20 +90,41 @@ class PermissionsScreenViewModel(
                         }
 
     val isActionRequired: Boolean
-        get() =
-            requiredPermissions
-                .any { application.checkSelfPermission(it) != PackageManager.PERMISSION_GRANTED }
-                    || isDocumentTreeAccessRequired
+        get() = !requiredPermissions.all(::isPermissionGranted)
+                || isDocumentTreeAccessRequired
 
     fun onGrantAction() {
         log.debug {
-            "onGrantAction(): emitting RequestRequiredPermissions"
+            "onGrantAction(): emitting RequestPermissions"
         }
 
-        events.tryEmit(Event.RequestRequiredPermissions)
+        events.tryEmit(
+            Event.RequestPermissions(
+                toRequest = (optionalPermissions + requiredPermissions).toPersistentSet()
+            )
+        )
     }
 
-    fun onRequestedPermissionsGranted() {
+    fun onPermissionRequestResult(
+        result: Map<String, Boolean>,
+    ) {
+        val grantedPermissions =
+            result
+                .filter(Map.Entry<String, Boolean>::value)
+                .map(Map.Entry<String, Boolean>::key)
+                .toSet()
+
+        if (!grantedPermissions.containsAll(requiredPermissions)) {
+            log.debug {
+                "onPermissionRequestResult(): not all required permissions granted, " +
+                        "emitting ShowRequiredPermissionsExplanation"
+            }
+
+            events.tryEmit(Event.ShowRequiredPermissionsExplanation)
+
+            return
+        }
+
         if (!stampDirectory.exists()) {
             check(stampDirectory.mkdirs()) {
                 "Can't create the stamp directory"
@@ -128,9 +162,33 @@ class PermissionsScreenViewModel(
         }
     }
 
-    fun onDocumentTreeAccessGranted() {
+    fun onDocumentTreeAccessRequestResult(
+        result: Uri?,
+    ) {
+        if (result == null) {
+            log.debug {
+                "onDocumentTreeAccessRequestResult(): document tree access denied, " +
+                        "emitting ShowRequiredDocumentTreeAccessExplanation"
+            }
+
+            events.tryEmit(Event.ShowRequiredDocumentTreeAccessExplanation)
+
+            return
+        }
+
+        if (result != requiredDocumentTreeAccessUri) {
+            log.debug {
+                "onDocumentTreeAccessRequestResult(): document tree access granted for " +
+                        "the wrong directory, emitting ShowDocumentTreeAccessRequiredForExactDirectoryExplanation"
+            }
+
+            events.tryEmit(Event.ShowDocumentTreeAccessRequiredForExactDirectoryExplanation)
+
+            return
+        }
+
         log.debug {
-            "onDocumentTreeAccessGranted(): document tree access granted, emitting Done"
+            "onDocumentTreeAccessRequestResult(): document tree access granted, emitting Done"
         }
 
         application.contentResolver.takePersistableUriPermission(
@@ -142,13 +200,28 @@ class PermissionsScreenViewModel(
         events.tryEmit(Event.Done)
     }
 
+    private fun isPermissionGranted(permission: String): Boolean =
+        application.checkSelfPermission(permission) == PackageManager.PERMISSION_GRANTED
+
     sealed interface Event {
-        object RequestRequiredPermissions : Event
+        class RequestPermissions(
+            val toRequest: ImmutableSet<String>,
+        ) : Event
 
         class RequestDocumentTreeAccess(
             val initialUri: Uri,
         ) : Event
 
+        object ShowRequiredPermissionsExplanation : Event
+
+        object ShowRequiredDocumentTreeAccessExplanation : Event
+
+        object ShowDocumentTreeAccessRequiredForExactDirectoryExplanation : Event
+
         object Done : Event
     }
+
+    data class Parameters(
+        val isCameraRequiredNow: Boolean,
+    )
 }

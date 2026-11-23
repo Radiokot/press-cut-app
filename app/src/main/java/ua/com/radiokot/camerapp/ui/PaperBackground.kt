@@ -23,6 +23,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.unit.Dp
@@ -62,14 +63,18 @@ fun DrawScope.drawPaperBackground(
     gridSizePx: Int,
     gridThicknessPx: Float,
     verticalOffsetPx: Int,
+    sizePx: Size = this.size,
 ) {
     if (backgroundColor != null) {
-        drawRect(backgroundColor)
+        drawRect(
+            color = backgroundColor,
+            size = sizePx,
+        )
     }
 
     val startY = (0 - gridSizePx / 2) + verticalOffsetPx % gridSizePx
 
-    for (y in (startY..size.height.toInt() step gridSizePx)) {
+    for (y in (startY..sizePx.height.toInt() step gridSizePx)) {
         drawLine(
             color = lineColor,
             start = Offset(
@@ -77,13 +82,13 @@ fun DrawScope.drawPaperBackground(
                 y = y.toFloat(),
             ),
             end = Offset(
-                x = size.width,
+                x = sizePx.width,
                 y = y.toFloat(),
             ),
             strokeWidth = gridThicknessPx,
         )
     }
-    for (x in (0..size.width.toInt() step gridSizePx)) {
+    for (x in (0..sizePx.width.toInt() step gridSizePx)) {
         drawLine(
             color = lineColor,
             start = Offset(
@@ -92,7 +97,7 @@ fun DrawScope.drawPaperBackground(
             ),
             end = Offset(
                 x = x.toFloat(),
-                y = size.height,
+                y = sizePx.height,
             ),
             strokeWidth = gridThicknessPx,
         )

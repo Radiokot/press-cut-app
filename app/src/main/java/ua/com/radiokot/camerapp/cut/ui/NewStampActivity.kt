@@ -19,7 +19,7 @@
 
 package ua.com.radiokot.camerapp.cut.ui
 
-import android.graphics.Bitmap
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.SystemBarStyle
@@ -38,20 +38,20 @@ import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.retain.retain
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.savedstate.serialization.saved
+import kotlinx.coroutines.launch
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.compose.viewmodel.koinViewModel
 import org.koin.core.parameter.parametersOf
 import ua.com.radiokot.camerapp.adjustments.ui.ImageAdjustmentsControllerViewModel
-import ua.com.radiokot.camerapp.cut.domain.StampCutCameraImageSource
 import ua.com.radiokot.camerapp.discardchanges.ui.ConfirmDiscardChangesContract
 import ua.com.radiokot.camerapp.discardchanges.ui.confirmDiscardChangesDestination
 import ua.com.radiokot.camerapp.intro.ui.PermissionsRoute
@@ -61,18 +61,29 @@ import ua.com.radiokot.camerapp.ui.AppTheme
 import ua.com.radiokot.camerapp.ui.LightAppColors
 import ua.com.radiokot.camerapp.ui.LocalColors
 import ua.com.radiokot.camerapp.ui.paperBackground
+import ua.com.radiokot.camerapp.ui.showToast
 import ua.com.radiokot.camerapp.util.fadeOutExit
+import ua.com.radiokot.camerapp.util.keepWhile
 import ua.com.radiokot.camerapp.util.lazyLogger
 
 @Immutable
 class NewStampActivity : ComponentActivity() {
 
     private val log by lazyLogger("NewStampActivity")
+    private val sharedViewModel: NewStampViewModel by viewModel()
+    private val permissionsScreenViewModel: PermissionsScreenViewModel by viewModel {
+        parametersOf(
+            PermissionsScreenViewModel.Parameters(
+                isCameraRequiredNow = sharedViewModel.isCameraRequired,
+            )
+        )
+    }
 
-    private val permissionsScreenViewModel: PermissionsScreenViewModel by viewModel()
+    private var isSplashScreenVisible by saved { true }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         installSplashScreen()
+            .keepWhile(::isSplashScreenVisible)
             .fadeOutExit()
 
         enableEdgeToEdge(
@@ -81,8 +92,42 @@ class NewStampActivity : ComponentActivity() {
 
         super.onCreate(savedInstanceState)
 
-        val collectionId: String? = intent.getStringExtra(COLLECTION_ID_EXTRA)
-        val showToastOnSave = intent.getBooleanExtra(SHOW_TOAST_ON_SAVE_EXTRA, true)
+        lifecycleScope.launch {
+            val toastColors = LightAppColors
+            sharedViewModel.events.collect { event ->
+                when (event) {
+                    NewStampViewModel.Event.ShowImageReadErrorMessage ->
+                        showToast(
+                            context = this@NewStampActivity,
+                            text = "Can't read this image",
+                            durationMs = 1000,
+                            colors = toastColors,
+                        )
+
+                    NewStampViewModel.Event.ShowImageFileTooBigMessage ->
+                        showToast(
+                            context = this@NewStampActivity,
+                            text = "The image is too big. Try taking a screenshot of it",
+                            durationMs = 3000,
+                            colors = toastColors,
+                        )
+                }
+            }
+        }
+
+        sharedViewModel.initOnce(
+            collectionId =
+                intent.getStringExtra(COLLECTION_ID_EXTRA),
+            showToastOnSave =
+                intent.getBooleanExtra(SHOW_TOAST_ON_SAVE_EXTRA, true),
+            receivedImageUri =
+                if (intent.action == Intent.ACTION_SEND && intent.type?.startsWith("image/") == true)
+                    @Suppress("DEPRECATION")
+                    intent.getParcelableExtra(Intent.EXTRA_STREAM)
+                else
+                    null,
+        )
+        isSplashScreenVisible = false
 
         val isPermissionActionRequired = permissionsScreenViewModel.isActionRequired
 
@@ -103,22 +148,10 @@ class NewStampActivity : ComponentActivity() {
                     modifier = Modifier
                         .fillMaxSize()
                 ) {
-                    val colors = LocalColors.current
-
                     StampCutNavHost(
+                        sharedViewModel = sharedViewModel,
                         startWithPermissions = isPermissionActionRequired,
-                        collectionId = collectionId,
-                        onDidSave = {
-                            if (showToastOnSave) {
-                                showToast(
-                                    context = this@NewStampActivity,
-                                    text = "Stamp saved",
-                                    durationMs = 1000,
-                                    colors = colors,
-                                )
-                            }
-                            finish()
-                        },
+                        onDone = ::finish,
                         modifier = Modifier
                             .fillMaxSize()
                     )
@@ -148,16 +181,13 @@ class NewStampActivity : ComponentActivity() {
 @Composable
 private fun SharedTransitionScope.StampCutNavHost(
     modifier: Modifier = Modifier,
+    sharedViewModel: NewStampViewModel,
     startWithPermissions: Boolean,
-    collectionId: String?,
-    onDidSave: () -> Unit,
+    onDone: () -> Unit,
 ) {
     val navController = rememberNavController()
     val confirmDiscardChangesContract = remember(navController) {
         ConfirmDiscardChangesContract(navController)
-    }
-    var stampImageBitmapToSave by retain {
-        mutableStateOf<Bitmap?>(null)
     }
     val paperBackgroundWithColorModifier =
         Modifier
@@ -169,7 +199,9 @@ private fun SharedTransitionScope.StampCutNavHost(
         navController = navController,
         startDestination =
             if (startWithPermissions)
-                PermissionsRoute
+                PermissionsRoute(
+                    isCameraRequiredNow = true,
+                )
             else
                 CutDestination,
         enterTransition = { fadeIn() },
@@ -193,17 +225,17 @@ private fun SharedTransitionScope.StampCutNavHost(
         composable(
             route = CutDestination,
         ) {
-            val viewModel: StampCutScreenViewModel = koinViewModel()
-            val cameraImageSource = viewModel.imageSource as StampCutCameraImageSource
-            val surfaceRequest by cameraImageSource.surfaceRequest.collectAsState()
+            val viewModel: StampCutScreenViewModel = koinViewModel {
+                parametersOf(sharedViewModel)
+            }
             val cutImage by viewModel.cutImage.collectAsState()
 
             CompositionLocalProvider(
                 LocalColors provides LightAppColors
             ) {
-                StampCutFromCameraScreen(
-                    useCaseGroup = cameraImageSource.useCaseGroup,
-                    surfaceRequest = surfaceRequest,
+                StampCutScreen(
+                    imageRenderer = viewModel.imageRenderer,
+                    shape = viewModel.shape,
                     cutImage = cutImage,
                     onCutAction = viewModel::onCutAction,
                     sharedTransitionScope = this@StampCutNavHost,
@@ -217,10 +249,7 @@ private fun SharedTransitionScope.StampCutNavHost(
                 viewModel.events.collect { event ->
                     when (event) {
 
-                        is StampCutScreenViewModel.Event.DidCut -> {
-                            stampImageBitmapToSave?.recycle()
-                            stampImageBitmapToSave = event.stampImageBitmap
-
+                        is StampCutScreenViewModel.Event.ProceedToSave -> {
                             navController.navigate(
                                 route = SaveDestination,
                             ) {
@@ -243,14 +272,7 @@ private fun SharedTransitionScope.StampCutNavHost(
         ) { navEntry ->
 
             val viewModel: StampSaveScreenViewModel = koinViewModel {
-                parametersOf(
-                    StampSaveScreenViewModel.Parameters(
-                        collectionId = collectionId,
-                        stampImageBitmap =
-                            stampImageBitmapToSave
-                                ?: error("Can't open the save screen without the bitmap to save")
-                    )
-                )
+                parametersOf(sharedViewModel)
             }
             val imageAdjustmentsControllerViewModel: ImageAdjustmentsControllerViewModel =
                 viewModel.imageAdjustmentsControllerViewModel
@@ -272,11 +294,23 @@ private fun SharedTransitionScope.StampCutNavHost(
                     .fillMaxSize(),
             )
 
+            val context = LocalContext.current
+            val colors = LocalColors.current
+
             LaunchedEffect(viewModel) {
                 viewModel.events.collect { event ->
                     when (event) {
-                        StampSaveScreenViewModel.Event.DidSave -> {
-                            onDidSave()
+                        StampSaveScreenViewModel.Event.ShowStampSavedMessage -> {
+                            showToast(
+                                context = context,
+                                text = "Stamp saved",
+                                durationMs = 1000,
+                                colors = colors,
+                            )
+                        }
+
+                        StampSaveScreenViewModel.Event.Done -> {
+                            onDone()
                         }
                     }
                 }

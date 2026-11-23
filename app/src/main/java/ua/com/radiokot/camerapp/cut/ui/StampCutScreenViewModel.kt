@@ -38,6 +38,7 @@ import androidx.core.graphics.times
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -45,23 +46,29 @@ import kotlinx.coroutines.flow.lastOrNull
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onEach
 import kotlinx.coroutines.launch
-import ua.com.radiokot.camerapp.cut.domain.StampCutCameraImageSource
-import ua.com.radiokot.camerapp.cut.domain.StampCutImageSource
+import ua.com.radiokot.camerapp.cut.render.StampCutCameraImageRenderer
+import ua.com.radiokot.camerapp.cut.render.StampCutImageRenderer
 import ua.com.radiokot.camerapp.stamps.domain.shape.StampShapeA
+import ua.com.radiokot.camerapp.stamps.ui.UiStampShape
 import ua.com.radiokot.camerapp.util.eventSharedFlow
 import ua.com.radiokot.camerapp.util.lazyLogger
 import ua.com.radiokot.camerapp.util.map
 import kotlin.math.min
+import kotlin.time.Duration.Companion.milliseconds
+import kotlin.time.measureTimedValue
 
 @Immutable
-class StampCutScreenViewModel : ViewModel() {
+class StampCutScreenViewModel(
+    private val sharedViewModel: NewStampViewModel,
+) : ViewModel() {
 
     private val log by lazyLogger("StampCutScreenVM")
 
-    val imageSource: StampCutImageSource =
-        StampCutCameraImageSource(
-            coroutineScope = viewModelScope,
-        )
+    private val _shape = StampShapeA
+    val shape = UiStampShape.fromShape(_shape)
+
+    val imageRenderer: StampCutImageRenderer =
+        sharedViewModel.imageRenderer
 
     private val cutBitmap: MutableStateFlow<Bitmap?> = MutableStateFlow(null)
     val cutImage: StateFlow<ImageBitmap?> =
@@ -76,8 +83,8 @@ class StampCutScreenViewModel : ViewModel() {
     private var cutJob: Job? = null
 
     fun onCutAction(
-        visibleViewfinderSize: Size,
-        visibleFrameRect: Rect,
+        viewfinderSize: Size,
+        shapeRectInViewfinder: Rect,
     ) {
         if (cutJob?.isActive == true) {
             return
@@ -85,41 +92,54 @@ class StampCutScreenViewModel : ViewModel() {
 
         log.debug {
             "onCutAction(): starting the cut sequence:" +
-                    "\nvisibleViewfinderSize: $visibleViewfinderSize" +
-                    "\nvisibleFrameRect: $visibleFrameRect"
+                    "\nviewfinderSize=$viewfinderSize" +
+                    "\nshapeRectInViewfinder=$shapeRectInViewfinder"
         }
 
         cutJob = viewModelScope.launch {
             doCut(
-                visibleViewfinderRect =
-                    RectF(0f, 0f, visibleViewfinderSize.width, visibleViewfinderSize.height),
-                visibleFrameRect =
+                viewfinderRect =
+                    RectF(0f, 0f, viewfinderSize.width, viewfinderSize.height),
+                shapeRectInViewfinder =
                     RectF(
-                        visibleFrameRect.left,
-                        visibleFrameRect.top,
-                        visibleFrameRect.right,
-                        visibleFrameRect.bottom
+                        shapeRectInViewfinder.left,
+                        shapeRectInViewfinder.top,
+                        shapeRectInViewfinder.right,
+                        shapeRectInViewfinder.bottom
                     ),
             )
         }
     }
 
     private suspend fun doCut(
-        visibleViewfinderRect: RectF,
-        visibleFrameRect: RectF,
+        viewfinderRect: RectF,
+        shapeRectInViewfinder: RectF,
     ) {
-        val stampImageBitmap =
-            imageSource
+        val (stampImageBitmap, cutDuration) = measureTimedValue {
+
+            // A delay gives better visual for camera.
+            // Bitmap is slower on its own 🤷‍♂️
+            if (imageRenderer is StampCutCameraImageRenderer) {
+                delay(50.milliseconds)
+            }
+
+            imageRenderer
                 .capture()
                 .map { capturedBitmap ->
-                    frameImage(
-                        image = capturedBitmap,
-                        visibleViewfinderRect = visibleViewfinderRect,
-                        visibleFrameRect = visibleFrameRect,
+                    frameCapture(
+                        capturedBitmap = capturedBitmap,
+                        viewfinderRect = viewfinderRect,
+                        shapeRectInViewfinder = shapeRectInViewfinder,
                     ).also { capturedBitmap.recycle() }
                 }
-                .onEach(cutBitmap::value::set)
+                .onEach {
+                    // Prevent harsh switch from LQ to HQ on the cut piece.
+                    if (cutBitmap.value == null) {
+                        cutBitmap.value = it
+                    }
+                }
                 .lastOrNull()
+        }
 
         if (stampImageBitmap == null) {
             log.warn {
@@ -128,11 +148,12 @@ class StampCutScreenViewModel : ViewModel() {
             return
         }
 
-        events.emit(
-            Event.DidCut(
-                stampImageBitmap = stampImageBitmap,
-            )
-        )
+        sharedViewModel.stampImageBitmap = stampImageBitmap
+
+        // Ensure min delay for visually pleasant animation.
+        delay(MIN_CUT_DURATION - cutDuration)
+
+        events.emit(Event.ProceedToSave)
     }
 
     fun onScreenDisposed() {
@@ -141,39 +162,38 @@ class StampCutScreenViewModel : ViewModel() {
         }
 
         cutJob?.cancel()
-        cutBitmap.value?.recycle()
         cutBitmap.value = null
     }
 
-    private fun frameImage(
-        image: Bitmap,
-        visibleViewfinderRect: RectF,
-        visibleFrameRect: RectF,
+    private fun frameCapture(
+        capturedBitmap: Bitmap,
+        viewfinderRect: RectF,
+        shapeRectInViewfinder: RectF,
     ): Bitmap {
-        val frameScale = min(
-            image.width / visibleViewfinderRect.width(),
-            image.height / visibleViewfinderRect.height(),
+        val viewfinderScale = min(
+            capturedBitmap.width / viewfinderRect.width(),
+            capturedBitmap.height / viewfinderRect.height(),
         )
-        val scaledViewfinderRect = visibleViewfinderRect * frameScale
-        val scaledFrameRect = visibleFrameRect * frameScale
+        val scaledViewfinderRect = viewfinderRect * viewfinderScale
+        val scaledShapeRect = shapeRectInViewfinder * viewfinderScale
 
         val resultBitmap = createBitmap(
-            width = scaledFrameRect.width().toInt(),
-            height = scaledFrameRect.height().toInt(),
+            width = scaledShapeRect.width().toInt(),
+            height = scaledShapeRect.height().toInt(),
         )
 
         val imageShaderPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             shader = BitmapShader(
-                image,
+                capturedBitmap,
                 Shader.TileMode.CLAMP,
                 Shader.TileMode.CLAMP,
             ).apply {
                 setLocalMatrix(Matrix().apply {
                     setTranslate(
-                        -(image.width - scaledViewfinderRect.width()) / 2f
-                                - scaledFrameRect.left,
-                        -(image.height - scaledViewfinderRect.height()) / 2f
-                                - scaledFrameRect.top,
+                        -(capturedBitmap.width - scaledViewfinderRect.width()) / 2f
+                                - scaledShapeRect.left,
+                        -(capturedBitmap.height - scaledViewfinderRect.height()) / 2f
+                                - scaledShapeRect.top,
                     )
                 })
             }
@@ -181,7 +201,7 @@ class StampCutScreenViewModel : ViewModel() {
         }
 
         val stampPath =
-            StampShapeA
+            _shape
                 .path
                 .toPath()
                 .asAndroidPath()
@@ -200,8 +220,10 @@ class StampCutScreenViewModel : ViewModel() {
     }
 
     sealed interface Event {
-        class DidCut(
-            val stampImageBitmap: Bitmap,
-        ) : Event
+        object ProceedToSave : Event
+    }
+
+    private companion object {
+        val MIN_CUT_DURATION = 750.milliseconds
     }
 }

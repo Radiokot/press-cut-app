@@ -21,12 +21,15 @@ package ua.com.radiokot.camerapp.stamps.ui
 
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.requiredHeight
 import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -42,7 +45,6 @@ import androidx.compose.ui.graphics.ColorFilter
 import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.Paint
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.graphics.drawscope.drawIntoCanvas
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.rememberVectorPainter
 import androidx.compose.ui.graphics.withSaveLayer
@@ -51,39 +53,59 @@ import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.rememberTextMeasurer
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
-import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import ua.com.radiokot.camerapp.ui.LeButton
 import ua.com.radiokot.camerapp.ui.LocalColors
 import ua.com.radiokot.camerapp.ui.PodkovaFamily
 import ua.com.radiokot.camerapp.ui.paperBackground
+import kotlin.math.min
 
 @Composable
 fun StampCutter(
     modifier: Modifier = Modifier,
     interactionSource: MutableInteractionSource = remember(::MutableInteractionSource),
-    frameSize: DpSize,
+    frameShape: UiStampShape,
+    outShapeRectState: MutableState<Rect?>,
+    didCut: Boolean,
+    hint: String,
 ) {
     val colors = LocalColors.current
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier,
     ) {
-        val stampPainter = rememberVectorPainter(UiStampShapeA.fill)
-        val stampStrokePainter = rememberVectorPainter(UiStampShapeA.stroke)
+        val stampPainter = rememberVectorPainter(frameShape.fill)
+        val stampStrokePainter = rememberVectorPainter(frameShape.stroke)
         val strokeColor = colors.componentStroke
+        val innerFillScale = 0.8f
 
         Spacer(
             modifier = Modifier
-                .fillMaxSize(0.8f)
+                .fillMaxSize()
                 .graphicsLayer {
                     compositingStrategy = CompositingStrategy.Offscreen
                 }
                 .drawWithCache {
+                    val size = Size(
+                        width = this.size.width * innerFillScale,
+                        height = this.size.height * innerFillScale,
+                    )
+                    val offset = Offset(
+                        x = (this.size.width - size.width) / 2f,
+                        y = (this.size.height - size.height) / 2f,
+                    )
                     val stampPaint = Paint().apply {
-                        blendMode = BlendMode.DstOut
+                        blendMode =
+                            if (didCut)
+                                BlendMode.SrcOver
+                            else
+                                BlendMode.DstOut
                     }
-                    val stampSize = frameSize.toSize()
+                    var stampSize = frameShape.size.toSize()
+                    stampSize *= 0.75f * min(
+                        size.width / stampSize.width,
+                        size.height / stampSize.height
+                    )
                     val stampRect = Rect(
                         offset = Offset.Zero,
                         size = stampSize,
@@ -92,6 +114,12 @@ fun StampCutter(
                         x = (size.width - stampSize.width) / 2,
                         y = (size.height - stampSize.height) / 2,
                     )
+
+                    outShapeRectState.value =
+                        stampRect
+                            .translate(offset)
+                            .translate(stampOffset)
+
                     val brush = Brush.linearGradient(
                         0f to Color(0xFFABA59C),
                         0.3f to Color(0xFFE3DDD3),
@@ -105,21 +133,23 @@ fun StampCutter(
                     val strokeColorFilter = ColorFilter.tint(strokeColor)
 
                     onDrawBehind {
-                        drawRect(brush)
-                        drawIntoCanvas { canvas ->
-                            canvas.translate(stampOffset.x, stampOffset.y)
-                            canvas.withSaveLayer(stampRect, stampPaint) {
-                                with(stampPainter) {
-                                    draw(stampSize)
-                                }
+                        val canvas = drawContext.canvas
+                        canvas.translate(offset.x, offset.y)
+                        drawRect(
+                            brush = brush,
+                            size = size,
+                        )
+                        canvas.translate(stampOffset.x, stampOffset.y)
+                        canvas.withSaveLayer(stampRect, stampPaint) {
+                            with(stampPainter) {
+                                draw(stampSize)
                             }
-                            with(stampStrokePainter) {
-                                draw(
-                                    size = stampSize,
-                                    colorFilter = strokeColorFilter,
-                                )
-                            }
-                            canvas.translate(-stampOffset.x, -stampOffset.y)
+                        }
+                        with(stampStrokePainter) {
+                            draw(
+                                size = stampSize,
+                                colorFilter = strokeColorFilter,
+                            )
                         }
                     }
                 }
@@ -204,7 +234,7 @@ fun StampCutter(
                             )
                             drawText(
                                 textMeasurer = textMeasurer,
-                                text = "tap to focus, hold to cut",
+                                text = hint,
                                 style = textStyle,
                                 topLeft = Offset(
                                     x = 0f,
@@ -227,8 +257,8 @@ fun StampCutter(
 private fun StampCutterPreview(
 
 ) {
-    Box(
-        contentAlignment = Alignment.Center,
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .paperBackground(
                 drawBackgroundColor = true,
@@ -236,7 +266,20 @@ private fun StampCutterPreview(
             .padding(24.dp)
     ) {
         StampCutter(
-            frameSize = UiStampShapeA.size * 1.5f,
+            frameShape = UiStampShapeA,
+            outShapeRectState = remember { mutableStateOf(null) },
+            didCut = false,
+            hint = "tap to focus, hold to cut",
+            modifier = Modifier
+                .requiredWidth(UiStampShapeA.size.width * 2.5f)
+                .requiredHeight(UiStampShapeA.size.height * 2.8f)
+        )
+
+        StampCutter(
+            frameShape = UiStampShapeA,
+            outShapeRectState = remember { mutableStateOf(null) },
+            hint = "hold to cut",
+            didCut = true,
             modifier = Modifier
                 .requiredWidth(UiStampShapeA.size.width * 2.5f)
                 .requiredHeight(UiStampShapeA.size.height * 2.8f)

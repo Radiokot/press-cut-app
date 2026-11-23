@@ -21,6 +21,7 @@
 
 package ua.com.radiokot.camerapp.stamps.ui
 
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -57,6 +58,7 @@ import kotlinx.coroutines.flow.first
 import org.koin.android.ext.android.inject
 import org.koin.androidx.viewmodel.ext.android.viewModel
 import org.koin.compose.koinInject
+import org.koin.core.parameter.parametersOf
 import ua.com.radiokot.camerapp.about.ui.AboutRoute
 import ua.com.radiokot.camerapp.about.ui.aboutDestination
 import ua.com.radiokot.camerapp.collectionselection.ui.SelectDestinationCollectionContract
@@ -94,7 +96,13 @@ class StampsActivity : ComponentActivity() {
 
     private val log by lazyLogger("StampsActivity")
 
-    private val permissionsScreenViewModel: PermissionsScreenViewModel by viewModel()
+    private val permissionsScreenViewModel: PermissionsScreenViewModel by viewModel {
+        parametersOf(
+            PermissionsScreenViewModel.Parameters(
+                isCameraRequiredNow = false,
+            )
+        )
+    }
     private val onboardingPreferences: OnboardingPreferences by inject()
     private var isSplashScreenVisible by saved { true }
 
@@ -149,6 +157,7 @@ class StampsActivity : ComponentActivity() {
     }
 }
 
+@SuppressLint("RestrictedApi")
 @Composable
 private fun SharedTransitionScope.StampsNavHost(
     modifier: Modifier = Modifier,
@@ -158,11 +167,14 @@ private fun SharedTransitionScope.StampsNavHost(
     onStartDestinationReached: () -> Unit,
 ) {
     val navController = rememberNavController()
-    val startDestination =
+    val permissionsRoute = PermissionsRoute(
+        isCameraRequiredNow = false,
+    )
+    val startRoute =
         if (isIntroNeeded)
             IntroRoute
         else if (arePermissionsNeeded)
-            PermissionsRoute
+            permissionsRoute
         else
             CollectionsRoute
     var startDestinationEverReached by retain { mutableStateOf(false) }
@@ -173,9 +185,12 @@ private fun SharedTransitionScope.StampsNavHost(
 
         navController
             .currentBackStackEntryFlow
-            .first { it.destination.route == startDestination }
+            .first {
+                it.destination.route == startRoute
+                        || it.destination.matchRoute(startRoute) != null
+            }
 
-        if (startDestination == CollectionsRoute) {
+        if (startRoute == CollectionsRoute) {
             // Here goes magic delay ✨
             // (give enough time for the images to load).
             delay(50.milliseconds)
@@ -259,7 +274,7 @@ private fun SharedTransitionScope.StampsNavHost(
 
     NavHost(
         navController = navController,
-        startDestination = startDestination,
+        startDestination = startRoute,
         enterTransition = { fadeIn() },
         exitTransition = { fadeOut() },
         modifier = modifier
@@ -275,7 +290,7 @@ private fun SharedTransitionScope.StampsNavHost(
                 navController.navigate(
                     route =
                         if (arePermissionsNeeded)
-                            PermissionsRoute
+                            permissionsRoute
                         else
                             CollectionsRoute,
                 ) {
