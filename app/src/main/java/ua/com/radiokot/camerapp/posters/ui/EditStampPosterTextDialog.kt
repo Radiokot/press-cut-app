@@ -20,6 +20,8 @@
 package ua.com.radiokot.camerapp.posters.ui
 
 import android.content.res.Configuration
+import android.os.Build
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -197,6 +199,12 @@ private fun FieldWithBackground(
     val fontScale = LocalDensity.current.fontScale
     val textScrollState = rememberScrollState()
 
+    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.BAKLAVA) {
+        BackHandler(
+            onBack = onBackPressed,
+        )
+    }
+
     LeField(
         hint = "A text",
         inputState = inputState,
@@ -208,7 +216,7 @@ private fun FieldWithBackground(
             .padding(
                 horizontal = 24.dp,
             )
-            // Handle Back when the keyboard is shown.
+            // Nicer Back handling when the keyboard is shown, on SDK < 36.
             .onPreInterceptKeyBeforeSoftKeyboard { keyEvent ->
                 if (keyEvent.key == Key.Back && keyEvent.type == KeyEventType.KeyDown) {
                     onBackPressed()
